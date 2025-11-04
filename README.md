@@ -34,9 +34,9 @@ Desktop
 ---
 
 ## Screenshots
-![Main Window](screenshots/main.png)
-![Preview](screenshots/preview.png)
-![Finished](screenshots/after.png)
+![Main Window](screenshots/Before.png)
+![Preview](screenshots/Preview.png)
+![Finished](screenshots/After.png)
 
 ---
 
