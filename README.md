@@ -39,15 +39,15 @@ Desktop
 ## Screenshots
 Before:
 
-![Before](screenshots/Before)
+![Before](screenshots/Before.png)
 
 Preview:
 
-![Preview](screenshots/Preview)
+![Preview](screenshots/Preview.png)
 
 After:
 
-![Finished](screenshots/After)
+![Finished](screenshots/After.png)
 
 ---
 
