@@ -35,8 +35,8 @@ Desktop
 
 ## Screenshots
 ![Before](screenshots/Before)
-![Preview](screenshots/Preview.png)
-![Finished](screenshots/After.png)
+![Preview](screenshots/Preview)
+![Finished](screenshots/After)
 
 ---
 
