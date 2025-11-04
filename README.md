@@ -1,4 +1,7 @@
 # FolderFresh — Desktop and Folder Cleaner for Windows
+link to download: 
+
+https://trihedron.itch.io/folderfresh-1-click-desktop-folder-cleaner-windows
 
 FolderFresh is a small utility that automatically organises messy folders.  
 It sorts files into simple categories such as Documents, Images, Videos, Audio, Archives, Code, and Other.  
