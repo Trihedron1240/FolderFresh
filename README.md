@@ -34,7 +34,7 @@ Desktop
 ---
 
 ## Screenshots
-![Main Window](screenshots/Before.png)
+![Before](screenshots/Before.png)
 ![Preview](screenshots/Preview.png)
 ![Finished](screenshots/After.png)
 
@@ -60,6 +60,7 @@ python -m pip install pyinstaller
 
 python -m PyInstaller --onefile --windowed ^ src\FolderFresh_full_app.py
 
+```
 The executable will appear in dist/.
 
 ## **Build the Installer (Inno Setup)**
