@@ -127,9 +127,7 @@ def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool) -> list[Pa
     iterator = root.rglob("*") if include_subfolders else root.glob("*")
     for p in iterator:
         try:
-            # Skip program/game directories if they contain executables
-            if any(p.suffix == ".exe" for p in root.glob("*")):
-                return []
+            
 
             if not p.is_file():
                 continue
