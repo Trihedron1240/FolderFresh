@@ -19,7 +19,7 @@ This tool is designed to help students, general Windows users, and anyone with a
 - Works on any folder, not just Desktop
 - Progress bar and status messages so the window never “freezes”
 - Skips internal files of games or software to avoid breaking installations
-
+- Filter by age of files
 ---
 
 ## Example Result
