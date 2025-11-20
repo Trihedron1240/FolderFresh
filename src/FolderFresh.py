@@ -27,7 +27,7 @@ import threading
 import hashlib
 from pathlib import Path
 from datetime import datetime
-
+from datetime import timedelta
 # --- Optional watchdog for Auto‑tidy ------------------------------------------
 try:
     from watchdog.observers import Observer
@@ -113,7 +113,13 @@ def save_config(cfg: dict) -> None:
     except Exception:
         pass
 
+def file_is_old_enough(path: Path, min_days: int):
+    if min_days <= 0:
+         return True  # no filter
 
+    cutoff = datetime.now() - timedelta(days=min_days)
+    mtime = datetime.fromtimestamp(path.stat().st_mtime)
+    return mtime < cutoff
 
 def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool) -> list[Path]:
     """Return list of files under root (optionally recursive).
@@ -125,6 +131,7 @@ def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool) -> list[Pa
     """
     files: list[Path] = []
     iterator = root.rglob("*") if include_subfolders else root.glob("*")
+
     for p in iterator:
         try:
             
@@ -290,22 +297,29 @@ class FolderFreshApp(ctk.CTk):
         opts = ctk.CTkFrame(self)
         opts.pack(fill="x", padx=12, pady=6)
 
+        # Configure columns so they don't squish
+        opts.grid_columnconfigure((0,1,2,3,4,5,6,7), weight=0)
+        opts.grid_rowconfigure(0, weight=1)
+
+        # Row 0 = everything in one neat aligned line
         self.include_sub = ctk.CTkCheckBox(opts, text="Include subfolders", checkbox_width=18, checkbox_height=18)
-        self.include_sub.select()
-        self.include_sub.pack(side="left", padx=8, pady=6)
+        self.include_sub.grid(row=0, column=0, padx=8, pady=6, sticky="w")
 
         self.skip_hidden = ctk.CTkCheckBox(opts, text="Ignore hidden/system files", checkbox_width=18, checkbox_height=18)
-        self.skip_hidden.select()
-        self.skip_hidden.pack(side="left", padx=8, pady=6)
+        self.skip_hidden.grid(row=0, column=1, padx=8, pady=6, sticky="w")
 
         self.safe_mode = ctk.CTkCheckBox(opts, text="Safe Mode (make copies, keep originals)")
-        self.safe_mode.select()
-        self.safe_mode.pack(side="left", padx=8, pady=6)
+        self.safe_mode.grid(row=0, column=2, padx=8, pady=6, sticky="w")
 
-        self.watch_mode = ctk.CTkCheckBox(opts, text="Auto‑tidy (watch folder)", command=self.on_toggle_watch)
-        self.watch_mode.deselect()
-        self.watch_mode.pack(side="left", padx=8, pady=6)
+        self.watch_mode = ctk.CTkCheckBox(opts, text="Auto-tidy (watch folder)", command=self.on_toggle_watch)
+        self.watch_mode.grid(row=0, column=3, padx=8, pady=6, sticky="w")
 
+        # Age filter controls
+        self.age_filter_label = ctk.CTkLabel(opts, text="Only move files older than:")
+        self.age_filter_label.grid(row=1, column=0, padx=8, sticky="w")
+
+        self.age_filter_entry = ctk.CTkEntry(opts, width=60, placeholder_text="0 days")
+        self.age_filter_entry.grid(row=1, column=1, padx=4, sticky="w")
 
 
         # center: preview + actions
@@ -462,7 +476,11 @@ class FolderFreshApp(ctk.CTk):
             else:
                 include_sub = self.include_sub.get()
 
-            files = scan_dir(self.selected_folder, include_sub, self.skip_hidden.get())
+            min_days = int(self.age_filter_entry.get() or 0)
+
+            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get())
+            files = [f for f in files_all if file_is_old_enough(f, min_days)]
+
             moves = plan_moves(files, self.selected_folder)
 
             self.preview_moves = moves
@@ -486,8 +504,12 @@ class FolderFreshApp(ctk.CTk):
                 include_sub = False
             else:
                 include_sub = self.include_sub.get()
+ 
+            min_days = int(self.age_filter_entry.get() or 0)
 
-            files = scan_dir(self.selected_folder, include_sub, self.skip_hidden.get())
+            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get())
+            files = [f for f in files_all if file_is_old_enough(f, min_days)]
+
             self.preview_moves = plan_moves(files, self.selected_folder)
         if not self.preview_moves:
             messagebox.showinfo("Organise", "There’s nothing to move. Nice and tidy already! ✨")
