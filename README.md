@@ -1,4 +1,5 @@
 # FolderFresh — Desktop and Folder Cleaner for Windows
+Website: https://trihedron1240.github.io/FolderFresh/
 (Optional) Support me: 
 
 https://trihedron.itch.io/folderfresh-1-click-desktop-folder-cleaner-windows
