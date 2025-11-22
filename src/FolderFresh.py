@@ -28,6 +28,7 @@ import hashlib
 from pathlib import Path
 from datetime import datetime
 from datetime import timedelta
+import time
 # --- Optional watchdog for Auto‑tidy ------------------------------------------
 try:
     from watchdog.observers import Observer
@@ -35,6 +36,8 @@ try:
     WATCHDOG_AVAILABLE = True
 except Exception:  # pragma: no cover
     WATCHDOG_AVAILABLE = False
+# Temporary/incomplete download extensions to ignore
+PARTIAL_EXTS = {".crdownload", ".part", ".partial", ".tmp", ".download"}
 
 # --- Optional system tray for background mode ---------------------------------
 try:
@@ -105,7 +108,15 @@ def load_config() -> dict:
         pass
     return {"first_run": True, "appearance": "system", "tray_mode": False}
 
-
+def file_is_stable(path: Path, wait=0.5):
+    try:
+        size1 = path.stat().st_size
+        time.sleep(wait)
+        size2 = path.stat().st_size
+        return size1 == size2
+    except Exception:
+        return False
+    
 def save_config(cfg: dict) -> None:
     try:
         p = Path.home() / CONFIG_FILENAME
@@ -713,6 +724,13 @@ class FolderFreshApp(ctk.CTk):
                 p = Path(event.src_path)
                 if not p.exists() or not p.is_file():
                     return
+                if not file_is_stable(p):
+                    return
+
+                # --- SKIP PARTIAL DOWNLOADS ---
+                PARTIAL_EXTS = {".crdownload", ".part", ".partial", ".tmp", ".download"}
+                if p.suffix.lower() in PARTIAL_EXTS:
+                    return
                 # hidden check
                 try:
                     rel = p.relative_to(root)
@@ -736,7 +754,52 @@ class FolderFreshApp(ctk.CTk):
                     self.outer.after(0, lambda: self.outer.set_status(f"Auto‑tidy moved: {Path(m['dst']).name}"))
                 except Exception as e:
                     self.outer.after(0, lambda: self.outer.set_status(f"Auto‑tidy error: {e}"))
+            def on_moved(self, event):
+                # When a partial download is renamed to a real file
+                if event.is_directory:
+                    return
+                root = self.outer.selected_folder
+                if not root:
+                    return
 
+                p = Path(event.dest_path)
+                if not p.exists() or not p.is_file():
+                    return
+
+                # skip hidden
+                try:
+                    rel = p.relative_to(root)
+                    if self.outer.skip_hidden.get() and (
+                        any(part.startswith(".") for part in rel.parts) or is_hidden_win(p)
+                    ):
+                        return
+                except Exception:
+                    pass
+
+                # skip partials
+                PARTIAL_EXTS = {".crdownload", ".part", ".partial", ".tmp", ".download", ".opdownload"}
+                if p.suffix.lower() in PARTIAL_EXTS:
+                    return
+
+                # stability check
+                if not file_is_stable(p):
+                    return
+
+                # plan & act
+                move_plan = plan_moves([p], root)
+                if not move_plan:
+                    return
+
+                m = move_plan[0]
+                try:
+                    if self.outer.safe_mode.get():
+                        Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(m["src"], m["dst"])
+                    else:
+                        shutil.move(m["src"], m["dst"])
+                    self.outer.after(0, lambda: self.outer.set_status(f"Auto-tidy moved: {Path(m['dst']).name}"))
+                except Exception as e:
+                    self.outer.after(0, lambda: self.outer.set_status(f"Auto-tidy error: {e}"))
         self.observer = Observer()
         try:
             self.observer.schedule(Handler(self), str(self.selected_folder), recursive=self.include_sub.get())
