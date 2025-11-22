@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://trihedron1240.github.io/FolderFresh/sitemap.xml
