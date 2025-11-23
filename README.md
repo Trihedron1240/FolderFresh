@@ -72,13 +72,13 @@ Desktop
 
 Open PowerShell in the project root:
 
-```powershell
+
 # optional: clean previous builds
 rmdir /s /q build dist
 
 python -m pip install pyinstaller
 
-python -m PyInstaller --onefile --windowed src\FolderFresh.py```
+python -m PyInstaller --onefile --windowed src\FolderFresh.py
 
 ## **Build the Installer (Inno Setup)**
 
