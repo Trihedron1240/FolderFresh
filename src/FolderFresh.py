@@ -80,6 +80,8 @@ RULES = {
     
 }
 
+CONFIG_PATH = Path.home() / ".folderfresh_config.json"
+
 TOP_LEVEL_CATS = set(CATEGORIES.keys()) | {"Other"}
 
 # ---- Platform helpers ---------------------------------------------------------
@@ -106,7 +108,18 @@ def load_config() -> dict:
             return json.load(open(p, "r", encoding="utf-8"))
     except Exception:
         pass
-    return {"first_run": True, "appearance": "system", "tray_mode": False}
+    return {
+    "first_run": True,
+    "appearance": "system",
+    "tray_mode": False,
+    "last_folder": None,
+    "include_sub": True,
+    "skip_hidden": True,
+    "safe_mode": True,
+    "watch_mode": False,
+    "age_filter_days": 0
+    }
+
 
 def file_is_stable(path: Path, wait=0.5):
     try:
@@ -279,6 +292,11 @@ class FolderFreshApp(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.config_data = load_config()
+
+        
+        
+        # Auto-load last used folder if it still exists
+        last = self.config_data.get("last_folder")
         ctk.set_appearance_mode(self.config_data.get("appearance", "Dark"))  # "light" | "dark" | "system"
         ctk.set_default_color_theme("blue")
 
@@ -303,7 +321,13 @@ class FolderFreshApp(ctk.CTk):
 
         self.choose_btn = ctk.CTkButton(top, text="📁 Choose Folder", command=self.choose_folder)
         self.choose_btn.pack(side="left", padx=(0, 6), pady=6)
-
+        if last and Path(last).exists():
+            self.selected_folder = Path(last)
+            # set entry field
+            self.path_entry.configure(state="normal")
+            self.path_entry.delete(0, "end")
+            self.path_entry.insert(0, last)
+            self.path_entry.configure(state="disabled")
         # options bar
         opts = ctk.CTkFrame(self)
         opts.pack(fill="x", padx=12, pady=6)
@@ -313,24 +337,45 @@ class FolderFreshApp(ctk.CTk):
         opts.grid_rowconfigure(0, weight=1)
 
         # Row 0 = everything in one neat aligned line
-        self.include_sub = ctk.CTkCheckBox(opts, text="Include subfolders", checkbox_width=18, checkbox_height=18)
+        self.include_sub = ctk.CTkCheckBox(
+            opts,
+            text="Include subfolders",
+            checkbox_width=18,
+            checkbox_height=18,
+            command=self.remember_options
+            )
         self.include_sub.grid(row=0, column=0, padx=8, pady=6, sticky="w")
+        if self.config_data.get("include_sub", True):
+            self.include_sub.select()
+        else:
+            self.include_sub.deselect()
 
-        self.skip_hidden = ctk.CTkCheckBox(opts, text="Ignore hidden/system files", checkbox_width=18, checkbox_height=18)
+        self.skip_hidden = ctk.CTkCheckBox(opts, text="Ignore hidden/system files", checkbox_width=18, checkbox_height=18, command=self.remember_options)
         self.skip_hidden.grid(row=0, column=1, padx=8, pady=6, sticky="w")
-
-        self.safe_mode = ctk.CTkCheckBox(opts, text="Safe Mode (make copies, keep originals)")
+        if self.config_data.get("skip_hidden", True):
+            self.skip_hidden.select()
+        else:
+            self.skip_hidden.deselect()
+        self.safe_mode = ctk.CTkCheckBox(opts, text="Safe Mode (make copies, keep originals)", command=self.remember_options)
         self.safe_mode.grid(row=0, column=2, padx=8, pady=6, sticky="w")
-
+        if self.config_data.get("safe_mode", True):
+            self.safe_mode.select()
+        else:
+            self.safe_mode.deselect()
         self.watch_mode = ctk.CTkCheckBox(opts, text="Auto-tidy (watch folder)", command=self.on_toggle_watch)
         self.watch_mode.grid(row=0, column=3, padx=8, pady=6, sticky="w")
-
+        if self.config_data.get("watch_mode", False):
+            self.watch_mode.select()
+        else:
+            self.watch_mode.deselect()
         # Age filter controls
         self.age_filter_label = ctk.CTkLabel(opts, text="Only move files older than:")
         self.age_filter_label.grid(row=1, column=0, padx=8, sticky="w")
 
         self.age_filter_entry = ctk.CTkEntry(opts, width=60, placeholder_text="0 days")
         self.age_filter_entry.grid(row=1, column=1, padx=4, sticky="w")
+        self.age_filter_entry.delete(0, "end")
+        self.age_filter_entry.insert(0, str(self.config_data.get("age_filter_days", 0)))
 
 
         # center: preview + actions
@@ -455,6 +500,9 @@ class FolderFreshApp(ctk.CTk):
         if not path:
             return
         self.selected_folder = Path(path)
+        # Save last folder to config
+        self.config_data["last_folder"] = str(self.selected_folder)
+        save_config(self.config_data)
         self.path_entry.configure(state="normal")
         self.path_entry.delete(0, "end")
         self.path_entry.insert(0, str(self.selected_folder))
@@ -474,8 +522,26 @@ class FolderFreshApp(ctk.CTk):
             self.start_watching()
 
     # ---- Actions ---------------------------------------------------------------
+    def remember_options(self):
+        self.config_data["include_sub"] = bool(self.include_sub.get())
+        self.config_data["skip_hidden"] = bool(self.skip_hidden.get())
+        self.config_data["safe_mode"] = bool(self.safe_mode.get())
+        self.config_data["watch_mode"] = bool(self.watch_mode.get())
+        try:
+            self.config_data["age_filter_days"] = int(self.age_filter_entry.get() or 0)
+        except:
+            self.config_data["age_filter_days"] = 0
+
+        save_config(self.config_data)
 
     def on_preview(self):
+        # Save current settings
+        self.config_data["include_sub"] = bool(self.include_sub.get())
+        self.config_data["skip_hidden"] = bool(self.skip_hidden.get())
+        self.config_data["safe_mode"] = bool(self.safe_mode.get())
+        self.config_data["watch_mode"] = bool(self.watch_mode.get())
+        self.config_data["age_filter_days"] = int(self.age_filter_entry.get() or 0)
+        save_config(self.config_data)
         if not self.selected_folder or not self.selected_folder.exists():
             messagebox.showerror("Choose Folder", "Please choose a valid folder first.")
             return
@@ -511,6 +577,13 @@ class FolderFreshApp(ctk.CTk):
         threading.Thread(target=worker, daemon=True).start()
 
     def on_organise(self):
+        # Save current settings
+        self.config_data["include_sub"] = bool(self.include_sub.get())
+        self.config_data["skip_hidden"] = bool(self.skip_hidden.get())
+        self.config_data["safe_mode"] = bool(self.safe_mode.get())
+        self.config_data["watch_mode"] = bool(self.watch_mode.get())
+        self.config_data["age_filter_days"] = int(self.age_filter_entry.get() or 0)
+        save_config(self.config_data)
         if not self.selected_folder or not self.selected_folder.exists():
             messagebox.showerror("Choose Folder", "Please choose a valid folder first.")
             return
@@ -706,6 +779,10 @@ class FolderFreshApp(ctk.CTk):
     # ---- Auto‑tidy (watch folder) ---------------------------------------------
 
     def on_toggle_watch(self):
+
+        self.config_data["watch_mode"] = bool(self.watch_mode.get())
+        save_config(self.config_data)
+
         if not self.selected_folder:
             if self.watch_mode.get():
                 messagebox.showinfo("Auto‑tidy", "Choose a folder first.")
