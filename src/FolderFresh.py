@@ -401,6 +401,10 @@ class FolderFreshApp(ctk.CTk):
         self.progress.set(0)
         self.progress.pack(fill="x", side="left", expand=True, padx=(10, 8), pady=10)
 
+        # Progress counter label (new)
+        self.progress_label = ctk.CTkLabel(bottom, text="0/0", font=("Segoe UI", 11))
+        self.progress_label.pack(side="left", padx=(0,8))
+
         self.status = ctk.CTkLabel(bottom, text="Ready ✨", font=("Segoe UI", 12))
         self.status.pack(side="left", padx=8)
 
@@ -497,9 +501,12 @@ class FolderFreshApp(ctk.CTk):
             self.preview_moves = moves
             summary = self.make_summary(moves)
             self.after(0, lambda: self.set_preview(summary))
+            # show counter: 0 / N -> then N / N
+            self.after(0, lambda: self.progress_label.configure(text=f"0/{len(moves)}"))
             self.after(0, lambda: self.set_status(f"Preview ready: {len(moves)} file(s)."))
             self.after(0, self.enable_buttons)
             self.after(0, lambda: self.progress.set(1.0))
+            self.after(0, lambda: self.progress_label.configure(text=f"{len(moves)}/{len(moves)}"))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -579,7 +586,10 @@ class FolderFreshApp(ctk.CTk):
                     # record error line in preview/status but keep going
                     moves_done.append({"src": m["src"], "dst": m["dst"], "error": str(e)})
                 finally:
-                    self.after(0, lambda val=i / total: self.progress.set(val))
+                    # update progress bar (fraction) and counter "i / total"
+                    self.after(0, lambda val=i/total: self.progress.set(val))
+                    self.after(0, lambda i=i, total=total: self.progress_label.configure(text=f"{i}/{total}"))
+
             # log only if not safe_mode (because originals still exist when copying)
             if not self.safe_mode.get():
                 save_log(self.selected_folder, moves_done, mode="move")
@@ -592,7 +602,7 @@ class FolderFreshApp(ctk.CTk):
             self.after(0, lambda: self.set_status("All done ✔️"))
             self.after(0, lambda: self.set_preview(self.finish_summary(moves_done)))
             self.after(0, self.enable_buttons)
-
+            self.after(0, lambda: self.progress_label.configure(text=f"{total}/{total}"))
         threading.Thread(target=worker, daemon=True).start()
 
     def on_undo(self):
@@ -630,7 +640,9 @@ class FolderFreshApp(ctk.CTk):
                 except Exception:
                     pass
                 finally:
-                    self.after(0, lambda val=i / total: self.progress.set(val))
+                    self.after(0, lambda val=i/total: self.progress.set(val))
+                    self.after(0, lambda i=i, total=total: self.progress_label.configure(text=f"{i}/{total}"))
+
             # remove log
             try:
                 (self.selected_folder / LOG_FILENAME).unlink(missing_ok=True)
@@ -639,6 +651,7 @@ class FolderFreshApp(ctk.CTk):
             self.after(0, lambda: self.set_status(f"Undo complete (restored {success} file(s))."))
             self.after(0, lambda: self.set_preview(f"⏪ Undo complete. Restored {success} file(s)."))
             self.after(0, self.enable_buttons)
+            self.after(0, lambda: self.progress_label.configure(text=f"{success}/{total}"))
 
         threading.Thread(target=worker, daemon=True).start()
 
@@ -666,6 +679,7 @@ class FolderFreshApp(ctk.CTk):
                 out = "No obvious duplicates found. 🎉"
             else:
                 out = "\n".join(lines) + "\n\nTip: Delete manually the ones you don't need."
+            self.after(0, lambda: self.progress_label.configure(text=f"{total}/{total}" if total else "0/0"))
             self.after(0, lambda: self.set_preview(out))
             self.after(0, lambda: self.set_status(f"Duplicate scan done ({total} files in groups)."))
             self.after(0, self.enable_buttons)
