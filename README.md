@@ -70,7 +70,7 @@ rmdir /s /q build dist
 
 python -m pip install pyinstaller
 
-python -m PyInstaller --onefile --windowed ^ src\FolderFresh_full_app.py
+python -m PyInstaller --onefile --windowed ^ src\FolderFresh.py
 
 ```
 The executable will appear in dist/.
@@ -100,7 +100,7 @@ For OneDrive users: moving files out of Desktop/Documents may trigger cloud “f
 ## **Build Status / Contributions**
 
 Pull requests, issues, and suggestions are welcome.
-This is a small, open project intended to help everyday users keep their machines organised.
+This is an open project intended to help everyday users keep their machines organised.
 
 ## **AI Assistance Disclosure**
 
