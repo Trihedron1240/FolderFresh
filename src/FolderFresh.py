@@ -37,7 +37,7 @@ try:
 except Exception:  # pragma: no cover
     WATCHDOG_AVAILABLE = False
 # Temporary/incomplete download extensions to ignore
-PARTIAL_EXTS = {".crdownload", ".part", ".partial", ".tmp", ".download"}
+PARTIAL_EXTS = {".crdownload", ".part", ".partial", ".download"}
 
 # --- Optional system tray for background mode ---------------------------------
 try:
@@ -118,11 +118,12 @@ def load_config() -> dict:
     "safe_mode": True,
     "watch_mode": False,
     "age_filter_days": 0,
-    "ignore_exts": ""
+    "ignore_exts": "",
+    "smart_mode": False
     }
 
 
-def file_is_stable(path: Path, wait=0.5):
+def file_is_stable(path: Path, wait=1.0):
     try:
         size1 = path.stat().st_size
         time.sleep(wait)
@@ -191,6 +192,125 @@ def apply_rules(path: Path) -> str | None:
     except Exception:
         pass
     return None
+# ---- Smart category picker ----------------------------------------------------
+def pick_smart_category(path: Path) -> str | None:
+    """
+    Advanced rule-based categoriser with metadata, filename patterns,
+    filetype inference, project detection, and contextual heuristics.
+    Returns a smart category or None if no confidently matching rule exists.
+    """
+
+    name = path.name.lower()
+    stem = path.stem.lower()
+    ext = path.suffix.lower()
+
+    # --- Try to get file size early ---
+    try:
+        size = path.stat().st_size
+    except Exception:
+        size = None
+
+    # --- Try EXIF for photos ---
+    is_photo = False
+    try:
+        from PIL import Image
+        img = Image.open(path)
+        img.verify()
+        is_photo = True
+    except Exception:
+        pass
+
+    # =============================================================
+    #  HIGH CONFIDENCE MATCHES  (Instant category assignment)
+    # =============================================================
+
+    # Screenshots
+    if any(x in name for x in ("screenshot", "screen shot", "capture", "snip", "printscreen")):
+        return "Screenshots"
+
+    # Camera photos (file structure + EXIF confirmed)
+    if is_photo:
+        if stem.startswith(("img_", "pxl_", "dsc_", "mvimg_", "psx_", "pano_", "img-")):
+            return "Camera Photos"
+        if stem[:8].isdigit() and ("-" in stem or "_" in stem):
+            return "Camera Photos"
+
+    # Messaging media (WhatsApp, Telegram, Messenger)
+    if any(x in name for x in ("whatsapp", "waimg", "telegram", "signal-", "messenger", "line_")):
+        return "Messaging Media"
+
+    # High-confidence Installers / Setup files
+    if ext in (".exe", ".msi", ".bat") and any(
+        x in name for x in ("setup", "installer", "install", "update", "patch")
+    ):
+        return "Installers"
+
+    # Large compressed files → Archives
+    if ext in (".zip", ".rar", ".7z", ".tar", ".gz") and size and size > 200_000_000:
+        return "Large Archives"
+
+    # Backup & version files
+    if any(x in name for x in ("backup", "bak", "_old", "-old", "(old)", "(copy)", "copy(")):
+        return "Backups"
+
+    # =============================================================
+    #  MEDIUM CONFIDENCE MATCHES  (Slightly more specific)
+    # =============================================================
+
+    # Game assets and save files
+    if ext in (".dll", ".pak", ".sav", ".vdf", ".uasset", ".unitypackage") or \
+       any(x in name for x in ("unity", "unreal", "godot", "shader", "texture")):
+        return "Game Assets"
+
+    # Developer / Project files
+    if ext in (".py", ".js", ".ts", ".java", ".cpp", ".csproj", ".sln", ".go", ".rs") or \
+       any(x in name for x in ("project", "config", "build", "node_modules")):
+        return "Code Projects"
+
+    # Android APKs
+    if ext in (".apk", ".aab"):
+        return "Android Packages"
+
+    # Video exports / edits
+    if ext in (".mp4", ".mov", ".avi", ".mkv") and any(
+        x in name for x in ("render", "final", "edited", "export")
+    ):
+        return "Edited Videos"
+
+    # Edited images / creative content
+    if ext in (".psd", ".xcf", ".kra", ".svg") or \
+       any(x in name for x in ("design", "banner", "thumbnail", "logo", "cover")):
+        return "Creative Assets"
+
+    # Ebooks
+    if ext in (".epub", ".mobi", ".azw3", ".pdf") and \
+       any(x in name for x in ("ebook", "novel", "chapter", "volume", "book")):
+        return "Ebooks"
+
+    # Finance docs
+    if any(x in name for x in ("invoice", "receipt", "bank", "statement", "tax", "payment", "paystub")):
+        return "Finance"
+
+    # School / Educational content
+    if any(x in name for x in ("assignment", "homework", "worksheet", "module", "lesson", "quiz", "exam")):
+        return "School Work"
+
+    # =============================================================
+    #  LOW CONFIDENCE MATCHES  (Weak patterns, safe fallback)
+    # =============================================================
+
+    # Common project folders/images
+    if ext in (".png", ".jpg", ".webp") and any(
+        x in name for x in ("temp", "asset", "sprite", "icon", "preview")
+    ):
+        return "Misc Media"
+
+    # Files frequently part of app downloads
+    if ext in (".zip", ".rar") and "download" in name:
+        return "Downloaded Archives"
+
+    # If nothing matched:
+    return None
 
 
 def pick_category(ext: str, src_path: Path | None = None) -> str:
@@ -218,17 +338,35 @@ def unique_dest(path: Path) -> Path:
             return candidate
         i += 1
 
+def plan_moves_preview(files, root):
+    #Same as plan_moves but does NOT create folders or write anything.
+    moves = []
+    for src in files:
+        folder = pick_category(src.suffix)  # or smart category, handled outside
+        dst_dir = root / folder
+        dst = dst_dir / src.name  # DO NOT mkdir, DO NOT unique_dest
+        if src != dst:
+            moves.append({"src": str(src), "dst": str(dst)})
+    return moves
 
 def plan_moves(files: list[Path], root: Path) -> list[dict]:
+    """
+    Pure helper: plan moves based on extension / rules.
+    Does NOT reference UI state (self) so it is safe to call from handlers.
+    """
     moves: list[dict] = []
     for src in files:
+        # rules first if we can (apply_rules uses path)
         folder = pick_category(src.suffix, src_path=src)
+        # fallback to Other handled inside pick_category
         dst_dir = root / folder
-        dst_dir.mkdir(parents=True, exist_ok=True)
+        # ensure destination dir is created by the caller (organise/worker)
+        # but here we will compute a unique destination name (caller must mkdir before move)
         dst = unique_dest(dst_dir / src.name)
         if src != dst:
             moves.append({"src": str(src), "dst": str(dst)})
     return moves
+
 
 
 def save_log(root: Path, moves: list[dict], mode: str) -> Path:
@@ -252,6 +390,19 @@ def load_log(root: Path) -> dict | None:
             return json.load(f)
     except Exception:
         return None
+def remove_empty_category_folders(root: Path):
+    """Remove empty category folders after undoing moves."""
+    try:
+        for item in root.iterdir():
+            if item.is_dir():
+                # Delete ONLY if the folder is empty
+                try:
+                    next(item.iterdir())  # raises StopIteration if empty
+                except StopIteration:
+                    # Folder is empty → safe to delete
+                    item.rmdir()
+    except Exception:
+        pass
 
 # ---- Duplicate finder ---------------------------------------------------------
 
@@ -387,6 +538,19 @@ class FolderFreshApp(ctk.CTk):
 
         # Save on typing
         self.ignore_entry.bind("<KeyRelease>", lambda e: self.remember_options())
+
+        # --- Smart Mode ---
+        self.smart_mode = ctk.CTkCheckBox(
+            opts,
+            text="Smart Sorting (experimental)",
+            command=self.remember_options
+        )
+        self.smart_mode.grid(row=3, column=0, padx=8, pady=6, sticky="w")
+        if self.config_data.get("smart_mode", False):
+            self.smart_mode.select()
+        else:
+            self.smart_mode.deselect()
+
 
 
         # center: preview + actions
@@ -524,12 +688,12 @@ class FolderFreshApp(ctk.CTk):
         for b in (self.preview_btn, self.organise_btn, self.dupe_btn):
             b.configure(state="normal")
         # keep Undo disabled until a move happens
-        if self.watch_mode.get():
-            self.stop_watching()
-            self.start_watching()
+        # Kill current watcher if any
+        self.stop_watching()
 
+        # Restart with new folder if watch mode is enabled
         if self.watch_mode.get():
-            self.stop_watching()
+            time.sleep(0.1)
             self.start_watching()
 
     # ---- Actions ---------------------------------------------------------------
@@ -543,6 +707,7 @@ class FolderFreshApp(ctk.CTk):
         except:
             self.config_data["age_filter_days"] = 0
         self.config_data["ignore_exts"] = self.ignore_entry.get()
+        self.config_data["smart_mode"] = bool(self.smart_mode.get())
         save_config(self.config_data)
 
     def on_preview(self):
@@ -582,7 +747,20 @@ class FolderFreshApp(ctk.CTk):
                 and f.suffix.lower() not in ignore_set
             ]
 
-            moves = plan_moves(files, self.selected_folder)
+            moves = []
+            use_smart = self.smart_mode.get()
+
+            for p in files:
+                # Smart or fallback
+                folder = pick_smart_category(p) if use_smart else None
+                if not folder:
+                    folder = pick_category(p.suffix)
+
+                # PREVIEW MODE: DO NOT create folders, DO NOT use unique_dest
+                dst = self.selected_folder / folder / p.name
+
+                if p != dst:
+                    moves.append({"src": str(p), "dst": str(dst)})
 
             self.preview_moves = moves
             summary = self.make_summary(moves)
@@ -630,7 +808,28 @@ class FolderFreshApp(ctk.CTk):
                 and f.suffix.lower() not in ignore_set
             ]
 
-            self.preview_moves = plan_moves(files, self.selected_folder)
+            moves = []
+            use_smart = self.smart_mode.get()
+
+            for p in files:
+                folder = None
+
+                # Smart Sorting
+                if use_smart:
+                    folder = pick_smart_category(p)
+
+                # fallback
+                if not folder:
+                    folder = pick_category(p.suffix)
+
+                # build destination
+                dest_dir = self.selected_folder / folder
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                dst = dest_dir / p.name
+
+                if p != dst:
+                    moves.append({"src": str(p), "dst": str(dst)})
+
         if not self.preview_moves:
             messagebox.showinfo("Organise", "There’s nothing to move. Nice and tidy already! ✨")
             return
@@ -677,6 +876,7 @@ class FolderFreshApp(ctk.CTk):
             total = len(self.preview_moves)
             for i, m in enumerate(self.preview_moves, start=1):
                 try:
+                    Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
                     if self.safe_mode.get():
                         # COPY instead of MOVE
                         Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
@@ -750,6 +950,9 @@ class FolderFreshApp(ctk.CTk):
                 (self.selected_folder / LOG_FILENAME).unlink(missing_ok=True)
             except Exception:
                 pass
+            # Remove now-empty category folders
+            remove_empty_category_folders(self.selected_folder)
+
             self.after(0, lambda: self.set_status(f"Undo complete (restored {success} file(s))."))
             self.after(0, lambda: self.set_preview(f"⏪ Undo complete. Restored {success} file(s)."))
             self.after(0, self.enable_buttons)
@@ -812,7 +1015,7 @@ class FolderFreshApp(ctk.CTk):
     # ---- Auto‑tidy (watch folder) ---------------------------------------------
 
     def on_toggle_watch(self):
-
+        self.remember_options()   # forces writing safe_mode state
         self.config_data["watch_mode"] = bool(self.watch_mode.get())
         save_config(self.config_data)
 
@@ -820,7 +1023,7 @@ class FolderFreshApp(ctk.CTk):
             if self.watch_mode.get():
                 messagebox.showinfo("Auto‑tidy", "Choose a folder first.")
                 self.watch_mode.deselect()
-            return
+            return 
         if self.watch_mode.get():
             self.start_watching()
         else:
@@ -839,107 +1042,126 @@ class FolderFreshApp(ctk.CTk):
         class Handler(FileSystemEventHandler):
             def __init__(self, outer: "FolderFreshApp"):
                 self.outer = outer
-            def on_created(self, event):
-                if event.is_directory:
-                    return
-                root = self.outer.selected_folder
-                if not root:
-                    return
-                p = Path(event.src_path)
-                # Ignore user file types
+
+            # ----------- Helper: should Auto-tidy ignore this file? -----------
+            def should_ignore(self, p: Path, root: Path) -> bool:
+                # Skip category folders (prevents endless loops)
+                try:
+                    rel = p.relative_to(root)
+                    if rel.parts and rel.parts[0] in TOP_LEVEL_CATS:
+                        return True
+                except Exception:
+                    pass
+
+                # Ignore user-ignored extensions
                 ignore_raw = self.outer.config_data.get("ignore_exts", "")
                 ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
                 if p.suffix.lower() in ignore_set:
-                    return
-                if not p.exists() or not p.is_file():
-                    return
-                if not file_is_stable(p):
-                    return
+                    return True
 
-                # --- SKIP PARTIAL DOWNLOADS ---
-                PARTIAL_EXTS = {".crdownload", ".part", ".partial", ".tmp", ".download"}
-                if p.suffix.lower() in PARTIAL_EXTS:
-                    return
-                # hidden check
+                # Skip partial download extensions (DO NOT include .tmp)
+                PARTIALS = {".crdownload", ".part", ".partial", ".download", ".opdownload"}
+                if p.suffix.lower() in PARTIALS:
+                    return True
+
+                # Skip hidden/system files
                 try:
                     rel = p.relative_to(root)
                     if self.outer.skip_hidden.get() and (
                         any(part.startswith(".") for part in rel.parts) or is_hidden_win(p)
                     ):
-                        return
+                        return True
                 except Exception:
                     pass
-                # plan & act for this single file
-                move_plan = plan_moves([p], root)
-                if not move_plan:
-                    return
-                m = move_plan[0]
-                try:
-                    if self.outer.safe_mode.get():
-                        Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(m["src"], m["dst"])
-                    else:
-                        shutil.move(m["src"], m["dst"]) 
-                    
-                    #self.outer.after(0, lambda: self.outer.set_status(f"Auto‑tidy moved: {Path(m['dst']).name}"))
-                except Exception as e:
-                    self.outer.after(0, lambda: self.outer.set_status(f"Auto‑tidy error: {e}"))
-            def on_moved(self, event):
-                # When a partial download is renamed to a real file
-                if event.is_directory:
-                    return
-                root = self.outer.selected_folder
-                if not root:
-                    return
 
-                p = Path(event.dest_path)
-                # Ignore user file types
-                ignore_raw = self.outer.config_data.get("ignore_exts", "")
-                ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
-                if p.suffix.lower() in ignore_set:
-                    return
+                return False
+
+            # ----------- Helper: wait for file stability -----------
+            def wait_until_stable(self, p: Path, attempts=4, delay=0.25) -> bool:
+                """Try multiple times because Explorer holds file locks after drag/drop."""
+                for _ in range(attempts):
+                    try:
+                        s1 = p.stat().st_size
+                        time.sleep(delay)
+                        s2 = p.stat().st_size
+                        if s1 == s2:
+                            return True
+                    except Exception:
+                        pass
+                return False
+
+            # ----------- Main: handle file arrival -----------
+            def handle_file(self, p: Path, root: Path):
+                # ensure file exists
                 if not p.exists() or not p.is_file():
                     return
 
-                # skip hidden
-                try:
-                    rel = p.relative_to(root)
-                    if self.outer.skip_hidden.get() and (
-                        any(part.startswith(".") for part in rel.parts) or is_hidden_win(p)
-                    ):
-                        return
-                except Exception:
-                    pass
-
-                # skip partials
-                PARTIAL_EXTS = {".crdownload", ".part", ".partial", ".tmp", ".download", ".opdownload"}
-                if p.suffix.lower() in PARTIAL_EXTS:
+                # skip logic
+                if self.should_ignore(p, root):
                     return
 
-                # stability check
-                if not file_is_stable(p):
+                # wait for stability
+                if not self.wait_until_stable(p):
                     return
 
-                # plan & act
+                # SMART override
+                if self.outer.smart_mode.get():
+                    smart_folder = pick_smart_category(p)
+                    if smart_folder:
+                        dest_dir = root / smart_folder
+                        dest_dir.mkdir(parents=True, exist_ok=True)
+                        dst = dest_dir / p.name
+                        try:
+                            if self.outer.safe_mode.get():
+                                shutil.copy2(p, dst)
+                            else:
+                                shutil.move(str(p), str(dst))
+                        except Exception as e:
+                            self.outer.after(0, lambda e=e: self.outer.set_status(f"Auto-tidy error: {e}"))
+                        return  # stop here
+
+                # NORMAL rules
                 move_plan = plan_moves([p], root)
                 if not move_plan:
                     return
 
                 m = move_plan[0]
                 try:
+                    Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
                     if self.outer.safe_mode.get():
-                        Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(m["src"], m["dst"])
                     else:
                         shutil.move(m["src"], m["dst"])
-                    #self.outer.after(0, lambda: self.outer.set_status(f"Auto-tidy moved: {Path(m['dst']).name}"))
                 except Exception as e:
-                    self.outer.after(0, lambda: self.outer.set_status(f"Auto-tidy error: {e}"))
+                    self.outer.after(0, lambda e=e: self.outer.set_status(f"Auto-tidy error: {e}"))
+
+            # ----------- Events -----------
+
+            def on_created(self, event):
+                
+                if event.is_directory:
+                    return
+                root = self.outer.selected_folder
+                if not root:
+                    return
+                self.handle_file(Path(event.src_path), root)
+
+            def on_moved(self, event):
+                
+                if event.is_directory:
+                    return
+                root = self.outer.selected_folder
+                if not root:
+                    return
+                self.handle_file(Path(event.dest_path), root)
+
         self.observer = Observer()
         try:
             self.observer.schedule(Handler(self), str(self.selected_folder), recursive=self.include_sub.get())
             self.observer.start()
             self.set_status("Auto‑tidy watching…")
+            
+
         except Exception as e:
             self.observer = None
             self.watch_mode.deselect()
@@ -1000,21 +1222,25 @@ class FolderFreshApp(ctk.CTk):
 
     def show_help(self):
         message = (
-            "This app tidies messy folders by sorting files into neat categories.\n\n"
-            "How to use:\n"
-            "1) Click ‘Choose Folder’.\n"
-            "2) Click ‘Preview’ to see what will happen.\n"
-            "3) Click ‘Organise Files’ to tidy up.\n\n"
-            "Options:\n"
-            "• Also tidy inside sub‑folders (Include subfolders).\n"
-            "• Ignore hidden/system files (recommended).\n"
-            "• Safe Mode — makes copies, keeps originals (safer, uses more space).\n"
-            "• Auto‑tidy — automatically sort new files as they appear.\n"
-            "• Run in background (tray) — keep FolderFresh active via system tray.\n\n"
-            "Extras:\n"
-            "• Find Duplicates — suggests duplicate groups (by size + partial hash).\n"
-            "• Clean Desktop — instantly target your Desktop folder.\n\n"
-            "Undo: If you moved files (Safe Mode off), use ‘Undo Last’ to restore."
+        "This app tidies messy folders by sorting files into simple categories.\n\n"
+        "How to use:\n"
+        "1) Click ‘Choose Folder’.\n"
+        "2) Click ‘Preview’ to see where files will go.\n"
+        "3) Click ‘Organise Files’ to tidy the folder.\n\n"
+        "Options:\n"
+        "• Include subfolders — tidy files inside sub-folders.\n"
+        "• Ignore hidden/system files — skip hidden or dot-prefixed items.\n"
+        "• Safe Mode — makes copies instead of moving (originals stay in place).\n"
+        "• Auto-tidy — automatically sort new files when they appear.\n"
+        "• Smart Sorting — recognises screenshots, invoices, assignments, photos, etc.\n"
+        "• Ignore types — skip certain extensions (e.g. .exe;.tmp).\n"
+        "• Age filter — only move files older than a chosen number of days.\n\n"
+        "Extras:\n"
+        "• Find Duplicates — shows groups of similar files.\n"
+        "• Clean Desktop — quickly tidy your Desktop.\n\n"
+        "Undo:\n"
+        "If Safe Mode was OFF, you can use ‘Undo Last’ to restore moved files."
+
         )
         messagebox.showinfo("Help", message)
 
