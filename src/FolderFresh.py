@@ -117,7 +117,8 @@ def load_config() -> dict:
     "skip_hidden": True,
     "safe_mode": True,
     "watch_mode": False,
-    "age_filter_days": 0
+    "age_filter_days": 0,
+    "ignore_exts": ""
     }
 
 
@@ -145,21 +146,15 @@ def file_is_old_enough(path: Path, min_days: int):
     mtime = datetime.fromtimestamp(path.stat().st_mtime)
     return mtime < cutoff
 
-def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool) -> list[Path]:
-    """Return list of files under root (optionally recursive).
-
-    We deliberately skip:
-      • Hidden files (dotfiles or Windows hidden) when requested
-      • Our own log file
-      • Files already inside top‑level category folders (to avoid re‑processing)
-    """
+def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool, ignore_set: set[str]) -> list[Path]:
     files: list[Path] = []
     iterator = root.rglob("*") if include_subfolders else root.glob("*")
 
     for p in iterator:
         try:
-            
-
+            # Ignore user-specified extensions
+            if p.suffix.lower() in ignore_set:
+                continue
             if not p.is_file():
                 continue
             if p.name == LOG_FILENAME:
@@ -174,6 +169,7 @@ def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool) -> list[Pa
         except Exception:
             # Be tolerant of permission/TOCTOU issues
             continue
+        
     return files
 
 
@@ -297,6 +293,7 @@ class FolderFreshApp(ctk.CTk):
         
         # Auto-load last used folder if it still exists
         last = self.config_data.get("last_folder")
+        
         ctk.set_appearance_mode(self.config_data.get("appearance", "Dark"))  # "light" | "dark" | "system"
         ctk.set_default_color_theme("blue")
 
@@ -328,6 +325,7 @@ class FolderFreshApp(ctk.CTk):
             self.path_entry.delete(0, "end")
             self.path_entry.insert(0, last)
             self.path_entry.configure(state="disabled")
+        
         # options bar
         opts = ctk.CTkFrame(self)
         opts.pack(fill="x", padx=12, pady=6)
@@ -376,6 +374,19 @@ class FolderFreshApp(ctk.CTk):
         self.age_filter_entry.grid(row=1, column=1, padx=4, sticky="w")
         self.age_filter_entry.delete(0, "end")
         self.age_filter_entry.insert(0, str(self.config_data.get("age_filter_days", 0)))
+        # --- Ignore File Types ---
+        self.ignore_label = ctk.CTkLabel(opts, text="Ignore types (e.g. .exe;.dll):")
+        self.ignore_label.grid(row=2, column=0, padx=8, pady=6, sticky="w")
+
+        self.ignore_entry = ctk.CTkEntry(opts, width=160, placeholder_text=".exe;.dll")
+        self.ignore_entry.grid(row=2, column=1, padx=4, pady=6, sticky="w")
+
+        # Load saved value
+        self.ignore_entry.delete(0, "end")
+        self.ignore_entry.insert(0, self.config_data.get("ignore_exts", ""))
+
+        # Save on typing
+        self.ignore_entry.bind("<KeyRelease>", lambda e: self.remember_options())
 
 
         # center: preview + actions
@@ -481,7 +492,7 @@ class FolderFreshApp(ctk.CTk):
             )
             self.config_data["first_run"] = False
             save_config(self.config_data)
-
+        self.enable_buttons()
 
     # ---- UI helpers ------------------------------------------------------------
 
@@ -531,7 +542,7 @@ class FolderFreshApp(ctk.CTk):
             self.config_data["age_filter_days"] = int(self.age_filter_entry.get() or 0)
         except:
             self.config_data["age_filter_days"] = 0
-
+        self.config_data["ignore_exts"] = self.ignore_entry.get()
         save_config(self.config_data)
 
     def on_preview(self):
@@ -559,8 +570,17 @@ class FolderFreshApp(ctk.CTk):
 
             min_days = int(self.age_filter_entry.get() or 0)
 
-            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get())
-            files = [f for f in files_all if file_is_old_enough(f, min_days)]
+            ignore_raw = self.config_data.get("ignore_exts", "")
+            ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+
+            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set)
+
+            # apply age + ignore filter
+            files = [
+                f for f in files_all
+                if file_is_old_enough(f, min_days)
+                and f.suffix.lower() not in ignore_set
+            ]
 
             moves = plan_moves(files, self.selected_folder)
 
@@ -598,8 +618,17 @@ class FolderFreshApp(ctk.CTk):
  
             min_days = int(self.age_filter_entry.get() or 0)
 
-            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get())
-            files = [f for f in files_all if file_is_old_enough(f, min_days)]
+            ignore_raw = self.config_data.get("ignore_exts", "")
+            ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+
+            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set)
+
+            # apply age + ignore filter
+            files = [
+                f for f in files_all
+                if file_is_old_enough(f, min_days)
+                and f.suffix.lower() not in ignore_set
+            ]
 
             self.preview_moves = plan_moves(files, self.selected_folder)
         if not self.preview_moves:
@@ -737,7 +766,11 @@ class FolderFreshApp(ctk.CTk):
         self.progress.set(0)
 
         def worker():
-            files = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get())
+            ignore_raw = self.config_data.get("ignore_exts", "")
+            ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+
+            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set)
+            files = [f for f in files_all if f.suffix.lower() not in ignore_set]
             groups = group_duplicates(files)
             lines: list[str] = []
             total = sum(len(g) for g in groups)
@@ -813,6 +846,11 @@ class FolderFreshApp(ctk.CTk):
                 if not root:
                     return
                 p = Path(event.src_path)
+                # Ignore user file types
+                ignore_raw = self.outer.config_data.get("ignore_exts", "")
+                ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+                if p.suffix.lower() in ignore_set:
+                    return
                 if not p.exists() or not p.is_file():
                     return
                 if not file_is_stable(p):
@@ -842,7 +880,8 @@ class FolderFreshApp(ctk.CTk):
                         shutil.copy2(m["src"], m["dst"])
                     else:
                         shutil.move(m["src"], m["dst"]) 
-                    self.outer.after(0, lambda: self.outer.set_status(f"Auto‑tidy moved: {Path(m['dst']).name}"))
+                    
+                    #self.outer.after(0, lambda: self.outer.set_status(f"Auto‑tidy moved: {Path(m['dst']).name}"))
                 except Exception as e:
                     self.outer.after(0, lambda: self.outer.set_status(f"Auto‑tidy error: {e}"))
             def on_moved(self, event):
@@ -854,6 +893,11 @@ class FolderFreshApp(ctk.CTk):
                     return
 
                 p = Path(event.dest_path)
+                # Ignore user file types
+                ignore_raw = self.outer.config_data.get("ignore_exts", "")
+                ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+                if p.suffix.lower() in ignore_set:
+                    return
                 if not p.exists() or not p.is_file():
                     return
 
@@ -888,7 +932,7 @@ class FolderFreshApp(ctk.CTk):
                         shutil.copy2(m["src"], m["dst"])
                     else:
                         shutil.move(m["src"], m["dst"])
-                    self.outer.after(0, lambda: self.outer.set_status(f"Auto-tidy moved: {Path(m['dst']).name}"))
+                    #self.outer.after(0, lambda: self.outer.set_status(f"Auto-tidy moved: {Path(m['dst']).name}"))
                 except Exception as e:
                     self.outer.after(0, lambda: self.outer.set_status(f"Auto-tidy error: {e}"))
         self.observer = Observer()
