@@ -78,7 +78,7 @@ rmdir /s /q build dist
 
 python -m pip install pyinstaller
 
-python -m PyInstaller --onefile --windowed src\FolderFresh.py
+python -m PyInstaller --onefile --windowed src\FolderFresh.py```
 
 ## **Build the Installer (Inno Setup)**
 
