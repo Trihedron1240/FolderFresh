@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta property="og:title" content="FolderFresh — Automatic File Organizer">
-  <meta property="og:description" content="Automatically organise any folder with preview mode, undo, safe mode, and more.">
+  <meta property="og:title" content="FolderFresh — Automatic Folder Organizer">
+  <meta property="og:description" content="A lightweight Windows tool that automatically organises folders with preview mode, undo, smart sorting, and safe mode.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://trihedron1240.github.io/FolderFresh/">
   <meta property="og:image" content="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Preview.png">
 
   <meta name="robots" content="index, follow">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="google-site-verification" content="pFoAn7y3hbJkb91kP0RW_XRAmlR2huCadGSLO5bl-Lg" />
-  <title>FolderFresh — Automatic File Organizer</title>
+  <title>FolderFresh — Automatic Folder Organizer</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="description" content="FolderFresh automatically organises your Downloads folder by sorting files as they appear. Lightweight, open-source and configurable." />
+  <meta name="description" content="FolderFresh automatically organises any folder by sorting files into clean categories. Includes preview, undo, smart sorting, auto-tidy, and safe mode." />
   <link rel="canonical" href="https://trihedron1240.github.io/FolderFresh/">
+
   <style>
     :root {
       --ff-bg: #1e1e1e;
@@ -37,14 +37,14 @@
         <div class="w-10 h-10 rounded-lg bg-[var(--ff-blue)] flex items-center justify-center text-white font-bold">FF</div>
         <div>
           <div class="text-lg font-semibold text-white">FolderFresh</div>
-          <div class="text-xs text-[var(--ff-muted)]">Auto File Organizer</div>
+          <div class="text-xs text-[var(--ff-muted)]">Automatic Folder Organizer</div>
         </div>
       </a>
 
       <div class="hidden md:flex items-center gap-6 text-sm text-[var(--ff-muted)]">
         <a href="#features" class="hover:text-white transition">Features</a>
         <a href="#screenshots" class="hover:text-white transition">Screenshots</a>
-        <a href="https://github.com/Trihedron1240/FolderFresh" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--ff-border)] hover:bg-[var(--ff-panel)] text-[var(--ff-text)]">
+        <a href="https://github.com/Trihedron1240/FolderFresh" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--ff-border)] hover:bg-[var(--ff-panel)] text-[var(--ff-text)]">
           GitHub
         </a>
         <a href="https://github.com/Trihedron1240/FolderFresh/releases/latest" class="ml-2 px-4 py-2 bg-[var(--ff-blue)] text-white rounded-lg shadow hover:bg-[var(--ff-blue-light)] transition">Download</a>
@@ -59,31 +59,47 @@
   <!-- HERO -->
   <header class="relative overflow-hidden">
     <div class="absolute -left-20 -top-24 w-[480px] h-[480px] rounded-full bg-[var(--ff-blue)] opacity-20 blur-3xl"></div>
+
     <div class="max-w-6xl mx-auto px-6 py-20 lg:py-28">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
         <div class="order-2 lg:order-1 text-center lg:text-left">
-          <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight text-white">Keep your folders tidy — <span class="text-[var(--ff-blue)]">automatically</span>.</h1>
-          <p class="mt-6 text-lg text-[var(--ff-muted)] max-w-xl">FolderFresh watches a folder in real time and instantly sorts new files into organised subfolders. Lightweight, configurable, and safe for downloads.</p>
+          <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight text-white">
+            Keep your folders organised<br>
+            <span class="text-[var(--ff-blue)]">automatically.</span>
+          </h1>
+
+          <p class="mt-6 text-lg text-[var(--ff-muted)] max-w-xl">
+            FolderFresh sorts files into clean category folders as they appear.  
+            It includes preview mode, undo, Smart Sorting, automatic watching, and full safety controls.  
+            Designed for students and everyday Windows users who want a simple, reliable organiser.
+          </p>
 
           <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-            <a href="https://github.com/Trihedron1240/FolderFresh/releases/latest" class="inline-flex items-center gap-3 bg-[var(--ff-blue)] text-white px-5 py-3 rounded-lg font-semibold shadow hover:bg-[var(--ff-blue-light)] transition">
+            <a href="https://github.com/Trihedron1240/FolderFresh/releases/latest"
+               class="inline-flex items-center gap-3 bg-[var(--ff-blue)] text-white px-5 py-3 rounded-lg font-semibold shadow hover:bg-[var(--ff-blue-light)] transition">
               Download Latest
             </a>
-            <a href="#features" class="inline-flex items-center gap-2 px-5 py-3 border border-[var(--ff-border)] rounded-lg hover:bg-[var(--ff-panel)] text-[var(--ff-muted)] hover:text-white transition">How it works</a>
+
+            <a href="#features"
+               class="inline-flex items-center gap-2 px-5 py-3 border border-[var(--ff-border)] rounded-lg hover:bg-[var(--ff-panel)] text-[var(--ff-muted)] hover:text-white transition">
+              How it works
+            </a>
           </div>
 
-          <div class="mt-6 text-sm text-[var(--ff-muted)]">Open source · Windows builds · Fast & lightweight</div>
+          <div class="mt-6 text-sm text-[var(--ff-muted)]">
+            Open source • Windows builds • Lightweight
+          </div>
         </div>
 
         <div class="order-1 lg:order-2 flex justify-center">
           <div class="relative bg-[var(--ff-panel)] rounded-3xl p-6 shadow-2xl w-[360px] lg:w-[420px] border border-[var(--ff-border)]">
             <div class="rounded-xl overflow-hidden bg-[var(--ff-bg)] border border-[var(--ff-border)]">
-              <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/da98cbc38e290ddbdd7111d612d44f1d73081f23/screenshots/Preview.png" alt="FolderFresh preview" class="w-full block" />
+              <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Preview.png" alt="FolderFresh preview" class="w-full block" />
             </div>
             <div class="mt-4 flex justify-between items-center text-sm text-[var(--ff-muted)]">
               <div>Preview</div>
-              <div class="font-mono text-xs">v1.0.6</div>
+              <div class="font-mono text-xs">v1.1</div>
             </div>
           </div>
         </div>
@@ -96,48 +112,66 @@
   <section id="features" class="py-20 bg-[var(--ff-bg)]">
     <div class="max-w-6xl mx-auto px-6">
       <h2 class="text-3xl font-bold text-center text-white">Features</h2>
-      <p class="text-center text-[var(--ff-muted)] mt-3 mb-10">Everything FolderFresh can do.</p>
+      <p class="text-center text-[var(--ff-muted)] mt-3 mb-10">
+        Everything FolderFresh offers in one tool.
+      </p>
 
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
-          <h3 class="font-semibold text-lg text-white">Sorts Files Into Category Folders</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Automatically organises files into clean, easy-to-navigate folders based on type.</p>
+          <h3 class="font-semibold text-lg text-white">Automatic Sorting</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            Sorts files into categories such as Documents, Images, Videos, Audio, Archives, Code, and Other.
+          </p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
           <h3 class="font-semibold text-lg text-white">Preview Mode</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Shows exactly what will be moved before anything happens, with no risk.</p>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            Shows exactly what will be moved before anything happens.
+          </p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
-          <h3 class="font-semibold text-lg text-white">Undo Button</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Instantly restores all moved files to their original locations with one click.</p>
+          <h3 class="font-semibold text-lg text-white">Undo</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            One click restores every file to its original location.
+          </p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
           <h3 class="font-semibold text-lg text-white">Safe Mode</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Copies files instead of moving them so nothing is ever lost or overwritten.</p>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            Copies files instead of moving them when extra caution is needed.
+          </p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
-          <h3 class="font-semibold text-lg text-white">Works on Any Folder</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Not just Desktop — sort Downloads, Documents, and any folder you choose.</p>
+          <h3 class="font-semibold text-lg text-white">Smart Sorting</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            Recognises screenshots, assignments, invoices, camera photos, messaging media, and other file patterns.
+          </p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
-          <h3 class="font-semibold text-lg text-white">Progress & Status Messages</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">A live progress bar and status text ensure the window never looks frozen.</p>
+          <h3 class="font-semibold text-lg text-white">Auto-tidy</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            Watches a folder in real time and sorts new files the moment they appear.
+          </p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
-          <h3 class="font-semibold text-lg text-white">Skips Internal Files</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Avoids internal game or software files to prevent breaking installations.</p>
+          <h3 class="font-semibold text-lg text-white">Duplicate Finder</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            Detects duplicates using size and partial hashing for faster results.
+          </p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow hover:shadow-lg transition">
-          <h3 class="font-semibold text-lg text-white">Filter by File Age</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Choose to only sort files older than a set amount of time.</p>
+          <h3 class="font-semibold text-lg text-white">Age & Ignore Filters</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">
+            Only move older files or skip specific file types entirely.
+          </p>
         </div>
 
       </div>
@@ -148,20 +182,22 @@
   <section id="screenshots" class="py-20 bg-[var(--ff-bg)]">
     <div class="max-w-7xl mx-auto px-6">
       <h2 class="text-3xl font-bold text-center text-white">Screenshots</h2>
-      <p class="text-center text-[var(--ff-muted)] mt-2">See FolderFresh in action.</p>
+      <p class="text-center text-[var(--ff-muted)] mt-2">FolderFresh in action.</p>
 
-      <div class="mt-12 grid gap-12 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 justify-center">
+      <div class="mt-12 grid gap-12 md:grid-cols-2 lg:grid-cols-2">
+
         <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
-          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/da98cbc38e290ddbdd7111d612d44f1d73081f23/screenshots/Before.png" alt="Before" class="w-full max-w-2xl mx-auto block rounded-xl shadow-2xl">
-        </div>
-
-        <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow-lg transform hover:scale-105 transition p-2 border border-[var(--ff-border)]">
-          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/da98cbc38e290ddbdd7111d612d44f1d73081f23/screenshots/Preview.png" alt="Preview" class="w-full max-w-2xl mx-auto block rounded-xl shadow-2xl">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Before.png" alt="Before" class="w-full max-w-2xl mx-auto block rounded-xl">
         </div>
 
         <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
-          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/da98cbc38e290ddbdd7111d612d44f1d73081f23/screenshots/After.png" alt="After" class="w-full max-w-2xl mx-auto block rounded-xl shadow-2xl">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Preview.png" alt="Preview" class="w-full max-w-2xl mx-auto block rounded-xl">
         </div>
+
+        <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/After.png" alt="After" class="w-full max-w-2xl mx-auto block rounded-xl">
+        </div>
+
       </div>
     </div>
   </section>
@@ -169,8 +205,8 @@
   <!-- CTA -->
   <section class="py-16 bg-[var(--ff-bg)]">
     <div class="max-w-4xl mx-auto px-6 text-center">
-      <h3 class="text-2xl font-bold text-white">Ready to tidy your folders?</h3>
-      <p class="mt-3 text-[var(--ff-muted)]">Download the latest release or explore the source code on GitHub.</p>
+      <h3 class="text-2xl font-bold text-white">Ready to organise your folders?</h3>
+      <p class="mt-3 text-[var(--ff-muted)]">Download the latest version or explore the source code on GitHub.</p>
       <div class="mt-6 flex justify-center gap-4">
         <a href="https://github.com/Trihedron1240/FolderFresh/releases/latest" class="px-6 py-3 bg-[var(--ff-blue)] text-white rounded-lg font-semibold shadow hover:bg-[var(--ff-blue-light)] transition">Download</a>
         <a href="https://github.com/Trihedron1240/FolderFresh" class="px-6 py-3 border border-[var(--ff-border)] rounded-lg text-[var(--ff-muted)] hover:bg-[var(--ff-panel)] hover:text-white transition">View on GitHub</a>
@@ -182,7 +218,9 @@
   <footer class="py-10 bg-[var(--ff-panel)] border-t border-[var(--ff-border)]">
     <div class="max-w-6xl mx-auto px-6 text-center text-[var(--ff-muted)]">
       <div class="mb-3">© 2025 FolderFresh — Created by Trihedron</div>
-      <div class="text-sm">Made with passion — <a href="https://github.com/Trihedron1240/FolderFresh" class="text-[var(--ff-blue)] hover:text-[var(--ff-blue-light)]">Contribute on GitHub</a></div>
+      <div class="text-sm">
+        <a href="https://github.com/Trihedron1240/FolderFresh" class="text-[var(--ff-blue)] hover:text-[var(--ff-blue-light)]">Contribute on GitHub</a>
+      </div>
     </div>
   </footer>
 
