@@ -147,7 +147,14 @@ def file_is_old_enough(path: Path, min_days: int):
     mtime = datetime.fromtimestamp(path.stat().st_mtime)
     return mtime < cutoff
 
-def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool, ignore_set: set[str]) -> list[Path]:
+def scan_dir(
+    root: Path,
+    include_subfolders: bool,
+    skip_hidden: bool,
+    ignore_set: set[str],
+    skip_categories: bool
+) -> list[Path]:
+
     files: list[Path] = []
     iterator = root.rglob("*") if include_subfolders else root.glob("*")
 
@@ -160,18 +167,28 @@ def scan_dir(root: Path, include_subfolders: bool, skip_hidden: bool, ignore_set
                 continue
             if p.name == LOG_FILENAME:
                 continue
+
             rel = p.relative_to(root)
-            if skip_hidden and (any(part.startswith(".") for part in rel.parts) or is_hidden_win(p)):
+
+            # Skip hidden/system files
+            if skip_hidden and (
+                any(part.startswith(".") for part in rel.parts) or is_hidden_win(p)
+            ):
                 continue
-            if len(rel.parts) >= 2 and rel.parts[0] in TOP_LEVEL_CATS:
-                # already organised into a top‑level category → skip
-                continue
+
+            # NEW RULE: Skip category folders only if last_mode == current_mode
+            if skip_categories:
+                if len(rel.parts) >= 2 and rel.parts[0] in TOP_LEVEL_CATS:
+                    continue
+
             files.append(p)
+
         except Exception:
-            # Be tolerant of permission/TOCTOU issues
+            # Be tolerant of permission / TOCTOU issues
             continue
-        
+
     return files
+
 
 
 def apply_rules(path: Path) -> str | None:
@@ -741,7 +758,11 @@ class FolderFreshApp(ctk.CTk):
             ignore_raw = self.config_data.get("ignore_exts", "")
             ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
 
-            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set)
+            last_mode = self.config_data.get("last_sort_mode", None)
+            current_mode = "smart" if self.smart_mode.get() else "simple"
+            skip_categories = (last_mode == current_mode)
+
+            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set, skip_categories)
 
             # apply age + ignore filter
             files = [
@@ -788,50 +809,56 @@ class FolderFreshApp(ctk.CTk):
         if not self.selected_folder or not self.selected_folder.exists():
             messagebox.showerror("Choose Folder", "Please choose a valid folder first.")
             return
-        # ensure we have a plan; if not, compute quickly
-        if not self.preview_moves:
-            # Force no recursion when cleaning Desktop
-            desktop = Path(os.path.join(os.path.expanduser("~"), "Desktop"))
-            if self.selected_folder == desktop:
-                include_sub = False
-            else:
-                include_sub = self.include_sub.get()
- 
-            min_days = int(self.age_filter_entry.get() or 0)
+        # ALWAYS regenerate moves fresh (preview is optional)
+        self.preview_moves = []
 
-            ignore_raw = self.config_data.get("ignore_exts", "")
-            ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+        # Force no recursion when cleaning Desktop
+        desktop = Path(os.path.join(os.path.expanduser("~"), "Desktop"))
+        if self.selected_folder == desktop:
+            include_sub = False
+        else:
+            include_sub = self.include_sub.get()
 
-            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set)
+        min_days = int(self.age_filter_entry.get() or 0)
 
-            # apply age + ignore filter
-            files = [
-                f for f in files_all
-                if file_is_old_enough(f, min_days)
-                and f.suffix.lower() not in ignore_set
-            ]
+        ignore_raw = self.config_data.get("ignore_exts", "")
+        ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
 
-            moves = []
-            use_smart = self.smart_mode.get()
+        last_mode = self.config_data.get("last_sort_mode", None)
+        current_mode = "smart" if self.smart_mode.get() else "simple"
+        skip_categories = (last_mode == current_mode)
 
-            for p in files:
-                folder = None
+        files_all = scan_dir(
+            self.selected_folder,
+            self.include_sub.get(),
+            self.skip_hidden.get(),
+            ignore_set,
+            skip_categories
+        )
 
-                # Smart Sorting
-                if use_smart:
-                    folder = pick_smart_category(p)
+        # apply age + ignore filter
+        files = [
+            f for f in files_all
+            if file_is_old_enough(f, min_days)
+            and f.suffix.lower() not in ignore_set
+        ]
 
-                # fallback
-                if not folder:
-                    folder = pick_category(p.suffix)
+        moves = []
+        use_smart = self.smart_mode.get()
 
-                # build destination
-                dest_dir = self.selected_folder / folder
-                dest_dir.mkdir(parents=True, exist_ok=True)
-                dst = dest_dir / p.name
+        for p in files:
+            folder = pick_smart_category(p) if use_smart else None
+            if not folder:
+                folder = pick_category(p.suffix)
 
-                if p != dst:
-                    moves.append({"src": str(p), "dst": str(dst)})
+            dest_dir = self.selected_folder / folder
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dst = dest_dir / p.name
+
+            if p != dst:
+                moves.append({"src": str(p), "dst": str(dst)})
+
+        self.preview_moves = moves
 
         if not self.preview_moves:
             messagebox.showinfo("Organise", "There’s nothing to move. Nice and tidy already! ✨")
@@ -904,7 +931,15 @@ class FolderFreshApp(ctk.CTk):
                     save_log(self.selected_folder, moves_done, mode="copy")
                 except Exception:
                     pass
+            # Save last used sorting mode
+            self.config_data["last_sort_mode"] = "smart" if self.smart_mode.get() else "simple"
+            save_config(self.config_data)
+            
+            # Cleanup: remove now-empty category folders
+            remove_empty_category_folders(self.selected_folder)
+            
             self.after(0, lambda: self.set_status("All done ✔️"))
+
             self.after(0, lambda: self.set_preview(self.finish_summary(moves_done)))
             self.after(0, self.enable_buttons)
             self.after(0, lambda: self.progress_label.configure(text=f"{total}/{total}"))
@@ -975,7 +1010,11 @@ class FolderFreshApp(ctk.CTk):
             ignore_raw = self.config_data.get("ignore_exts", "")
             ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
 
-            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set)
+            last_mode = self.config_data.get("last_sort_mode", None)
+            current_mode = "smart" if self.smart_mode.get() else "simple"
+            skip_categories = (last_mode == current_mode)
+
+            files_all = scan_dir(self.selected_folder, self.include_sub.get(), self.skip_hidden.get(), ignore_set, skip_categories)
             files = [f for f in files_all if f.suffix.lower() not in ignore_set]
             groups = group_duplicates(files)
             lines: list[str] = []
