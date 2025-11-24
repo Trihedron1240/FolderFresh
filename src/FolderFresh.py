@@ -1145,6 +1145,15 @@ class FolderFreshApp(ctk.CTk):
                 # wait for stability
                 if not self.wait_until_stable(p):
                     return
+                # --- AGE FILTER (ensure auto-tidy respects it) ---
+                try:
+                    min_days = int(self.outer.age_filter_entry.get() or 0)
+                except:
+                    min_days = 0
+
+                if min_days > 0:
+                    if not file_is_old_enough(p, min_days):
+                        return  # too new → do not auto-move it
 
                 # SMART override
                 if self.outer.smart_mode.get():
