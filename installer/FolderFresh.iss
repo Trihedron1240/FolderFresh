@@ -1,5 +1,5 @@
 #define MyAppName      "FolderFresh"
-#define MyAppVersion   "1.1.2"
+#define MyAppVersion   "1.1.3"
 #define MyAppPublisher "Tristan Jay Neale"
 #define MyAppURL       ""
 #define MyAppExeName   "FolderFresh.exe"
