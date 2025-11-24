@@ -657,7 +657,10 @@ class FolderFreshApp(ctk.CTk):
             self.config_data["first_run"] = False
             save_config(self.config_data)
         self.enable_buttons()
-
+        # Start Auto-tidy automatically if enabled and folder restored
+        if self.watch_mode.get() and self.selected_folder:
+            self.start_watching()
+        
     # ---- UI helpers ------------------------------------------------------------
 
     def set_status(self, msg: str):
