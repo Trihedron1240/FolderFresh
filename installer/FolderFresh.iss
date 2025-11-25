@@ -33,7 +33,7 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 Name: "runonstartup"; Description: "Run {#MyAppName} at Windows &startup"; GroupDescription: "Startup options:"; Flags: unchecked
 
 [Files]
-Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\folderfresh.ico"; Check: FileExists(ExpandConstant('{app}\folderfresh.ico'))
