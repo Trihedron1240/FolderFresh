@@ -23,7 +23,10 @@ if ($LASTEXITCODE -ne 0) {
 
 # 5) Build EXE
 Write-Host "Building FolderFresh $version..."
-python -m PyInstaller --onefile --windowed --name FolderFresh src\main.py
+pyinstaller --onefile --windowed --clean --noupx `
+  --add-data "src/folderfresh/VERSION;folderfresh" `
+  --name FolderFresh src/main.py
+
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed."
