@@ -1,7 +1,8 @@
 # constants.py
 from pathlib import Path
 
-APP_TITLE = "FolderFresh – Student File Organiser"
+APP_VERSION = "1.2.0"
+APP_TITLE = f"FolderFresh v{APP_VERSION}"
 
 # Log file created inside the selected folder after organise/copy
 LOG_FILENAME = ".folderfresh_moves_log.json"
@@ -38,4 +39,3 @@ DEFAULT_CATEGORIES = [
     "Images", "PDF", "Documents", "Videos", "Audio",
     "Archives", "Code", "Other"
 ]
-
