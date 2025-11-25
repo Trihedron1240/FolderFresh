@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from .constants import LOG_FILENAME, TOP_LEVEL_CATS
+from .constants import LOG_FILENAME, DEFAULT_CATEGORIES
 
 
 # ----------------------------- HIDDEN FILE CHECK ------------------------------
@@ -81,7 +81,7 @@ def scan_dir(
                 continue
 
             if skip_categories:
-                if len(rel.parts) >= 2 and rel.parts[0] in TOP_LEVEL_CATS:
+                if len(rel.parts) >= 2 and rel.parts[0] in DEFAULT_CATEGORIES:
                     continue
 
             files.append(p)
