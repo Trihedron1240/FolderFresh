@@ -1,7 +1,7 @@
 # constants.py
 from pathlib import Path
 
-APP_VERSION = "1.2.0"
+APP_VERSION = (Path(__file__).resolve().parent / "VERSION").read_text().strip()
 APP_TITLE = f"FolderFresh v{APP_VERSION}"
 
 # Log file created inside the selected folder after organise/copy

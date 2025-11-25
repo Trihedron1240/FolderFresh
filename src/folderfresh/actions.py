@@ -16,6 +16,7 @@ from .sorting import pick_category, pick_smart_category
 from .sorting import plan_moves
 from .constants import LOG_FILENAME
 from .naming import resolve_category
+from tkinter import messagebox
 def save_log(root: Path, moves: list[dict], mode: str) -> Path:
     log_path = root / LOG_FILENAME
     payload = {
@@ -221,3 +222,34 @@ def do_find_duplicates(app):
 
     groups = group_duplicates(files)
     return groups
+
+def open_log_file(folder: Path) -> bool:
+    """
+    Attempts to open the FolderFresh move log file.
+    Returns True if opened, False if not found.
+    """
+
+    # Correct pattern for your app
+    logs = sorted(
+        folder.glob(".folderfresh_moves_log*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True
+    )
+
+    if not logs:
+        return False
+
+    try:
+        os.startfile(logs[0])  # open newest log file
+        return True
+    except Exception:
+        return False
+
+def view_log_file(self):
+    if not self.selected_folder:
+        messagebox.showerror("Log File", "Select a folder first.")
+        return
+
+    if not open_log_file(Path(self.selected_folder)):
+        messagebox.showinfo("Log File", "No FolderFresh log file found in this folder.")
+

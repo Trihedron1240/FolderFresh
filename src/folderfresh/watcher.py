@@ -26,26 +26,32 @@ class AutoTidyHandler(FileSystemEventHandler):
     # Should ignore file?
     # -------------------------------------------------------------
     def should_ignore(self, p: Path, root: Path) -> bool:
-        # Skip category folders
+
+        # Build combined category set: default + custom
+        overrides = self.app.config_data.get("custom_category_names", {})
+        allowed_cats = set(DEFAULT_CATEGORIES) | set(overrides.values())
+
+        # Ignore if inside category folder
         try:
             rel = p.relative_to(root)
-            if rel.parts and rel.parts[0] in DEFAULT_CATEGORIES:
+            first = rel.parts[0] if rel.parts else ""
+            if first in allowed_cats:
                 return True
         except Exception:
             pass
 
-        # User-ignored extensions
+        # User ignored extensions
         ignore_raw = self.app.config_data.get("ignore_exts", "")
         ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
         if p.suffix.lower() in ignore_set:
             return True
 
-        # Skip partial download files
+        # Skip partial downloads
         PARTIALS = {".crdownload", ".part", ".partial", ".download", ".opdownload"}
         if p.suffix.lower() in PARTIALS:
             return True
 
-        # Skip hidden/system files
+        # Skip hidden/system
         try:
             rel = p.relative_to(root)
             if self.app.skip_hidden.get() and (
@@ -56,6 +62,7 @@ class AutoTidyHandler(FileSystemEventHandler):
             pass
 
         return False
+
 
     # -------------------------------------------------------------
     # Wait until file stops being written

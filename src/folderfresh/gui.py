@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import threading
+import webbrowser
 from pathlib import Path
 from typing import Optional
 
@@ -12,7 +13,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 
 from .config import load_config, save_config
-from .constants import APP_TITLE, LOG_FILENAME
+from .constants import APP_TITLE, LOG_FILENAME, APP_VERSION
 from . import actions
 from . import watcher
 from . import tray
@@ -28,6 +29,43 @@ CARD_BG = "#0b1220"
 BORDER = "#1f2937"
 TEXT = "#e6eef8"
 MUTED = "#9aa6b2"
+
+class Tooltip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tip_window = None
+
+        widget.bind("<Enter>", self.show)
+        widget.bind("<Leave>", self.hide)
+
+    def show(self, event=None):
+        if self.tip_window or not self.text:
+            return
+        x, y, _, _ = self.widget.bbox("insert")
+        x = x + self.widget.winfo_rootx() + 25
+        y = y + self.widget.winfo_rooty() + 25
+
+        self.tip_window = tw = ctk.CTkToplevel(self.widget)
+        tw.overrideredirect(True)
+        tw.geometry(f"+{x}+{y}")
+
+        label = ctk.CTkLabel(
+            tw,
+            text=self.text,
+            bg_color="#000000",
+            text_color="#ffffff",
+            corner_radius=6,
+            fg_color="#000000",
+            padx=6,
+            pady=4,
+        )
+        label.pack()
+    
+    def hide(self, event=None):
+        if self.tip_window:
+            self.tip_window.destroy()
+            self.tip_window = None
 
 
 class FolderFreshApp(ctk.CTk):
@@ -92,6 +130,16 @@ class FolderFreshApp(ctk.CTk):
             command=self.choose_folder,
         )
         choose_btn.pack(side="right", padx=(0, 12))
+        open_btn = ctk.CTkButton(
+            header,
+            text="Open Folder",
+            width=140,
+            corner_radius=8,
+            fg_color=ACCENT,
+            hover_color="#1e4fd8",
+            command=self.open_folder,
+        )
+        open_btn.pack(side="right", padx=(1, 12))         
 
         # main card
         main_card = ctk.CTkFrame(self, fg_color=CARD_BG, corner_radius=12)
@@ -125,6 +173,7 @@ class FolderFreshApp(ctk.CTk):
 
         # Smart Sorting + Auto-tidy in basic row (Option C)
         self.smart_mode = ctk.CTkCheckBox(opts, text="Smart Sorting (experimental)", command=self.remember_options)
+        Tooltip(self.smart_mode, "Uses advanced rules to detect screenshots, assignments,\nphotos, invoices, messaging media and more.")
         self.smart_mode.grid(row=0, column=3, sticky="w", padx=(0, 16))
         if self.config_data.get("smart_mode", False):
             self.smart_mode.select()
@@ -302,7 +351,33 @@ class FolderFreshApp(ctk.CTk):
 
         self.status = ctk.CTkLabel(bottom, text="Ready")
         self.status.pack(side="left", padx=(0, 8), pady=8)
+        # --- Footer: version + report bug ---
+        footer = ctk.CTkFrame(bottom, fg_color="transparent")
+        footer.pack(side="right", padx=4)
 
+        # Version label
+        self.version_label = ctk.CTkLabel(
+            footer,
+            text=f"v{APP_VERSION}",
+            font=("Segoe UI", 11),
+            text_color="#8c8c8c",
+        )
+        self.version_label.pack(side="left", padx=(0, 6))
+
+        # Report Bug link
+        def open_bug_page():
+            webbrowser.open("https://github.com/Trihedron1240/FolderFresh/issues/new/choose")
+
+        self.bug_label = ctk.CTkLabel(
+            footer,
+            text="Report Bug",
+            font=("Segoe UI", 11, "underline"),
+            text_color="#60a5fa",     # Windows 11 blue-ish
+            cursor="hand2"
+        )
+        self.bug_label.pack(side="left")
+
+        self.bug_label.bind("<Button-1>", lambda e: open_bug_page())
         # protocol and bindings
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.bind("<Control-o>", lambda e: self.choose_folder())
@@ -427,6 +502,18 @@ class FolderFreshApp(ctk.CTk):
         self.config_data["startup"] = bool(self.startup_checkbox.get())
         save_config(self.config_data)
 
+    def open_folder(self):
+        """
+        Opens the given folder in File Explorer.
+        """
+        path = self.config_data.get("last_folder")
+        try:
+            os.startfile(path)
+        except Exception:
+            messagebox.showerror(
+            "Open Folder",
+            "No valid folder is selected or the folder no longer exists."
+        )
     # folder selection
     def choose_folder(self):
         path = filedialog.askdirectory()
@@ -650,15 +737,44 @@ class FolderFreshApp(ctk.CTk):
     def enable_buttons(self):
         for b in (self.preview_btn, self.organise_btn, self.undo_btn, self.dupe_btn, self.desktop_btn):
             b.configure(state="normal")
+    def view_log_file(self):
+        if not self.selected_folder:
+            messagebox.showerror("Log File", "Select a folder first.")
+            return
 
+        if not actions.open_log_file(Path(self.selected_folder)):
+            messagebox.showinfo("Log File", "No FolderFresh log file found in this folder.")
     def show_help(self):
-        message = (
-            "FolderFresh tidies folders by sorting files into categories.\n\n"
-            "Use Preview to check changes before Organising.\n"
-            "Safe Mode copies instead of moving.\n"
-            "Advanced options include age filter, ignore types, smart sorting, custom folder naming, and auto-tidy."
+        help_win = ctk.CTkToplevel(self)
+        help_win.title("Help")
+        help_win.geometry("420x480")
+        help_win.grab_set()
+
+        text = (
+            "FolderFresh helps you tidy folders quickly.\n\n"
+            "Features:\n"
+            "• Preview mode\n"
+            "• Safe Mode\n"
+            "• Smart Sorting\n"
+            "• Auto-tidy\n"
+            "• Undo\n"
+            "• Duplicate finder\n"
+            "• Age & ignore filters\n\n"
+            "This tool never deletes files.\n"
+            "All actions are reversible.\n"
         )
-        messagebox.showinfo("Help", message)
+
+        txt = ctk.CTkLabel(help_win, text=text, justify="left", wraplength=380)
+        txt.pack(padx=16, pady=12)
+
+
+
+        view_log_btn = ctk.CTkButton(help_win, text="View Log File", command=lambda: actions.open_log_file(self.selected_folder))
+        view_log_btn.pack(pady=(8, 4))
+
+        # Report Bug button
+        report_btn = ctk.CTkButton(help_win, text="Report Bug", command=lambda: webbrowser.open("https://github.com/Trihedron1240/FolderFresh/issues/new/choose"))
+        report_btn.pack(pady=(4, 12))
 
 
     def on_close(self):
