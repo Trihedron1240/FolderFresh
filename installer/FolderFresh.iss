@@ -1,5 +1,5 @@
 #define MyAppName      "FolderFresh"
-#define MyAppVersion GetStringFile("src\folderfresh\VERSION")
+#define MyAppVersion "1.2.1"
 #define MyAppPublisher "Tristan Jay Neale"
 #define MyAppURL       "https://github.com/Trihedron1240/FolderFresh"
 #define MyAppExeName   "FolderFresh.exe"
