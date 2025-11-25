@@ -19,7 +19,8 @@ def load_config() -> dict:
     "watch_mode": False,
     "age_filter_days": 0,
     "ignore_exts": "",
-    "smart_mode": False
+    "smart_mode": False,
+    "custom_category_names": {}
     }
 
 def save_config(cfg: dict) -> None:
