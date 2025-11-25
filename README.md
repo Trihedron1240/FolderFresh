@@ -3,32 +3,41 @@
 Website: https://trihedron1240.github.io/FolderFresh/  
 Support (optional): https://trihedron.itch.io/folderfresh-1-click-desktop-folder-cleaner-windows
 
-FolderFresh is a lightweight utility that organises messy folders by sorting files into simple, predictable categories.  
-It is designed for Windows users who want a quick, safe way to clean their Desktop, Downloads, or project folders without risk.  
-Nothing is deleted, and all actions can be undone.
-
-This tool is intended for students, general Windows users, and anyone who prefers a clean, organised workspace.
+FolderFresh is a lightweight utility that organises messy Windows folders by sorting files into simple, predictable categories.  
+It is designed for students, educators, and general Windows users who want a quick, safe method to clean their Desktop, Downloads, or project folders without risk.  
+Files are never deleted, and every action can be undone.
 
 ---
 
-## Features
+## Features (v1.2.0)
 
-- Sorts files into category folders such as Documents, Images, Videos, Audio, Archives, Code, and Other.
-- Preview mode shows exactly what will be moved before anything happens.
-- Undo restores every moved file back to its original location.
-- Safe Mode copies files instead of moving them.
-- Works on any folder (Desktop, Downloads, project folders, external drives, etc.).
-- Progress bar and status messages to prevent the interface from freezing.
-- Smart Sorting for recognising screenshots, assignments, invoices, photos, and other common patterns.
-- Auto-tidy mode automatically organises new files as they appear.
-- File age filter to only move older files.
-- Ignore list for file types you do not want to touch.
-- Duplicate finder with quick hashing.
-- “Clean Desktop” one-click shortcut.
+### Core Sorting
+- Sorts files into clean category folders such as Documents, Images, Videos, Audio, Archives, Code, and Other.
+- Custom folder names for simple sorting (e.g., rename “Documents” → “School Work”).
+- Preview mode shows exactly what will happen before organising.
+- Undo restores every moved file to its original location.
+- Safe Mode can make copies instead of moving files.
+
+### Smart Sorting
+- Detects screenshots, camera photos, messaging media, invoices, assignments, backups, edited videos, game assets, and more.
+- Smart Sorting uses intelligent, predefined categories.
+- Simple Sorting uses user-defined custom folder names.
+
+### Auto-Tidy (Real-Time Monitoring)
+- Automatically sorts new files that appear in the selected folder.
+- Handles partially downloaded files safely.
+- Respects ignore lists and age filters.
+
+### Additional Utilities
+- Duplicate Finder using fast hashing.
+- Age filter to only move files older than a chosen number of days.
+- Ignore list for file types you want excluded.
+- One-click “Clean Desktop” mode.
+- System tray mode for background operation.
 
 ---
 
-## Example Output Structure
+## Example Folder Structure
 
 
 Desktop
@@ -72,22 +81,27 @@ Desktop
 1) update the version number in the .iss file
 2) run build.ps1 with powershell
 3) run the .iss file
-## **Safety Notes**
 
-Files are never deleted.
 
-Undo restores all moved files.
+## Safety Notes
 
-Safe Mode can duplicate files instead of moving them.
+FolderFresh never deletes files.
 
-OneDrive users may receive cloud messages when files move out of synced folders; files remain safely stored locally.
+Undo restores all files moved by the last organise action.
+
+Safe Mode creates copies instead of moving files.
+
+OneDrive and cloud folders may show sync messages when files move; files remain stored locally.
+
+Auto-tidy will only process stable, fully written files.
 
 ## **Build Status / Contributions**
 
 Pull requests, issues, and suggestions are welcome.
 This is an open project intended to help everyday users keep their machines organised.
 
-## **AI Assistance Disclosure**
+## AI Assistance Disclosure
 
-Some parts of the code were developed with the assistance of AI tools, then reviewed and tested manually.
-No third-party proprietary code is included.
+Portions of the UI and backend architecture were refined using AI-assisted development tools.
+All logic has been reviewed, tested, and verified manually.
+No proprietary third-party code is used.
