@@ -71,7 +71,7 @@ Desktop
 ## Create a build
 1) update the version number in the .iss file
 2) run build.ps1 with powershell
-
+3) run the .iss file
 ## **Safety Notes**
 
 Files are never deleted.
