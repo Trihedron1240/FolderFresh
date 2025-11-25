@@ -15,6 +15,7 @@ from .utils import (
 from .sorting import pick_category, pick_smart_category
 from .sorting import plan_moves
 from .constants import LOG_FILENAME
+from .naming import resolve_category
 def save_log(root: Path, moves: list[dict], mode: str) -> Path:
     log_path = root / LOG_FILENAME
     payload = {
@@ -83,6 +84,9 @@ def do_preview(app):
         if not folder_name:
             folder_name = pick_category(p.suffix)
 
+        folder_name = resolve_category(folder_name, app.config_data)
+
+
         dst = folder / folder_name / p.name
 
         if p != dst:
@@ -103,21 +107,35 @@ def do_organise(app, moves):
 
     moves_done = []
 
+
     for m in moves:
         src = m["src"]
-        dst = m["dst"]
+
+        # --- GET ORIGINAL DST ---
+        dst = Path(m["dst"])
+
+        # --- EXTRACT DEFAULT CATEGORY NAME ---
+        default_cat = dst.parent.name
+
+        # --- APPLY USER-DEFINED CATEGORY NAME ---
+        new_cat = resolve_category(default_cat, app.config_data)
+
+        # --- REBUILD DESTINATION WITH UPDATED CATEGORY NAME ---
+        new_dst = Path(app.selected_folder) / new_cat / dst.name
+        m["dst"] = str(new_dst)   # update for logging/undo
+
         try:
-            Path(dst).parent.mkdir(parents=True, exist_ok=True)
+            new_dst.parent.mkdir(parents=True, exist_ok=True)
 
             if app.safe_mode.get():
-                shutil.copy2(src, dst)
+                shutil.copy2(src, new_dst)
             else:
-                shutil.move(src, dst)
+                shutil.move(src, new_dst)
 
             moves_done.append(m)
 
         except Exception as e:
-            moves_done.append({"src": src, "dst": dst, "error": str(e)})
+            moves_done.append({"src": src, "dst": str(new_dst), "error": str(e)})
 
     # Log only moves (not copy)
     from .utils import save_log  # local import avoids circular issues
