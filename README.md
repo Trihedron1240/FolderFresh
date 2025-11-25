@@ -68,64 +68,9 @@ Desktop
 
 ---
 
-## Build script
-make sure to update version number in the .iss file
-
-```powershell
-Write-Host "Building FolderFresh..."
-
-
-Write-Host "Cleaning previous build folders..."
-if (Test-Path "build") { Remove-Item "build" -Recurse -Force }
-if (Test-Path "dist")  { Remove-Item "dist"  -Recurse -Force }
-
-Write-Host "Checking PyInstaller installation..."
-pip show pyinstaller > $null 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "PyInstaller not found. Installing..."
-    python -m pip install pyinstaller
-}
-
-Write-Host "Building FolderFresh.exe..."
-python -m PyInstaller --onefile --windowed --name FolderFresh main.py
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "PyInstaller build failed."
-    exit 1
-}
-
-Write-Host "Executable created: dist/FolderFresh.exe"
-
-$issPath = "installer/FolderFresh.iss"
-Write-Host "Reading version from $issPath..."
-
-$versionLine = Get-Content $issPath | Select-String '#define MyAppVersion'
-$version = ($versionLine -split '"')[1]
-
-Write-Host "Version detected: $version"
-
-Write-Host "Building installer..."
-
-$ISCC = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-if (!(Test-Path $ISCC)) {
-    $ISCC = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
-}
-
-if (!(Test-Path $ISCC)) {
-    Write-Host "Error: Inno Setup Compiler (ISCC.exe) was not found."
-    exit 1
-}
-
-& "$ISCC" "installer/FolderFresh.iss"
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "Installer build failed."
-    exit 1
-}
-
-Write-Host "Build complete. Installer located in Output/ folder."
-
-```
+## Create a build
+1) update the version number in the .iss file
+2) run build.ps1 with powershell
 
 ## **Safety Notes**
 
