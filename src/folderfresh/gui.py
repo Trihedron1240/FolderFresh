@@ -37,7 +37,9 @@ class FolderFreshApp(ctk.CTk):
         self.config_data = load_config()
 
         # appearance
-        ctk.set_appearance_mode(self.config_data.get("appearance", "Dark"))
+        ctk.set_appearance_mode("Dark")
+        self.config_data["appearance"] = "Dark"
+
         ctk.set_default_color_theme("blue")
 
         # window
@@ -214,7 +216,7 @@ class FolderFreshApp(ctk.CTk):
         adv_inner = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
         adv_inner.pack(fill="x", padx=8, pady=8)
 
-        # age filter + ignore types
+        # age filter + ignore types + custom category names
         age_label = ctk.CTkLabel(adv_inner, text="Only move files older than (days):")
         age_label.grid(row=0, column=0, sticky="w", padx=(4, 8), pady=(4, 6))
         self.age_filter_entry = ctk.CTkEntry(
@@ -234,6 +236,19 @@ class FolderFreshApp(ctk.CTk):
         self.ignore_entry.insert(0, self.config_data.get("ignore_exts", ""))
         self.ignore_entry.bind("<KeyRelease>", lambda e: self.remember_options())
 
+        edit_names_row = ctk.CTkFrame(adv_inner, fg_color=CARD_BG)
+        edit_names_row.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 6))
+
+        self.edit_names_btn = ctk.CTkButton(
+            edit_names_row,
+            text="Edit Category Names",
+            width=180,
+            corner_radius=8,
+            fg_color="#374151",
+            hover_color="#2b3740",
+            command=self.open_category_editor
+        )
+        self.edit_names_btn.pack(anchor="w", padx=(4, 0))
         # tray mode (in advanced)
         toggles = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
         toggles.pack(fill="x", padx=8, pady=(6, 8))
@@ -332,6 +347,61 @@ class FolderFreshApp(ctk.CTk):
             self.advanced_frame.pack(fill="x", padx=12, pady=(0, 12))
             self.advanced_button.configure(text="Advanced Options ▴")
             self.advanced_visible = True
+    def open_category_editor(self):
+        win = ctk.CTkToplevel(self)
+        win.title("Edit Category Names")
+        win.geometry("380x460")
+        win.minsize(360, 420)
+        win.grab_set()  # modal behaviour
+
+        ctk.CTkLabel(
+            win, text="Rename Categories", font=("Segoe UI Variable", 16, "bold")
+        ).pack(pady=(12, 6))
+
+        from .constants import DEFAULT_CATEGORIES
+        self.name_entries = {}
+
+        # Field list
+        for cat in DEFAULT_CATEGORIES:
+            row = ctk.CTkFrame(win)
+            row.pack(fill="x", padx=12, pady=4)
+
+            ctk.CTkLabel(row, text=f"{cat} →", width=120).pack(side="left", padx=(0, 6))
+
+            entry = ctk.CTkEntry(
+                row,
+                width=200,
+                corner_radius=8,
+                fg_color="#071018",
+                border_width=1,
+                border_color=BORDER,
+                text_color=TEXT,
+            )
+            entry.pack(side="left", fill="x", expand=True)
+
+            # Load saved override
+            entry.insert(
+                0,
+                self.config_data.get("custom_category_names", {}).get(cat, "")
+            )
+
+            self.name_entries[cat] = entry
+
+        def save_names():
+            overrides = {}
+            for cat, ent in self.name_entries.items():
+                val = ent.get().strip()
+                if val:
+                    overrides[cat] = val
+
+            self.config_data["custom_category_names"] = overrides
+            save_config(self.config_data)
+            win.destroy()
+
+        save_btn = ctk.CTkButton(
+            win, text="Save", fg_color=ACCENT, hover_color="#1e4fd8", command=save_names
+        )
+        save_btn.pack(pady=12)
 
     # folder selection
     def choose_folder(self):
@@ -566,12 +636,6 @@ class FolderFreshApp(ctk.CTk):
         )
         messagebox.showinfo("Help", message)
 
-    def toggle_theme(self):
-        current = ctk.get_appearance_mode()
-        new_mode = "Light" if current == "Dark" else "Dark"
-        ctk.set_appearance_mode(new_mode)
-        self.config_data["appearance"] = new_mode
-        save_config(self.config_data)
 
     def on_close(self):
         try:
