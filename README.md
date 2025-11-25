@@ -68,29 +68,64 @@ Desktop
 
 ---
 
-## Building an Executable (PyInstaller)
+## Build script
+make sure to update version number in the .iss file
 
-Open PowerShell in the project root:
+```powershell
+Write-Host "Building FolderFresh..."
 
 
-# optional: clean previous builds
-rmdir /s /q build dist
+Write-Host "Cleaning previous build folders..."
+if (Test-Path "build") { Remove-Item "build" -Recurse -Force }
+if (Test-Path "dist")  { Remove-Item "dist"  -Recurse -Force }
 
-python -m pip install pyinstaller
+Write-Host "Checking PyInstaller installation..."
+pip show pyinstaller > $null 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "PyInstaller not found. Installing..."
+    python -m pip install pyinstaller
+}
 
-python -m PyInstaller --onefile --windowed src\FolderFresh.py
+Write-Host "Building FolderFresh.exe..."
+python -m PyInstaller --onefile --windowed --name FolderFresh main.py
 
-## **Build the Installer (Inno Setup)**
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "PyInstaller build failed."
+    exit 1
+}
 
-Install Inno Setup
+Write-Host "Executable created: dist/FolderFresh.exe"
 
-Open installer/FolderFresh.iss
+$issPath = "installer/FolderFresh.iss"
+Write-Host "Reading version from $issPath..."
 
-Update #define MyAppVersion when releasing a new version
+$versionLine = Get-Content $issPath | Select-String '#define MyAppVersion'
+$version = ($versionLine -split '"')[1]
 
-Build → Compile
+Write-Host "Version detected: $version"
 
-The installer will appear in the Output/ folder
+Write-Host "Building installer..."
+
+$ISCC = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+if (!(Test-Path $ISCC)) {
+    $ISCC = "${env:ProgramFiles}\Inno Setup 6\ISCC.exe"
+}
+
+if (!(Test-Path $ISCC)) {
+    Write-Host "Error: Inno Setup Compiler (ISCC.exe) was not found."
+    exit 1
+}
+
+& "$ISCC" "installer/FolderFresh.iss"
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Installer build failed."
+    exit 1
+}
+
+Write-Host "Build complete. Installer located in Output/ folder."
+
+```
 
 ## **Safety Notes**
 
