@@ -632,7 +632,7 @@ class FolderFreshApp(ctk.CTk):
             "FolderFresh tidies folders by sorting files into categories.\n\n"
             "Use Preview to check changes before Organising.\n"
             "Safe Mode copies instead of moving.\n"
-            "Advanced options include age filter, ignore types, smart sorting, and auto-tidy."
+            "Advanced options include age filter, ignore types, smart sorting, custom folder naming, and auto-tidy."
         )
         messagebox.showinfo("Help", message)
 
