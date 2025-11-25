@@ -13,7 +13,7 @@ CONFIG_FILENAME = ".folderfresh_config.json"
 CATEGORIES: dict[str, list[str]] = {
     "Images": [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".heic"],
     "PDF": [".pdf"],
-    "Docs": [".doc", ".docx", ".txt", ".rtf", ".odt", ".ppt", ".pptx", ".xls", ".xlsx", ".csv"],
+    "Documents": [".doc", ".docx", ".txt", ".rtf", ".odt", ".ppt", ".pptx", ".xls", ".xlsx", ".csv"],
     "Videos": [".mp4", ".mov", ".avi", ".mkv", ".webm"],
     "Audio": [".mp3", ".wav", ".flac", ".m4a", ".aac"],
     "Archives": [".zip", ".rar", ".7z", ".tar", ".gz"],
@@ -34,4 +34,8 @@ RULES = {
 CONFIG_PATH = Path.home() / CONFIG_FILENAME
 
 # Top-level category folders to avoid infinite loops
-TOP_LEVEL_CATS = set(CATEGORIES.keys()) | {"Other"}
+DEFAULT_CATEGORIES = [
+    "Images", "PDF", "Documents", "Videos", "Audio",
+    "Archives", "Code", "Other"
+]
+
