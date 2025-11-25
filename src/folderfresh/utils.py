@@ -2,6 +2,7 @@
 import time
 import hashlib
 import json
+import winreg
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -179,3 +180,27 @@ def load_log(root: Path):
         return json.load(open(log_path, "r", encoding="utf-8"))
     except Exception:
         return None
+
+def enable_startup(app_name: str, exe_path: str):
+    key = winreg.OpenKey(
+        winreg.HKEY_CURRENT_USER,
+        r"Software\Microsoft\Windows\CurrentVersion\Run",
+        0,
+        winreg.KEY_SET_VALUE
+    )
+    winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, f'"{exe_path}"')
+    winreg.CloseKey(key)
+
+
+def disable_startup(app_name: str):
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_SET_VALUE
+        )
+        winreg.DeleteValue(key, app_name)
+        winreg.CloseKey(key)
+    except FileNotFoundError:
+        pass
