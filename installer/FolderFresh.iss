@@ -1,7 +1,7 @@
 #define MyAppName      "FolderFresh"
 #define MyAppVersion   "1.1.3"
 #define MyAppPublisher "Tristan Jay Neale"
-#define MyAppURL       ""
+#define MyAppURL       "https://github.com/Trihedron1240/FolderFresh"
 #define MyAppExeName   "FolderFresh.exe"
 
 [Setup]
@@ -25,7 +25,6 @@ ArchitecturesInstallIn64BitMode=x64
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
-
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
@@ -36,15 +35,11 @@ Name: "runonstartup"; Description: "Run {#MyAppName} at Windows &startup"; Group
 [Files]
 Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
-
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\folderfresh.ico"; Check: FileExists(ExpandConstant('{app}\folderfresh.ico'))
-; Fallback Start Menu shortcut without icon
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Check: not FileExists(ExpandConstant('{app}\folderfresh.ico'))
-; Desktop shortcut (optional task) with/without icon
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; IconFilename: "{app}\folderfresh.ico"; Check: FileExists(ExpandConstant('{app}\folderfresh.ico'))
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; Check: not FileExists(ExpandConstant('{app}\folderfresh.ico'))
-; Uninstall shortcut
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 
 [Registry]
@@ -57,5 +52,3 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName} now"; Flags
 [UninstallDelete]
 Type: files; Name: "{app}\*.log"
 Type: files; Name: "{app}\*.json"
-
-
