@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import time
 import threading
 from pathlib import Path
@@ -260,6 +261,15 @@ class FolderFreshApp(ctk.CTk):
         else:
             self.tray_mode.deselect()
 
+        self.startup_checkbox = ctk.CTkCheckBox(
+            adv_inner,
+            text="Run FolderFresh at Windows startup",
+            command=self.toggle_startup
+        )
+        self.startup_checkbox.grid(row=3, column=0, columnspan=2, sticky="w", padx=4, pady=(6, 6))
+        if self.config_data.get("startup", False):
+            self.startup_checkbox.select()
+
         # help button (small circular icon button) - style B
         help_frame = ctk.CTkFrame(main_card, fg_color=CARD_BG)
         help_frame.pack(fill="x", padx=12, pady=(0, 6))
@@ -402,6 +412,20 @@ class FolderFreshApp(ctk.CTk):
             win, text="Save", fg_color=ACCENT, hover_color="#1e4fd8", command=save_names
         )
         save_btn.pack(pady=12)
+    def toggle_startup(self):
+        from folderfresh.utils import enable_startup, disable_startup
+
+        exe_path = sys.executable  # works for both EXE and python launches
+        app_name = "FolderFresh"
+
+        if bool(self.startup_checkbox.get()):
+            enable_startup(app_name, exe_path)
+        else:
+            disable_startup(app_name)
+
+        # save preference
+        self.config_data["startup"] = bool(self.startup_checkbox.get())
+        save_config(self.config_data)
 
     # folder selection
     def choose_folder(self):
