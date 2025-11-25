@@ -1,4 +1,4 @@
-# gui.py
+# gui.py (Windows-11-style, Option C with Smart + Auto-tidy in basic row, Tray in Advanced, Help as circular icon)
 from __future__ import annotations
 
 import os
@@ -16,22 +16,36 @@ from . import actions
 from . import watcher
 from . import tray
 
+# Optional local file path (uploaded earlier) — can be used for tray/icon if you replace with a real .ico/.png
+ICON_PATH = "/mnt/data/FolderFresh.py"
+
+# Theme colours tuned for a Windows-11 utility look
+ACCENT = "#2563eb"
+SUCCESS = "#16a34a"
+PANEL_BG = "#0f1720"
+CARD_BG = "#0b1220"
+BORDER = "#1f2937"
+TEXT = "#e6eef8"
+MUTED = "#9aa6b2"
+
 
 class FolderFreshApp(ctk.CTk):
     def __init__(self):
         super().__init__()
+
+        # load config
         self.config_data = load_config()
 
-        # Appearance
+        # appearance
         ctk.set_appearance_mode(self.config_data.get("appearance", "Dark"))
         ctk.set_default_color_theme("blue")
 
-        # Window
+        # window
         self.title(APP_TITLE)
-        self.geometry("820x620")
-        self.minsize(720, 520)
+        self.geometry("880x660")
+        self.minsize(760, 520)
 
-        # State
+        # state
         self.selected_folder: Optional[Path] = None
         self.preview_moves: list[dict] = []
         self.observer = None
@@ -39,179 +53,251 @@ class FolderFreshApp(ctk.CTk):
         self.tray_thread = None
         self.advanced_visible = False
 
-        # Top header
-        header = ctk.CTkFrame(self)
-        header.pack(fill="x", padx=12, pady=(12, 6))
+        # root background
+        self.configure(fg_color=PANEL_BG)
 
-        title_label = ctk.CTkLabel(header, text=APP_TITLE, font=("Segoe UI", 18, "bold"))
-        title_label.pack(side="left", padx=(8, 12))
+        # header card
+        header = ctk.CTkFrame(self, fg_color=CARD_BG, corner_radius=12)
+        header.pack(fill="x", padx=16, pady=(16, 10))
 
-        self.path_entry = ctk.CTkEntry(header, placeholder_text="Choose a folder to tidy…")
-        self.path_entry.configure(state="disabled")
-        self.path_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-
-        choose_btn = ctk.CTkButton(header, text="Choose Folder", width=140, command=self.choose_folder)
-        choose_btn.pack(side="left")
-
-        # Main column frame (single column layout)
-        main = ctk.CTkFrame(self)
-        main.pack(fill="both", expand=True, padx=12, pady=6)
-
-        # Basic options row
-        opts = ctk.CTkFrame(main)
-        opts.pack(fill="x", padx=6, pady=(2, 8))
-
-        self.include_sub = ctk.CTkCheckBox(
-            opts, text="Include subfolders", command=self.remember_options
+        title_label = ctk.CTkLabel(
+            header, text=APP_TITLE, font=("Segoe UI Variable", 18, "bold"), text_color=TEXT
         )
-        self.include_sub.grid(row=0, column=0, padx=8, pady=6, sticky="w")
+        title_label.pack(side="left", padx=(12, 12))
+
+        self.path_entry = ctk.CTkEntry(
+            header,
+            placeholder_text="Choose a folder to tidy…",
+            width=0,
+            height=0,
+            corner_radius=8,
+            fg_color="#071018",
+            border_width=1,
+            border_color=BORDER,
+            text_color=TEXT,
+        )
+        self.path_entry.configure(state="disabled")
+        self.path_entry.pack(side="left", fill="x", expand=True, padx=(0, 12))
+
+        choose_btn = ctk.CTkButton(
+            header,
+            text="Choose Folder",
+            width=140,
+            corner_radius=8,
+            fg_color=ACCENT,
+            hover_color="#1e4fd8",
+            command=self.choose_folder,
+        )
+        choose_btn.pack(side="right", padx=(0, 12))
+
+        # main card
+        main_card = ctk.CTkFrame(self, fg_color=CARD_BG, corner_radius=12)
+        main_card.pack(fill="both", expand=True, padx=16, pady=(0, 16))
+
+        # basic options row
+        opts = ctk.CTkFrame(main_card, fg_color=CARD_BG)
+        opts.pack(fill="x", padx=12, pady=(12, 10))
+
+        # Include sub / Skip hidden / Safe mode
+        self.include_sub = ctk.CTkCheckBox(opts, text="Include subfolders", command=self.remember_options)
+        self.include_sub.grid(row=0, column=0, sticky="w", padx=(6, 16))
         if self.config_data.get("include_sub", True):
             self.include_sub.select()
         else:
             self.include_sub.deselect()
 
-        self.skip_hidden = ctk.CTkCheckBox(
-            opts, text="Ignore hidden/system files", command=self.remember_options
-        )
-        self.skip_hidden.grid(row=0, column=1, padx=8, pady=6, sticky="w")
+        self.skip_hidden = ctk.CTkCheckBox(opts, text="Ignore hidden/system files", command=self.remember_options)
+        self.skip_hidden.grid(row=0, column=1, sticky="w", padx=(0, 16))
         if self.config_data.get("skip_hidden", True):
             self.skip_hidden.select()
         else:
             self.skip_hidden.deselect()
 
         self.safe_mode = ctk.CTkCheckBox(opts, text="Safe Mode (copy)", command=self.remember_options)
-        self.safe_mode.grid(row=0, column=2, padx=8, pady=6, sticky="w")
+        self.safe_mode.grid(row=0, column=2, sticky="w", padx=(0, 16))
         if self.config_data.get("safe_mode", True):
             self.safe_mode.select()
         else:
             self.safe_mode.deselect()
 
-        # Action buttons row
-        actions_frame = ctk.CTkFrame(main)
-        actions_frame.pack(fill="x", padx=6, pady=(0, 8))
-
-        self.preview_btn = ctk.CTkButton(actions_frame, text="Preview", width=120, command=self.on_preview)
-        self.preview_btn.grid(row=0, column=0, padx=8, pady=6)
-
-        self.organise_btn = ctk.CTkButton(actions_frame, text="Organise Files", width=140, command=self.on_organise)
-        self.organise_btn.grid(row=0, column=1, padx=8, pady=6)
-
-        self.undo_btn = ctk.CTkButton(actions_frame, text="Undo Last", width=120, command=self.on_undo)
-        self.undo_btn.grid(row=0, column=2, padx=8, pady=6)
-
-        self.dupe_btn = ctk.CTkButton(actions_frame, text="Find Duplicates", width=140, command=self.on_find_dupes)
-        self.dupe_btn.grid(row=0, column=3, padx=8, pady=6)
-
-        self.desktop_btn = ctk.CTkButton(actions_frame, text="Clean Desktop", width=120, command=self.clean_desktop)
-        self.desktop_btn.grid(row=0, column=4, padx=8, pady=6)
-
-        # Preview box
-        preview_box_frame = ctk.CTkFrame(main)
-        preview_box_frame.pack(fill="both", expand=True, padx=6, pady=(0, 8))
-
-        preview_label = ctk.CTkLabel(preview_box_frame, text="Preview", font=("Segoe UI", 13, "bold"))
-        preview_label.pack(anchor="w", padx=8, pady=(8, 0))
-
-        self.preview_box = ctk.CTkTextbox(preview_box_frame, wrap="word")
-        self.preview_box.pack(fill="both", expand=True, padx=10, pady=8)
-        self.preview_box.insert("end", "Select a folder and click Preview to see planned moves.")
-        self.preview_box.configure(state="disabled")
-
-        # Advanced toggle and advanced options drawer
-        adv_toggle_frame = ctk.CTkFrame(main)
-        adv_toggle_frame.pack(fill="x", padx=6, pady=(0, 4))
-
-        self.advanced_button = ctk.CTkButton(adv_toggle_frame, text="Advanced Options ▾", command=self.toggle_advanced)
-        self.advanced_button.pack(fill="x", padx=4, pady=(4, 0))
-
-        self.advanced_frame = ctk.CTkFrame(main)
-        # start hidden
-        self.advanced_frame.pack_forget()
-
-        # Advanced content (moved here from previous layout)
-        adv_inner = ctk.CTkFrame(self.advanced_frame)
-        adv_inner.pack(fill="x", padx=8, pady=8)
-
-        # Age filter
-        age_row = ctk.CTkFrame(adv_inner)
-        age_row.pack(fill="x", pady=(0, 6))
-        age_label = ctk.CTkLabel(age_row, text="Only move files older than (days):")
-        age_label.pack(side="left", padx=(0, 8))
-        self.age_filter_entry = ctk.CTkEntry(age_row, width=80, placeholder_text="0")
-        self.age_filter_entry.pack(side="left")
-        self.age_filter_entry.delete(0, "end")
-        self.age_filter_entry.insert(0, str(self.config_data.get("age_filter_days", 0)))
-
-        # Ignore types
-        ignore_row = ctk.CTkFrame(adv_inner)
-        ignore_row.pack(fill="x", pady=(0, 6))
-        ignore_label = ctk.CTkLabel(ignore_row, text="Ignore types (e.g. .exe;.tmp):")
-        ignore_label.pack(side="left", padx=(0, 8))
-        self.ignore_entry = ctk.CTkEntry(ignore_row, width=240, placeholder_text=".exe;.tmp")
-        self.ignore_entry.pack(side="left")
-        self.ignore_entry.delete(0, "end")
-        self.ignore_entry.insert(0, self.config_data.get("ignore_exts", ""))
-        self.ignore_entry.bind("<KeyRelease>", lambda e: self.remember_options())
-
-        # Smart mode + watch + tray
-        toggles_row = ctk.CTkFrame(adv_inner)
-        toggles_row.pack(fill="x", pady=(6, 0))
-
-        self.smart_mode = ctk.CTkCheckBox(toggles_row, text="Smart Sorting (experimental)", command=self.remember_options)
-        self.smart_mode.pack(side="left", padx=(0, 12))
+        # Smart Sorting + Auto-tidy in basic row (Option C)
+        self.smart_mode = ctk.CTkCheckBox(opts, text="Smart Sorting (experimental)", command=self.remember_options)
+        self.smart_mode.grid(row=0, column=3, sticky="w", padx=(0, 16))
         if self.config_data.get("smart_mode", False):
             self.smart_mode.select()
         else:
             self.smart_mode.deselect()
 
-        self.watch_mode = ctk.CTkCheckBox(toggles_row, text="Auto-tidy (watch)", command=self.on_toggle_watch)
-        self.watch_mode.pack(side="left", padx=(0, 12))
+        self.watch_mode = ctk.CTkCheckBox(opts, text="Auto-tidy", command=self.on_toggle_watch)
+        self.watch_mode.grid(row=0, column=4, sticky="w", padx=(0, 6))
         if self.config_data.get("watch_mode", False):
             self.watch_mode.select()
         else:
             self.watch_mode.deselect()
 
-        self.tray_mode = ctk.CTkCheckBox(toggles_row, text="Run in background (tray)", command=self.on_toggle_tray)
-        self.tray_mode.pack(side="left")
+        # actions row
+        btn_row = ctk.CTkFrame(main_card, fg_color=CARD_BG)
+        btn_row.pack(fill="x", padx=12, pady=(0, 12))
+
+        btn_pad = 8
+        self.preview_btn = ctk.CTkButton(
+            btn_row, text="Preview", width=140, corner_radius=10, fg_color=ACCENT, hover_color="#1e4fd8", command=self.on_preview
+        )
+        self.preview_btn.grid(row=0, column=0, padx=(btn_pad, 0), pady=6)
+
+        self.organise_btn = ctk.CTkButton(
+            btn_row,
+            text="Organise Files",
+            width=160,
+            corner_radius=10,
+            fg_color=SUCCESS,
+            hover_color="#0f9a3a",
+            command=self.on_organise,
+        )
+        self.organise_btn.grid(row=0, column=1, padx=(btn_pad, 0), pady=6)
+
+        self.undo_btn = ctk.CTkButton(
+            btn_row, text="Undo Last", width=140, corner_radius=10, fg_color="#334155", hover_color="#24313b", command=self.on_undo
+        )
+        self.undo_btn.grid(row=0, column=2, padx=(btn_pad, 0), pady=6)
+
+        self.dupe_btn = ctk.CTkButton(
+            btn_row,
+            text="Find Duplicates",
+            width=160,
+            corner_radius=10,
+            fg_color="#3b82f6",
+            hover_color="#2f6fdc",
+            command=self.on_find_dupes,
+        )
+        self.dupe_btn.grid(row=0, column=3, padx=(btn_pad, 0), pady=6)
+
+        self.desktop_btn = ctk.CTkButton(
+            btn_row, text="Clean Desktop", width=140, corner_radius=10, fg_color="#0ea5a4", hover_color="#0a8a88", command=self.clean_desktop
+        )
+        self.desktop_btn.grid(row=0, column=4, padx=(btn_pad, 8), pady=6)
+
+        # preview label
+        preview_label = ctk.CTkLabel(main_card, text="Preview", font=("Segoe UI Variable", 13, "bold"), text_color=TEXT)
+        preview_label.pack(anchor="w", padx=12, pady=(4, 6))
+
+        # preview box
+        self.preview_box = ctk.CTkTextbox(
+            main_card,
+            wrap="word",
+            corner_radius=10,
+            width=0,
+            height=0,
+            fg_color="#071018",
+            border_width=1,
+            border_color=BORDER,
+            text_color=TEXT,
+        )
+        self.preview_box.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+        self.preview_box.insert("end", "Select a folder and click Preview to see planned moves.")
+        self.preview_box.configure(state="disabled", font=("Segoe UI", 11))
+
+        # advanced toggle
+        adv_frame = ctk.CTkFrame(main_card, fg_color=CARD_BG)
+        adv_frame.pack(fill="x", padx=12, pady=(0, 8))
+
+        self.advanced_button = ctk.CTkButton(
+            adv_frame, text="Advanced Options ▾", width=720, corner_radius=10, fg_color="#1f2937", hover_color="#16202a", command=self.toggle_advanced
+        )
+        self.advanced_button.pack(fill="x", padx=6)
+
+        # advanced content (hidden initially)
+        self.advanced_frame = ctk.CTkFrame(main_card, fg_color=CARD_BG, corner_radius=10)
+        # advanced_frame is not packed -> hidden
+
+        # advanced inner layout
+        adv_inner = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
+        adv_inner.pack(fill="x", padx=8, pady=8)
+
+        # age filter + ignore types
+        age_label = ctk.CTkLabel(adv_inner, text="Only move files older than (days):")
+        age_label.grid(row=0, column=0, sticky="w", padx=(4, 8), pady=(4, 6))
+        self.age_filter_entry = ctk.CTkEntry(
+            adv_inner, width=100, corner_radius=8, fg_color="#071018", border_width=1, border_color=BORDER, text_color=TEXT
+        )
+        self.age_filter_entry.grid(row=0, column=1, sticky="w", padx=(0, 16), pady=(4, 6))
+        self.age_filter_entry.delete(0, "end")
+        self.age_filter_entry.insert(0, str(self.config_data.get("age_filter_days", 0)))
+
+        ignore_label = ctk.CTkLabel(adv_inner, text="Ignore types (e.g. .exe;.tmp):")
+        ignore_label.grid(row=1, column=0, sticky="w", padx=(4, 8), pady=(0, 6))
+        self.ignore_entry = ctk.CTkEntry(
+            adv_inner, width=420, corner_radius=8, fg_color="#071018", border_width=1, border_color=BORDER, text_color=TEXT
+        )
+        self.ignore_entry.grid(row=1, column=1, sticky="w", padx=(0, 16), pady=(0, 6))
+        self.ignore_entry.delete(0, "end")
+        self.ignore_entry.insert(0, self.config_data.get("ignore_exts", ""))
+        self.ignore_entry.bind("<KeyRelease>", lambda e: self.remember_options())
+
+        # tray mode (in advanced)
+        toggles = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
+        toggles.pack(fill="x", padx=8, pady=(6, 8))
+
+        self.tray_mode = ctk.CTkCheckBox(toggles, text="Run in background (tray)", command=self.on_toggle_tray)
+        self.tray_mode.pack(side="left", padx=(6, 12))
         if self.config_data.get("tray_mode", False):
             self.tray_mode.select()
         else:
             self.tray_mode.deselect()
 
-        # Bottom status and progress
-        bottom = ctk.CTkFrame(self)
-        bottom.pack(fill="x", padx=12, pady=(0, 12))
+        # help button (small circular icon button) - style B
+        help_frame = ctk.CTkFrame(main_card, fg_color=CARD_BG)
+        help_frame.pack(fill="x", padx=12, pady=(0, 6))
+        # place help at right side
+        help_container = ctk.CTkFrame(help_frame, fg_color=CARD_BG)
+        help_container.pack(fill="both")
+        self.help_btn = ctk.CTkButton(
+            help_container,
+            text="?",
+            width=36,
+            height=36,
+            corner_radius=18,
+            fg_color="#374151",
+            hover_color="#2b3740",
+            command=self.show_help,
+        )
+        # align to right
+        self.help_btn.pack(anchor="e", padx=(0, 8))
 
-        self.progress = ctk.CTkProgressBar(bottom)
+        # bottom status strip
+        bottom = ctk.CTkFrame(self, fg_color=CARD_BG, corner_radius=12)
+        bottom.pack(fill="x", padx=16, pady=(0, 16))
+
+        self.progress = ctk.CTkProgressBar(bottom, corner_radius=8)
         self.progress.set(0)
-        self.progress.pack(fill="x", side="left", expand=True, padx=(10, 8), pady=10)
+        self.progress.pack(fill="x", side="left", expand=True, padx=(10, 12), pady=8)
 
         self.progress_label = ctk.CTkLabel(bottom, text="0/0")
-        self.progress_label.pack(side="left", padx=(0, 8))
+        self.progress_label.pack(side="left", padx=(0, 12), pady=8)
 
         self.status = ctk.CTkLabel(bottom, text="Ready")
-        self.status.pack(side="left", padx=8)
+        self.status.pack(side="left", padx=(0, 8), pady=8)
 
-        # Protocol and keyboard shortcuts
+        # protocol and bindings
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.bind("<Control-o>", lambda e: self.choose_folder())
         self.bind("<Control-p>", lambda e: self.on_preview())
         self.bind("<Return>", lambda e: self.on_organise())
 
-        # Initial state
+        # initial disable
         for b in (self.preview_btn, self.organise_btn, self.undo_btn, self.dupe_btn):
             b.configure(state="disabled")
 
-        # First-run popup
+        # first run
         if self.config_data.get("first_run", True):
             messagebox.showinfo(
                 "Welcome",
-                "Welcome to FolderFresh!\n\nYou can Preview before anything changes. Safe Mode keeps originals. Undo is available."
+                "Welcome to FolderFresh!\n\nUse Preview before organising. Safe Mode copies files."
             )
             self.config_data["first_run"] = False
             save_config(self.config_data)
 
-        # Restore last folder if exists
+        # restore last folder
         last = self.config_data.get("last_folder")
         if last and Path(last).exists():
             self.selected_folder = Path(last)
@@ -219,15 +305,14 @@ class FolderFreshApp(ctk.CTk):
             self.path_entry.delete(0, "end")
             self.path_entry.insert(0, last)
             self.path_entry.configure(state="disabled")
-            # enable buttons
             for b in (self.preview_btn, self.organise_btn, self.dupe_btn):
                 b.configure(state="normal")
 
-        # Start watcher if needed
+        # start watcher if needed
         if self.watch_mode.get() and self.selected_folder:
             watcher.start_watching(self)
 
-    # ---- UI helpers ----
+    # UI helpers
     def set_status(self, msg: str):
         self.status.configure(text=msg)
         self.update_idletasks()
@@ -244,10 +329,11 @@ class FolderFreshApp(ctk.CTk):
             self.advanced_button.configure(text="Advanced Options ▾")
             self.advanced_visible = False
         else:
-            self.advanced_frame.pack(fill="x", padx=6, pady=(0, 8))
+            self.advanced_frame.pack(fill="x", padx=12, pady=(0, 12))
             self.advanced_button.configure(text="Advanced Options ▴")
             self.advanced_visible = True
 
+    # folder selection
     def choose_folder(self):
         path = filedialog.askdirectory()
         if not path:
@@ -268,7 +354,7 @@ class FolderFreshApp(ctk.CTk):
             time.sleep(0.1)
             watcher.start_watching(self)
 
-    # ---- Actions (delegated to actions.py) ----
+    # actions (delegate to actions.py)
     def remember_options(self):
         try:
             self.config_data["age_filter_days"] = int(self.age_filter_entry.get() or 0)
@@ -305,7 +391,6 @@ class FolderFreshApp(ctk.CTk):
             messagebox.showerror("Choose Folder", "Please choose a valid folder first.")
             return
 
-        # Ensure options are saved
         self.remember_options()
 
         moves = actions.do_preview(self)
@@ -315,7 +400,6 @@ class FolderFreshApp(ctk.CTk):
             messagebox.showinfo("Organise", "There’s nothing to move. Your folder is tidy.")
             return
 
-        # space estimator if safe mode on
         if self.safe_mode.get() and self.preview_moves:
             try:
                 total_bytes = sum(Path(m["src"]).stat().st_size for m in self.preview_moves if Path(m["src"]).exists())
@@ -359,7 +443,6 @@ class FolderFreshApp(ctk.CTk):
             messagebox.showinfo("Undo", "Last action was Safe Mode COPY — nothing to undo.")
             return
 
-        # reset last sort mode so next runs scan properly
         self.config_data["last_sort_mode"] = None
         save_config(self.config_data)
 
@@ -407,7 +490,7 @@ class FolderFreshApp(ctk.CTk):
             watcher.stop_watching(self)
             watcher.start_watching(self)
 
-    # ---- Watcher & Tray wrappers ----
+    # watcher & tray wrappers
     def on_toggle_watch(self):
         self.remember_options()
         self.config_data["watch_mode"] = bool(self.watch_mode.get())
@@ -432,7 +515,7 @@ class FolderFreshApp(ctk.CTk):
     def show_window(self):
         tray.show_window(self)
 
-    # ---- Summaries, UI helpers ----
+    # summaries
     def make_summary(self, moves: list[dict]) -> str:
         if not moves:
             return "Nothing to organise."
@@ -492,12 +575,10 @@ class FolderFreshApp(ctk.CTk):
 
     def on_close(self):
         try:
-            # persist options
             self.remember_options()
         except Exception:
             pass
 
-        # If tray mode is enabled, hide to tray instead of exiting
         try:
             if getattr(self, "tray_mode", None) and self.tray_mode.get():
                 self.hide_to_tray()
@@ -513,6 +594,3 @@ class FolderFreshApp(ctk.CTk):
         self.destroy()
 
 
-if __name__ == "__main__":
-    app = FolderFreshApp()
-    app.mainloop()
