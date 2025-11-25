@@ -62,7 +62,7 @@ Desktop
 ![Before](screenshots/Before.png)
 
 **Preview:**  
-![Preview](screenshots/Preview.png)
+![Preview](screenshots/Preview v1.2.0.png)
 
 **After:**  
 ![Finished](screenshots/After.png)
