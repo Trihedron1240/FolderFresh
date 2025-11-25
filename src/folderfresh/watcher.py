@@ -8,8 +8,8 @@ from watchdog.events import FileSystemEventHandler
 from .utils import file_is_old_enough, is_hidden_win
 from .sorting import pick_smart_category
 from .sorting import plan_moves
-from .constants import TOP_LEVEL_CATS
-
+from .constants import DEFAULT_CATEGORIES
+from .naming import resolve_category
 # ========== INTERNAL HANDLER CLASS ===========================================
 
 class AutoTidyHandler(FileSystemEventHandler):
@@ -21,7 +21,7 @@ class AutoTidyHandler(FileSystemEventHandler):
     def __init__(self, app):
         super().__init__()
         self.app = app
-
+        
     # -------------------------------------------------------------
     # Should ignore file?
     # -------------------------------------------------------------
@@ -29,7 +29,7 @@ class AutoTidyHandler(FileSystemEventHandler):
         # Skip category folders
         try:
             rel = p.relative_to(root)
-            if rel.parts and rel.parts[0] in TOP_LEVEL_CATS:
+            if rel.parts and rel.parts[0] in DEFAULT_CATEGORIES:
                 return True
         except Exception:
             pass
@@ -96,10 +96,14 @@ class AutoTidyHandler(FileSystemEventHandler):
 
         # SMART SORTING
         if self.app.smart_mode.get():
-            folder = pick_smart_category(p)
-            if folder:
-                dest_dir = root / folder
+            smart_folder = pick_smart_category(p)
+            if smart_folder:
+                # APPLY USER-DEFINED CATEGORY NAME
+                smart_folder = resolve_category(smart_folder, self.app.config_data)
+
+                dest_dir = root / smart_folder
                 dest_dir.mkdir(parents=True, exist_ok=True)
+
                 dst = dest_dir / p.name
                 try:
                     if self.app.safe_mode.get():
@@ -116,6 +120,16 @@ class AutoTidyHandler(FileSystemEventHandler):
             return
 
         m = move_plan[0]
+        # Extract default category name
+        dst_path = Path(m["dst"])
+        default_cat = dst_path.parent.name
+
+        # APPLY USER-DEFINED CATEGORY NAME
+        new_cat = resolve_category(default_cat, self.app.config_data)
+
+        # Rebuild dst with new category
+        new_dst = root / new_cat / dst_path.name
+        m["dst"] = str(new_dst)
         try:
             Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
             if self.app.safe_mode.get():
