@@ -3,7 +3,7 @@
 # ---------------------------
 
 # 1) Set the new version here:
-$version = "1.2.1"
+$version = "1.3.0"
 
 # 2) Write version into VERSION file
 Set-Content -Path "src/folderfresh/VERSION" -Value $version
