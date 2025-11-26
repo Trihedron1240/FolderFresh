@@ -81,19 +81,26 @@ def do_preview(app):
     use_smart = app.smart_mode.get()
 
     for p in files:
-        folder_name = pick_smart_category(p) if use_smart else None
+        # SMART
+        folder_name = pick_smart_category(p, cfg=app.config_data) if use_smart else None
+
+        # fallback to simple
         if not folder_name:
-            folder_name = pick_category(p.suffix)
+            folder_name = pick_category(
+                p.suffix,
+                src_path=p,
+                cfg=app.config_data
+            )
 
+        # apply rename overrides
         folder_name = resolve_category(folder_name, app.config_data)
-
 
         dst = folder / folder_name / p.name
 
         if p != dst:
             moves.append({"src": str(p), "dst": str(dst)})
-
     return moves
+
 
 
 # ========== ORGANISE =========================================================
@@ -108,22 +115,32 @@ def do_organise(app, moves):
 
     moves_done = []
 
-
     for m in moves:
         src = m["src"]
+        p = Path(src)
 
-        # --- GET ORIGINAL DST ---
-        dst = Path(m["dst"])
+        # Determine category using smart/simple *with config awareness*
+        if app.smart_mode.get():
+            folder_name = pick_smart_category(p, cfg=app.config_data)
+            if not folder_name:
+                folder_name = pick_category(
+                    p.suffix,
+                    src_path=p,
+                    cfg=app.config_data
+                )
+        else:
+            folder_name = pick_category(
+                p.suffix,
+                src_path=p,
+                cfg=app.config_data
+            )
 
-        # --- EXTRACT DEFAULT CATEGORY NAME ---
-        default_cat = dst.parent.name
+        # Apply rename overrides
+        folder_name = resolve_category(folder_name, app.config_data)
 
-        # --- APPLY USER-DEFINED CATEGORY NAME ---
-        new_cat = resolve_category(default_cat, app.config_data)
-
-        # --- REBUILD DESTINATION WITH UPDATED CATEGORY NAME ---
-        new_dst = Path(app.selected_folder) / new_cat / dst.name
-        m["dst"] = str(new_dst)   # update for logging/undo
+        # Build final destination
+        new_dst = Path(app.selected_folder) / folder_name / p.name
+        m["dst"] = str(new_dst)
 
         try:
             new_dst.parent.mkdir(parents=True, exist_ok=True)
@@ -136,7 +153,11 @@ def do_organise(app, moves):
             moves_done.append(m)
 
         except Exception as e:
-            moves_done.append({"src": src, "dst": str(new_dst), "error": str(e)})
+            moves_done.append({
+                "src": src,
+                "dst": str(new_dst),
+                "error": str(e)
+            })
 
     # Log only moves (not copy)
     from .utils import save_log  # local import avoids circular issues

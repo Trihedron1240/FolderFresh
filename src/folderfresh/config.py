@@ -24,9 +24,11 @@ def load_config() -> dict:
             "ignore_exts": "",
             "smart_mode": False,
             "custom_category_names": {},
+            "custom_categories": {},
+            "category_enabled": {},
         }
 
-    # --- Migration for 1.3.0 ---
+    # --- Migration for old versions ---
     if "watched_folders" not in cfg:
         old = cfg.get("auto_tidy_folder")
         if old:
@@ -34,7 +36,13 @@ def load_config() -> dict:
         else:
             cfg["watched_folders"] = []
 
+    # --- Ensure new v1.4 keys exist (important for upgrades) ---
+    cfg.setdefault("custom_categories", {})
+    cfg.setdefault("custom_category_names", {})
+    cfg.setdefault("category_enabled", {})
+
     return cfg
+
 
 
 

@@ -11,7 +11,6 @@ from typing import Optional
 
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
-
 from .config import load_config, save_config
 from .constants import APP_TITLE, LOG_FILENAME, APP_VERSION
 from .watcher_manager import WatcherManager
@@ -306,18 +305,17 @@ class FolderFreshApp(ctk.CTk):
         )
         self.manage_wf_btn.pack(side="right", padx=6)
 
-
-        self.edit_names_btn = ctk.CTkButton(
+        # tray mode (in advanced)
+        self.manage_categories_btn = ctk.CTkButton(
             edit_names_row,
-            text="Edit Category Names",
+            text="Manage Categories",
             width=180,
             corner_radius=8,
             fg_color="#374151",
             hover_color="#2b3740",
-            command=self.open_category_editor
+            command=self.open_category_manager
         )
-        self.edit_names_btn.pack(anchor="w", padx=(4, 0))
-        # tray mode (in advanced)
+        self.manage_categories_btn.pack(anchor="w", padx=(4, 0))
 
         toggles = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
         toggles.pack(fill="x", padx=8, pady=(6, 8))
@@ -370,13 +368,29 @@ class FolderFreshApp(ctk.CTk):
 
         self.status = ctk.CTkLabel(bottom, text="Ready")
         self.status.pack(side="left", padx=(0, 8), pady=8)
-        # --- Footer: version + report bug ---
-        footer = ctk.CTkFrame(bottom, fg_color="transparent")
-        footer.pack(side="right", padx=4)
+        # Move footer ABOVE the bottom status bar
+        footer = ctk.CTkFrame(self, fg_color="transparent")
+        footer.pack(fill="x", padx=16, pady=(0, 0))
+
+        left_zone = ctk.CTkFrame(footer, fg_color="transparent")
+        left_zone.pack(side="left")
+
+        right_zone = ctk.CTkFrame(footer, fg_color="transparent")
+        right_zone.pack(side="right")
+
+        self.credit_label = ctk.CTkLabel(
+            left_zone,
+            text="By Tristan Neale github.com/Trihedron1240/FolderFresh",
+            font=("Segoe UI", 11),
+            text_color="#8c8c8c",
+            cursor="hand2"
+        )
+        self.credit_label.pack(side="left", padx=(8, 0))
+        self.credit_label.bind("<Button-1>", lambda e: webbrowser.open("https://trihedron1240.github.io/FolderFresh/"))
 
         # Version label
         self.version_label = ctk.CTkLabel(
-            footer,
+            right_zone,
             text=f"v{APP_VERSION}",
             font=("Segoe UI", 11),
             text_color="#8c8c8c",
@@ -388,7 +402,7 @@ class FolderFreshApp(ctk.CTk):
             webbrowser.open("https://github.com/Trihedron1240/FolderFresh/issues/new/choose")
 
         self.bug_label = ctk.CTkLabel(
-            footer,
+            right_zone,
             text="Report Bug",
             font=("Segoe UI", 11, "underline"),
             text_color="#60a5fa",     # Windows 11 blue-ish
@@ -430,6 +444,257 @@ class FolderFreshApp(ctk.CTk):
         for folder in self.config_data.get("watched_folders", []):
             if Path(folder).exists():
                 self.watcher_manager.watch_folder(folder)
+    def open_category_manager(self):
+        win = ctk.CTkToplevel(self)
+        win.title("Manage Categories")
+        win.geometry("750x700")
+        win.grab_set()
+
+        ctk.CTkLabel(
+            win,
+            text="Category Manager",
+            font=("Segoe UI Variable", 20, "bold")
+        ).pack(pady=12)
+
+        frame = ctk.CTkScrollableFrame(win, width=560, height=520)
+        frame.pack(padx=10, pady=10, fill="both", expand=True)
+
+        from .constants import CATEGORIES
+
+        defaults = list(CATEGORIES.keys())
+        overrides = self.config_data.get("custom_category_names", {})
+        enabled_map = self.config_data.get("category_enabled", {})
+        custom_ext_map = self.config_data.get("custom_categories", {})
+
+        # ==============================================================
+        #  RENDER FUNCTION (rebuilds entire content when changes happen)
+        # ==============================================================
+        def refresh():
+            for w in frame.winfo_children():
+                w.destroy()
+
+            # -----------------------------------------
+            # DEFAULT CATEGORIES
+            # -----------------------------------------
+            ctk.CTkLabel(
+                frame,
+                text="Default Categories",
+                font=("Segoe UI Variable", 16, "bold")
+            ).pack(anchor="w", pady=(4, 6), padx=6)
+
+            for cat in defaults:
+                row = ctk.CTkFrame(frame)
+                row.pack(fill="x", pady=4, padx=6)
+
+                # Enabled checkbox
+                var = ctk.BooleanVar(value=enabled_map.get(cat, True))
+                chk = ctk.CTkCheckBox(
+                    row,
+                    text="Enabled",
+                    variable=var,
+                    command=lambda c=cat, v=var: self.set_category_enabled(c, v.get())
+                )
+                chk.pack(side="left", padx=(0, 8))
+
+                # Label showing default category name
+                ctk.CTkLabel(row, text=cat, width=100).pack(side="left")
+
+                # Rename field with placeholder
+                rename_entry = ctk.CTkEntry(
+                    row,
+                    width=150,
+                    placeholder_text="New name"
+                )
+                rename_entry.pack(side="left", padx=(6, 6))
+                if cat in overrides:
+                    rename_entry.insert(0, overrides[cat])
+
+                # Extensions field with placeholder
+                default_exts = CATEGORIES[cat]
+                current_exts = custom_ext_map.get(cat, default_exts)
+
+                ext_entry = ctk.CTkEntry(
+                    row,
+                    width=200,
+                    placeholder_text=".ext1;.ext2"
+                )
+                ext_entry.pack(side="left", padx=(6, 6))
+                ext_entry.insert(0, ";".join(current_exts))
+
+                # SAVE BUTTON (default)
+                def save_default(c=cat, r=rename_entry, e=ext_entry):
+                    # Save rename
+                    name = r.get().strip()
+                    if name:
+                        overrides[c] = name
+                    else:
+                        overrides.pop(c, None)
+
+                    # Save extension override
+                    raw = e.get().strip()
+                    exts = [x.strip().lower() for x in raw.split(";") if x.strip()]
+                    self.config_data["custom_categories"][c] = exts
+
+                    self.config_data["custom_category_names"] = overrides
+                    save_config(self.config_data)
+                    refresh()
+
+                ctk.CTkButton(row, text="Save", width=60,
+                            command=save_default).pack(side="left", padx=6)
+
+            # -----------------------------------------
+            # CUSTOM CATEGORIES
+            # -----------------------------------------
+            ctk.CTkLabel(
+                frame,
+                text="Custom Categories",
+                font=("Segoe UI Variable", 16, "bold")
+            ).pack(anchor="w", pady=(12, 6), padx=6)
+
+            for cat, exts in list(custom_ext_map.items()):
+                if cat in defaults:
+                    # Handled above
+                    continue
+
+                row = ctk.CTkFrame(frame)
+                row.pack(fill="x", pady=4, padx=6)
+
+                # Enabled toggle
+                var = ctk.BooleanVar(value=enabled_map.get(cat, True))
+                chk = ctk.CTkCheckBox(
+                    row,
+                    text="Enabled",
+                    variable=var,
+                    command=lambda c=cat, v=var: self.set_category_enabled(c, v.get())
+                )
+                chk.pack(side="left", padx=(0, 8))
+
+                # Editable name
+                name_entry = ctk.CTkEntry(
+                    row,
+                    width=140,
+                    placeholder_text="Category name"
+                )
+                name_entry.pack(side="left", padx=6)
+                name_entry.insert(0, cat)
+
+                # Editable extensions
+                ext_entry = ctk.CTkEntry(
+                    row,
+                    width=200,
+                    placeholder_text=".ext1;.ext2"
+                )
+                ext_entry.pack(side="left", padx=6)
+                ext_entry.insert(0, ";".join(exts))
+
+                # SAVE custom category
+                def save_custom(old_name=cat, n=name_entry, e=ext_entry):
+                    new_name = n.get().strip()
+                    raw = e.get().strip()
+                    new_exts = [x.strip().lower() for x in raw.split(";") if x.strip()]
+
+                    # Rename
+                    if new_name != old_name:
+                        # Move extension rule
+                        self.config_data["custom_categories"].pop(old_name, None)
+                        self.config_data["custom_categories"][new_name] = new_exts
+
+                        # Preserve enabled status
+                        en = enabled_map.pop(old_name, True)
+                        enabled_map[new_name] = en
+                    else:
+                        self.config_data["custom_categories"][old_name] = new_exts
+
+                    save_config(self.config_data)
+                    refresh()
+
+                ctk.CTkButton(row, text="Save", width=60,
+                            command=save_custom).pack(side="left", padx=4)
+
+                # DELETE custom category
+                def delete_custom(x=cat):
+                    self.config_data["custom_categories"].pop(x, None)
+                    enabled_map.pop(x, None)
+                    save_config(self.config_data)
+                    refresh()
+
+                ctk.CTkButton(
+                    row, text="✕", width=35,
+                    fg_color="#8b0000", hover_color="#b30000",
+                    command=delete_custom
+                ).pack(side="left", padx=4)
+
+            # -----------------------------------------
+            # ADD NEW CATEGORY
+            # -----------------------------------------
+            ctk.CTkLabel(
+                frame,
+                text="Add New Category",
+                font=("Segoe UI Variable", 16, "bold")
+            ).pack(anchor="w", pady=(12, 4), padx=6)
+
+            add_row = ctk.CTkFrame(frame)
+            add_row.pack(fill="x", padx=6, pady=4)
+
+            new_name = ctk.CTkEntry(
+                add_row,
+                width=150,
+                placeholder_text="Category name"
+            )
+            new_name.pack(side="left", padx=6)
+
+            new_exts = ctk.CTkEntry(
+                add_row,
+                width=200,
+                placeholder_text=".ext1;.ext2"
+            )
+            new_exts.pack(side="left", padx=6)
+
+            def add_custom():
+                name = new_name.get().strip()
+                raw = new_exts.get().strip()
+                if not name:
+                    return
+                exts = [x.strip().lower() for x in raw.split(";") if x.strip()]
+
+                self.config_data["custom_categories"][name] = exts
+                enabled_map[name] = True
+                save_config(self.config_data)
+                refresh()
+
+            ctk.CTkButton(
+                add_row, text="Add", width=70,
+                fg_color="#2563eb", hover_color="#1e4fd8",
+                command=add_custom
+            ).pack(side="left", padx=4)
+
+        # initial render
+        refresh()
+
+        # -----------------------------------------
+        # RESET CATEGORIES BUTTON
+        # -----------------------------------------
+        def reset_categories():
+            self.config_data["custom_categories"] = {}
+            self.config_data["custom_category_names"] = {}
+            self.config_data["category_enabled"] = {}
+            save_config(self.config_data)
+            win.destroy()
+            self.open_category_manager()
+
+        ctk.CTkButton(
+            win,
+            text="Restore Default Categories",
+            width=260,
+            fg_color="#ef4444",
+            hover_color="#c72f2f",
+            corner_radius=8,
+            command=reset_categories
+        ).pack(pady=12)
+
+
+
+
     def open_watched_folders_window(self):
         win = ctk.CTkToplevel(self)
         win.title("Watched Folders")
@@ -497,6 +762,11 @@ class FolderFreshApp(ctk.CTk):
                     corner_radius=8, command=win.destroy).pack(side="right", padx=6)
 
     # UI helpers
+    def set_category_enabled(self, cat, val):
+        self.config_data.setdefault("category_enabled", {})
+        self.config_data["category_enabled"][cat] = bool(val)
+        save_config(self.config_data)
+
     def set_status(self, msg: str):
         self.status.configure(text=msg)
         self.update_idletasks()
@@ -516,61 +786,7 @@ class FolderFreshApp(ctk.CTk):
             self.advanced_frame.pack(fill="x", padx=12, pady=(0, 12))
             self.advanced_button.configure(text="Advanced Options ▴")
             self.advanced_visible = True
-    def open_category_editor(self):
-        win = ctk.CTkToplevel(self)
-        win.title("Edit Category Names")
-        win.geometry("380x460")
-        win.minsize(360, 420)
-        win.grab_set()  # modal behaviour
 
-        ctk.CTkLabel(
-            win, text="Rename Categories", font=("Segoe UI Variable", 16, "bold")
-        ).pack(pady=(12, 6))
-
-        from .constants import DEFAULT_CATEGORIES
-        self.name_entries = {}
-
-        # Field list
-        for cat in DEFAULT_CATEGORIES:
-            row = ctk.CTkFrame(win)
-            row.pack(fill="x", padx=12, pady=4)
-
-            ctk.CTkLabel(row, text=f"{cat} →", width=120).pack(side="left", padx=(0, 6))
-
-            entry = ctk.CTkEntry(
-                row,
-                width=200,
-                corner_radius=8,
-                fg_color="#071018",
-                border_width=1,
-                border_color=BORDER,
-                text_color=TEXT,
-            )
-            entry.pack(side="left", fill="x", expand=True)
-
-            # Load saved override
-            entry.insert(
-                0,
-                self.config_data.get("custom_category_names", {}).get(cat, "")
-            )
-
-            self.name_entries[cat] = entry
-
-        def save_names():
-            overrides = {}
-            for cat, ent in self.name_entries.items():
-                val = ent.get().strip()
-                if val:
-                    overrides[cat] = val
-
-            self.config_data["custom_category_names"] = overrides
-            save_config(self.config_data)
-            win.destroy()
-
-        save_btn = ctk.CTkButton(
-            win, text="Save", fg_color=ACCENT, hover_color="#1e4fd8", command=save_names
-        )
-        save_btn.pack(pady=12)
     def toggle_startup(self):
         from folderfresh.utils import enable_startup, disable_startup
 

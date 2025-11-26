@@ -1,46 +1,70 @@
-# FolderFresh — Desktop and Folder Cleaner for Windows
+# FolderFresh — Smart Desktop & Folder Cleaner for Windows
 
 Website: https://trihedron1240.github.io/FolderFresh/  
-Support (optional): https://trihedron.itch.io/folderfresh-1-click-desktop-folder-cleaner-windows
 
-FolderFresh is a lightweight utility that organises messy Windows folders by sorting files into simple, predictable categories.  
-It is designed for students, educators, and general Windows users who want a quick, safe method to clean their Desktop, Downloads, or project folders without risk.  
-Files are never deleted, and every action can be undone.
+
+FolderFresh is a lightweight Windows utility that organises messy folders by sorting your files into clean, predictable categories.  
+It’s built for students, creators, educators, and everyday Windows users who want a fast, **safe**, and **reversible** way to clean their Desktop, Downloads, or project folders.
+
+FolderFresh **never deletes files**, and every action can be undone.
 
 ---
 
-## Features (v1.2.0)
+## What’s New in v1.3.0
+
+Version 1.3.0 introduces major improvements:
+
+- **Unified Category Manager** — create, disable, rename, and fully customise categories  
+- **Custom Categories** — define your own categories with custom file extensions  
+- **Enable/Disable Categories** — hide categories you don’t use  
+- **Restore Defaults** — one-click reset to original category presets  
+- **Multi-Folder Auto-Tidy** — watch multiple folders at once  
+- **Improved Smart Sorting** — more accurate screenshot/photo/messaging/media detection  
+- **New UI polish** and better Windows 11 styling  
+- **Bug fixes & better stability**
+
+---
+
+## Features
 
 ### Core Sorting
-- Sorts files into clean category folders such as Documents, Images, Videos, Audio, Archives, Code, and Other.
-- Custom folder names for simple sorting (e.g., rename “Documents” → “School Work”).
-- Preview mode shows exactly what will happen before organising.
-- Undo restores every moved file to its original location.
-- Safe Mode can make copies instead of moving files.
+- Sorts files into structured folders such as **Documents, Images, Videos, Audio, Archives, Code**, and **Other**.  
+- Fully **customisable** category names and extensions.  
+- **Preview mode** shows exactly what will be moved before organising.  
+- **Undo** restores every moved file to its original location.  
+- **Safe Mode** makes copies instead of moving files.
 
 ### Smart Sorting
-- Detects screenshots, camera photos, messaging media, invoices, assignments, backups, edited videos, game assets, and more.
-- Smart Sorting uses intelligent, predefined categories.
-- Simple Sorting uses user-defined custom folder names.
+Automatically detects:
+- Screenshots  
+- Camera roll photos  
+- Messaging media (WhatsApp, Telegram, Signal, etc.)  
+- Invoices & finance documents  
+- Assignments and school work  
+- Backups & duplicate versions  
+- Edited videos  
+- Game assets & project files  
+- Large archives  
+Smart Sorting uses intelligent rules — no configuration needed.
 
-### Auto-Tidy (Real-Time Monitoring)
-- Automatically sorts new files that appear in the selected folder.
-- Handles partially downloaded files safely.
-- Respects ignore lists and age filters.
+### Real-Time Auto-Tidy
+- Automatically organises new files placed in watched folders.  
+- Now supports **multiple watched folders**.  
+- Skips partial downloads until fully written.  
+- Respects ignore lists, hidden files, and age filters.
 
-### Additional Utilities
-- Duplicate Finder using fast hashing.
-- Age filter to only move files older than a chosen number of days.
-- Ignore list for file types you want excluded.
-- One-click “Clean Desktop” mode.
-- System tray mode for background operation.
+### Additional Tools
+- **Duplicate Finder** using fast hashing.  
+- **Age Filter** — only move files older than X days.  
+- **Ignore List** for extensions you want excluded.  
+- **One-click “Clean Desktop”** button.  
+- Optional **system tray mode** for background operation.
 
 ---
 
 ## Example Folder Structure
-
-
 Desktop
+
 ├─ Documents
 
 ├─ Images
@@ -51,6 +75,8 @@ Desktop
 
 ├─ Archives
 
+├─ Code
+
 └─ Other
 
 
@@ -58,50 +84,54 @@ Desktop
 
 ## Screenshots
 
-**Before:**  
-![Before](screenshots/Before.png)
+### Main Window  
+![Main Window](screenshots/1.3.0_main.png)
 
-**Preview:**  
-![Preview](screenshots/Preview_1.2.0.png)
+### Category Manager  
+![Category customisation](screenshots/Manage_categories.png)
 
-**After:**  
-![Finished](screenshots/After.png)
+### Watch Folders  
+![Watch Folders](screenshots/Watch_folders.png)
 
 ---
 
 ## Requirements
-
-- Windows  
+- Windows 10/11  
 - Python 3.10+  
 - pip  
 
+*(If using the installer, Python is not required.)*
+
 ---
 
-## Create a build
-1) update the version number in the .iss file
-2) run build.ps1 with powershell
-3) run the .iss file
+## Building From Source
 
+1. Update the version number in `installer/FolderFresh.iss`  
+2. Run `build.ps1` in PowerShell  
+3. Open the updated `.iss` file and build the installer  
+
+---
 
 ## Safety Notes
 
-FolderFresh never deletes files.
+FolderFresh is designed to be safe:
+- **Never deletes files**  
+- **Undo** restores all moved files  
+- **Safe Mode** copies instead of moving  
+- Cloud folders (OneDrive, Google Drive, etc.) may show sync activity, but files remain local  
+- Auto-Tidy only processes **fully written** files  
 
-Undo restores all files moved by the last organise action.
+---
 
-Safe Mode creates copies instead of moving files.
+## Contributions
 
-OneDrive and cloud folders may show sync messages when files move; files remain stored locally.
+Pull requests, feedback, and suggestions are welcome.  
+FolderFresh is an open project created to help users stay organised with minimal effort.
 
-Auto-tidy will only process stable, fully written files.
-
-## **Build Status / Contributions**
-
-Pull requests, issues, and suggestions are welcome.
-This is an open project intended to help everyday users keep their machines organised.
+---
 
 ## AI Assistance Disclosure
 
-Portions of the UI and backend architecture were refined using AI-assisted development tools.
-All logic has been reviewed, tested, and verified manually.
-No proprietary third-party code is used.
+Some UI and backend improvements were refined using AI-assisted development tools.  
+All logic has been manually reviewed, tested, and validated.  
+No proprietary or third-party code is used.

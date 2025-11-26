@@ -10,6 +10,7 @@ from .utils import file_is_old_enough, is_hidden_win
 from .sorting import pick_smart_category, plan_moves
 from .constants import DEFAULT_CATEGORIES
 from .naming import resolve_category
+from .sorting import pick_smart_category, plan_moves, pick_category
 
 
 # =====================================================================
@@ -27,7 +28,18 @@ class AutoTidyHandler(FileSystemEventHandler):
     def should_ignore(self, p: Path) -> bool:
         root = self.root
         overrides = self.app.config_data.get("custom_category_names", {})
-        allowed_cats = set(DEFAULT_CATEGORIES) | set(overrides.values())
+        enabled_map = self.app.config_data.get("category_enabled", {})
+        custom = self.app.config_data.get("custom_categories", {})
+        overrides = self.app.config_data.get("custom_category_names", {})
+
+        # Default categories that are enabled
+        allowed_cats = {c for c in DEFAULT_CATEGORIES if enabled_map.get(c, True)}
+
+        # Custom categories that are enabled
+        allowed_cats |= {c for c in custom if enabled_map.get(c, True)}
+
+        # Renamed categories need to be allowed by name
+        allowed_cats |= set(overrides.values())
 
         # Ignore category folders
         try:
@@ -106,7 +118,7 @@ class AutoTidyHandler(FileSystemEventHandler):
 
         # SMART SORTING
         if self.app.smart_mode.get():
-            smart_folder = pick_smart_category(p)
+            smart_folder = pick_smart_category(p, cfg=self.app.config_data)
             if smart_folder:
                 smart_folder = resolve_category(smart_folder, self.app.config_data)
                 dest_dir = root / smart_folder
@@ -121,27 +133,28 @@ class AutoTidyHandler(FileSystemEventHandler):
                     self.app.after(0, lambda e=e: self.app.set_status(f"Auto-tidy error: {e}"))
                 return
 
-        # STANDARD SORTING
-        move_plan = plan_moves([p], root)
-        if not move_plan:
-            return
+        # STANDARD SORTING with config support
+        from .sorting import pick_category  # ensure imported
 
-        m = move_plan[0]
-        dst_path = Path(m["dst"])
-        default_cat = dst_path.parent.name
+        folder_name = pick_category(
+            p.suffix,
+            src_path=p,
+            cfg=self.app.config_data
+        )
 
-        new_cat = resolve_category(default_cat, self.app.config_data)
-        new_dst = root / new_cat / dst_path.name
-        m["dst"] = str(new_dst)
+        folder_name = resolve_category(folder_name, self.app.config_data)
+
+        new_dst = root / folder_name / p.name
 
         try:
-            Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
+            new_dst.parent.mkdir(parents=True, exist_ok=True)
             if self.app.safe_mode.get():
-                shutil.copy2(m["src"], m["dst"])
+                shutil.copy2(p, new_dst)
             else:
-                shutil.move(m["src"], m["dst"])
+                shutil.move(str(p), new_dst)
         except Exception as e:
             self.app.after(0, lambda e=e: self.app.set_status(f"Auto-tidy error: {e}"))
+
 
     # ---------------------------------------------------
     # Event handling — uses delay
