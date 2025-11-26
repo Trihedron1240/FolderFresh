@@ -14,8 +14,9 @@ from tkinter import filedialog, messagebox
 
 from .config import load_config, save_config
 from .constants import APP_TITLE, LOG_FILENAME, APP_VERSION
+from .watcher_manager import WatcherManager
+
 from . import actions
-from . import watcher
 from . import tray
 
 # Optional local file path (uploaded earlier) — can be used for tray/icon if you replace with a real .ico/.png
@@ -74,6 +75,8 @@ class FolderFreshApp(ctk.CTk):
 
         # load config
         self.config_data = load_config()
+        # Multi-folder watcher manager
+        self.watcher_manager = WatcherManager(self)
 
         # appearance
         ctk.set_appearance_mode("Dark")
@@ -288,6 +291,21 @@ class FolderFreshApp(ctk.CTk):
 
         edit_names_row = ctk.CTkFrame(adv_inner, fg_color=CARD_BG)
         edit_names_row.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 6))
+        # Manage Watched Folders button
+        manage_row = ctk.CTkFrame(adv_inner, fg_color=CARD_BG)
+        manage_row.grid(row=3, column=0, columnspan=2, sticky="e", pady=(6, 6))
+
+        self.manage_wf_btn = ctk.CTkButton(
+            manage_row,
+            text="Manage Watched Folders…",
+            width=220,
+            corner_radius=8,
+            fg_color="#374151",
+            hover_color="#2b3740",
+            command=self.open_watched_folders_window
+        )
+        self.manage_wf_btn.pack(side="right", padx=6)
+
 
         self.edit_names_btn = ctk.CTkButton(
             edit_names_row,
@@ -300,6 +318,7 @@ class FolderFreshApp(ctk.CTk):
         )
         self.edit_names_btn.pack(anchor="w", padx=(4, 0))
         # tray mode (in advanced)
+
         toggles = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
         toggles.pack(fill="x", padx=8, pady=(6, 8))
 
@@ -407,10 +426,75 @@ class FolderFreshApp(ctk.CTk):
             self.path_entry.configure(state="disabled")
             for b in (self.preview_btn, self.organise_btn, self.dupe_btn):
                 b.configure(state="normal")
+        # Start multi-folder watchers at launch
+        for folder in self.config_data.get("watched_folders", []):
+            if Path(folder).exists():
+                self.watcher_manager.watch_folder(folder)
+    def open_watched_folders_window(self):
+        win = ctk.CTkToplevel(self)
+        win.title("Watched Folders")
+        win.geometry("500x400")
+        win.grab_set()
 
-        # start watcher if needed
-        if self.watch_mode.get() and self.selected_folder:
-            watcher.start_watching(self)
+        title = ctk.CTkLabel(win, text="Watched Folders", font=("Segoe UI Variable", 16, "bold"))
+        title.pack(pady=10)
+
+        list_frame = ctk.CTkScrollableFrame(
+            win, width=460, height=260, corner_radius=10, fg_color="#0b1220"
+        )
+        list_frame.pack(fill="both", expand=True, padx=12, pady=(4, 12))
+
+        def refresh_list():
+            for child in list_frame.winfo_children():
+                child.destroy()
+
+            folders = self.config_data.get("watched_folders", [])
+            for folder in folders:
+                row = ctk.CTkFrame(list_frame, fg_color="#0b1220")
+                row.pack(fill="x", pady=2)
+
+                ctk.CTkLabel(row, text=folder, text_color="#ffffff").pack(side="left", padx=6)
+
+                status = "🟢 Watching" if self.watch_mode.get() else "⚪ Disabled"
+                ctk.CTkLabel(row, text=status, text_color="#16a34a").pack(side="right", padx=6)
+
+        refresh_list()
+
+        # --- Buttons row ---
+        btn_row = ctk.CTkFrame(win, fg_color="transparent")
+        btn_row.pack(fill="x", pady=6)
+
+        def add_folder():
+            folder = filedialog.askdirectory()
+            if not folder:
+                return
+            folder = str(Path(folder))
+            if folder not in self.config_data["watched_folders"]:
+                self.config_data["watched_folders"].append(folder)
+                save_config(self.config_data)
+                if self.watch_mode.get():
+                    self.watcher_manager.watch_folder(folder)
+                refresh_list()
+
+        def remove_folder():
+            folder = filedialog.askdirectory(title="Select folder to remove")
+            if not folder:
+                return
+            folder = str(Path(folder))
+            if folder in self.config_data["watched_folders"]:
+                self.config_data["watched_folders"].remove(folder)
+                save_config(self.config_data)
+                self.watcher_manager.unwatch_folder(folder)
+                refresh_list()
+
+        ctk.CTkButton(btn_row, text="Add Folder", fg_color="#2563eb", hover_color="#1e4fd8",
+                    corner_radius=8, command=add_folder).pack(side="left", padx=6)
+
+        ctk.CTkButton(btn_row, text="Remove Folder", fg_color="#374151", hover_color="#2b3740",
+                    corner_radius=8, command=remove_folder).pack(side="left", padx=6)
+
+        ctk.CTkButton(btn_row, text="Close", fg_color="#475569", hover_color="#334155",
+                    corner_radius=8, command=win.destroy).pack(side="right", padx=6)
 
     # UI helpers
     def set_status(self, msg: str):
@@ -530,10 +614,7 @@ class FolderFreshApp(ctk.CTk):
         self.set_status("Folder ready")
         for b in (self.preview_btn, self.organise_btn, self.dupe_btn):
             b.configure(state="normal")
-        watcher.stop_watching(self)
-        if self.watch_mode.get():
-            time.sleep(0.1)
-            watcher.start_watching(self)
+
 
     # actions (delegate to actions.py)
     def remember_options(self):
@@ -667,25 +748,23 @@ class FolderFreshApp(ctk.CTk):
         self.set_preview("Desktop selected. Click ‘Preview’ then ‘Organise Files’.")
         self.enable_buttons()
         self.set_status("Desktop ready")
-        if self.watch_mode.get():
-            watcher.stop_watching(self)
-            watcher.start_watching(self)
 
-    # watcher & tray wrappers
     def on_toggle_watch(self):
-        self.remember_options()
-        self.config_data["watch_mode"] = bool(self.watch_mode.get())
+        enabled = bool(self.watch_mode.get())
+        self.config_data["watch_mode"] = enabled
         save_config(self.config_data)
-        if self.watch_mode.get():
-            watcher.start_watching(self)
+
+        if enabled:
+            # Start watching all folders
+            for folder in self.config_data.get("watched_folders", []):
+                if Path(folder).exists():
+                    self.watcher_manager.watch_folder(folder)
+            self.set_status("Auto-tidy enabled")
         else:
-            watcher.stop_watching(self)
+            # Stop ALL watchers
+            self.watcher_manager.stop_all()
+            self.set_status("Auto-tidy paused")
 
-    def start_watching(self):
-        watcher.start_watching(self)
-
-    def stop_watching(self):
-        watcher.stop_watching(self)
 
     def on_toggle_tray(self):
         tray.toggle_tray(self)
@@ -791,9 +870,10 @@ class FolderFreshApp(ctk.CTk):
             pass
 
         try:
-            watcher.stop_watching(self)
+            self.watcher_manager.stop_all()
         except Exception:
             pass
+
 
         self.destroy()
 

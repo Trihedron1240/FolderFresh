@@ -1,37 +1,35 @@
 # watcher.py
 import time
 import shutil
+import threading
 from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 from .utils import file_is_old_enough, is_hidden_win
-from .sorting import pick_smart_category
-from .sorting import plan_moves
+from .sorting import pick_smart_category, plan_moves
 from .constants import DEFAULT_CATEGORIES
 from .naming import resolve_category
-# ========== INTERNAL HANDLER CLASS ===========================================
 
+
+# =====================================================================
+# AutoTidyHandler — handler for a **single watched folder**
+# =====================================================================
 class AutoTidyHandler(FileSystemEventHandler):
-    """
-    This class mirrors the inner Handler class inside FolderFreshApp,
-    but extracted into a standalone module.
-    """
-
-    def __init__(self, app):
+    def __init__(self, app, root_folder):
         super().__init__()
         self.app = app
-        
-    # -------------------------------------------------------------
-    # Should ignore file?
-    # -------------------------------------------------------------
-    def should_ignore(self, p: Path, root: Path) -> bool:
+        self.root = Path(root_folder)
 
-        # Build combined category set: default + custom
+    # ---------------------------------------------------
+    # Ignore logic
+    # ---------------------------------------------------
+    def should_ignore(self, p: Path) -> bool:
+        root = self.root
         overrides = self.app.config_data.get("custom_category_names", {})
         allowed_cats = set(DEFAULT_CATEGORIES) | set(overrides.values())
 
-        # Ignore if inside category folder
+        # Ignore category folders
         try:
             rel = p.relative_to(root)
             first = rel.parts[0] if rel.parts else ""
@@ -40,18 +38,18 @@ class AutoTidyHandler(FileSystemEventHandler):
         except Exception:
             pass
 
-        # User ignored extensions
+        # Ignore extensions
         ignore_raw = self.app.config_data.get("ignore_exts", "")
         ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
         if p.suffix.lower() in ignore_set:
             return True
 
-        # Skip partial downloads
+        # Partial downloads
         PARTIALS = {".crdownload", ".part", ".partial", ".download", ".opdownload"}
         if p.suffix.lower() in PARTIALS:
             return True
 
-        # Skip hidden/system
+        # Hidden/system
         try:
             rel = p.relative_to(root)
             if self.app.skip_hidden.get() and (
@@ -63,10 +61,9 @@ class AutoTidyHandler(FileSystemEventHandler):
 
         return False
 
-
-    # -------------------------------------------------------------
-    # Wait until file stops being written
-    # -------------------------------------------------------------
+    # ---------------------------------------------------
+    # Ensure file is done writing
+    # ---------------------------------------------------
     def wait_until_stable(self, p: Path, attempts=4, delay=0.25) -> bool:
         for _ in range(attempts):
             try:
@@ -79,25 +76,31 @@ class AutoTidyHandler(FileSystemEventHandler):
                 pass
         return False
 
-    # -------------------------------------------------------------
-    # Main file handling
-    # -------------------------------------------------------------
-    def handle_file(self, p: Path, root: Path):
+    # ---------------------------------------------------
+    # Main move logic
+    # ---------------------------------------------------
+    def handle_file(self, p: Path):
+        root = self.root
+        
         if not p.exists() or not p.is_file():
             return
-
-        if self.should_ignore(p, root):
+        # If the file was edited/renamed in the last second, ignore it
+        try:
+            if time.time() - p.stat().st_mtime < 1.0:
+                return
+        except:
+            return
+        if self.should_ignore(p):
             return
 
         if not self.wait_until_stable(p):
             return
 
-        # AGE FILTER
+        # Age filter
         try:
             min_days = int(self.app.age_filter_entry.get() or 0)
         except:
             min_days = 0
-
         if min_days > 0 and not file_is_old_enough(p, min_days):
             return
 
@@ -105,12 +108,9 @@ class AutoTidyHandler(FileSystemEventHandler):
         if self.app.smart_mode.get():
             smart_folder = pick_smart_category(p)
             if smart_folder:
-                # APPLY USER-DEFINED CATEGORY NAME
                 smart_folder = resolve_category(smart_folder, self.app.config_data)
-
                 dest_dir = root / smart_folder
                 dest_dir.mkdir(parents=True, exist_ok=True)
-
                 dst = dest_dir / p.name
                 try:
                     if self.app.safe_mode.get():
@@ -127,16 +127,13 @@ class AutoTidyHandler(FileSystemEventHandler):
             return
 
         m = move_plan[0]
-        # Extract default category name
         dst_path = Path(m["dst"])
         default_cat = dst_path.parent.name
 
-        # APPLY USER-DEFINED CATEGORY NAME
         new_cat = resolve_category(default_cat, self.app.config_data)
-
-        # Rebuild dst with new category
         new_dst = root / new_cat / dst_path.name
         m["dst"] = str(new_dst)
+
         try:
             Path(m["dst"]).parent.mkdir(parents=True, exist_ok=True)
             if self.app.safe_mode.get():
@@ -146,68 +143,25 @@ class AutoTidyHandler(FileSystemEventHandler):
         except Exception as e:
             self.app.after(0, lambda e=e: self.app.set_status(f"Auto-tidy error: {e}"))
 
-    # -------------------------------------------------------------
-    # Watchdog Events
-    # -------------------------------------------------------------
+    # ---------------------------------------------------
+    # Event handling — uses delay
+    # ---------------------------------------------------
+    def delayed_handle(self, path):
+        time.sleep(0.6)   # grace period
+        self.handle_file(Path(path))
+
     def on_created(self, event):
         if event.is_directory:
             return
-        root = self.app.selected_folder
-        if root:
-            self.handle_file(Path(event.src_path), root)
+        threading.Thread(
+            target=lambda: self.delayed_handle(event.src_path),
+            daemon=True,
+        ).start()
 
     def on_moved(self, event):
         if event.is_directory:
             return
-        root = self.app.selected_folder
-        if root:
-            self.handle_file(Path(event.dest_path), root)
-
-
-
-# ========== PUBLIC API FUNCTIONS =============================================
-
-def start_watching(app):
-    """
-    Starts folder watching for auto-tidy.
-    Mirrors FolderFreshApp.start_watching logic.
-    """
-    if not app.selected_folder:
-        return
-
-    # Create observer only once
-    if app.observer:
-        return
-
-    app.observer = Observer()
-    handler = AutoTidyHandler(app)
-
-    try:
-        app.observer.schedule(
-            handler,
-            str(app.selected_folder),
-            recursive=app.include_sub.get()
-        )
-        app.observer.start()
-        app.set_status("Auto-tidy watching…")
-    except Exception as e:
-        app.observer = None
-        app.watch_mode.deselect()
-        from tkinter import messagebox
-        messagebox.showerror("Auto-tidy", f"Could not start watcher: {e}")
-
-
-def stop_watching(app):
-    """
-    Stops folder watching.
-    Mirrors FolderFreshApp.stop_watching logic.
-    """
-    if app.observer:
-        try:
-            app.observer.stop()
-            app.observer.join(timeout=2)
-        except Exception:
-            pass
-
-        app.observer = None
-        app.set_status("Auto-tidy stopped")
+        threading.Thread(
+            target=lambda: self.delayed_handle(event.dest_path),
+            daemon=True,
+        ).start()

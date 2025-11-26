@@ -5,23 +5,39 @@ def load_config() -> dict:
     try:
         p = Path.home() / CONFIG_FILENAME
         if p.exists():
-            return json.load(open(p, "r", encoding="utf-8"))
+            cfg = json.load(open(p, "r", encoding="utf-8"))
+        else:
+            raise FileNotFoundError
     except Exception:
-        pass
-    return {
-    "first_run": True,
-    "appearance": "system",
-    "tray_mode": False,
-    "last_folder": None,
-    "include_sub": True,
-    "skip_hidden": True,
-    "safe_mode": True,
-    "watch_mode": False,
-    "age_filter_days": 0,
-    "ignore_exts": "",
-    "smart_mode": False,
-    "custom_category_names": {},
-    }
+        # Fall back to defaults
+        cfg = {
+            "watched_folders": [],
+            "first_run": True,
+            "appearance": "system",
+            "tray_mode": False,
+            "last_folder": None,
+            "include_sub": True,
+            "skip_hidden": True,
+            "safe_mode": True,
+            "watch_mode": False,
+            "age_filter_days": 0,
+            "ignore_exts": "",
+            "smart_mode": False,
+            "custom_category_names": {},
+        }
+
+    # --- Migration for 1.3.0 ---
+    if "watched_folders" not in cfg:
+        old = cfg.get("auto_tidy_folder")
+        if old:
+            cfg["watched_folders"] = [old]
+        else:
+            cfg["watched_folders"] = []
+
+    return cfg
+
+
+
 
 def save_config(cfg: dict) -> None:
     try:
