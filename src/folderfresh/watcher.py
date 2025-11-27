@@ -6,7 +6,7 @@ from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-from .utils import file_is_old_enough, is_hidden_win
+from .utils import file_is_old_enough, is_hidden_win, is_onedrive_placeholder
 from .sorting import pick_smart_category, plan_moves
 from .constants import DEFAULT_CATEGORIES
 from .naming import resolve_category
@@ -31,6 +31,9 @@ class AutoTidyHandler(FileSystemEventHandler):
         enabled_map = self.app.config_data.get("category_enabled", {})
         custom = self.app.config_data.get("custom_categories", {})
         overrides = self.app.config_data.get("custom_category_names", {})
+        # Skip OneDrive cloud-only placeholders
+        if is_onedrive_placeholder(p):
+            return True
 
         # Default categories that are enabled
         allowed_cats = {c for c in DEFAULT_CATEGORIES if enabled_map.get(c, True)}

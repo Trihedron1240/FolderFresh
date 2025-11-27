@@ -14,9 +14,11 @@ from tkinter import filedialog, messagebox
 from .config import load_config, save_config
 from .constants import APP_TITLE, LOG_FILENAME, APP_VERSION
 from .watcher_manager import WatcherManager
-
+from datetime import datetime
 from . import actions
 from . import tray
+from .profile_store import ProfileStore
+from .profile_manager import ProfileManagerWindow
 
 # Optional local file path (uploaded earlier) — can be used for tray/icon if you replace with a real .ico/.png
 ICON_PATH = "/mnt/data/FolderFresh.py"
@@ -73,7 +75,18 @@ class FolderFreshApp(ctk.CTk):
         super().__init__()
 
         # load config
-        self.config_data = load_config()
+        from .profile_store import ProfileStore
+        global_cfg = load_config()
+        store = ProfileStore()
+        store.ensure_profiles()            # create/migrate if needed
+        profiles_doc = store.load()
+        active_profile = store.get_active_profile(profiles_doc)
+        self.config_data = store.merge_profile_into_config(active_profile, global_cfg)
+        # keep a reference to the store for later saves
+        self.profile_store = store
+        self.profiles_doc = profiles_doc
+        self.active_profile = active_profile
+
         # Multi-folder watcher manager
         self.watcher_manager = WatcherManager(self)
 
@@ -174,7 +187,7 @@ class FolderFreshApp(ctk.CTk):
             self.safe_mode.deselect()
 
         # Smart Sorting + Auto-tidy in basic row (Option C)
-        self.smart_mode = ctk.CTkCheckBox(opts, text="Smart Sorting (experimental)", command=self.remember_options)
+        self.smart_mode = ctk.CTkCheckBox(opts, text="Smart Sorting", command=self.remember_options)
         Tooltip(self.smart_mode, "Uses advanced rules to detect screenshots, assignments,\nphotos, invoices, messaging media and more.")
         self.smart_mode.grid(row=0, column=3, sticky="w", padx=(0, 16))
         if self.config_data.get("smart_mode", False):
@@ -266,36 +279,23 @@ class FolderFreshApp(ctk.CTk):
 
         # advanced inner layout
         adv_inner = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
-        adv_inner.pack(fill="x", padx=8, pady=8)
+        adv_inner.pack(fill="x", padx=12, pady=12)
 
-        # age filter + ignore types + custom category names
-        age_label = ctk.CTkLabel(adv_inner, text="Only move files older than (days):")
-        age_label.grid(row=0, column=0, sticky="w", padx=(4, 8), pady=(4, 6))
-        self.age_filter_entry = ctk.CTkEntry(
-            adv_inner, width=100, corner_radius=8, fg_color="#071018", border_width=1, border_color=BORDER, text_color=TEXT
+        # ---- Manage Profiles ----
+        self.manage_profiles_btn = ctk.CTkButton(
+            adv_inner,
+            text="Manage Profiles",
+            width=220,
+            corner_radius=8,
+            fg_color="#374151",
+            hover_color="#2b3740",
+            command=self.open_profile_manager
         )
-        self.age_filter_entry.grid(row=0, column=1, sticky="w", padx=(0, 16), pady=(4, 6))
-        self.age_filter_entry.delete(0, "end")
-        self.age_filter_entry.insert(0, str(self.config_data.get("age_filter_days", 0)))
+        self.manage_profiles_btn.grid(row=0, column=0, sticky="w", pady=(0, 8))
 
-        ignore_label = ctk.CTkLabel(adv_inner, text="Ignore types (e.g. .exe;.tmp):")
-        ignore_label.grid(row=1, column=0, sticky="w", padx=(4, 8), pady=(0, 6))
-        self.ignore_entry = ctk.CTkEntry(
-            adv_inner, width=420, corner_radius=8, fg_color="#071018", border_width=1, border_color=BORDER, text_color=TEXT
-        )
-        self.ignore_entry.grid(row=1, column=1, sticky="w", padx=(0, 16), pady=(0, 6))
-        self.ignore_entry.delete(0, "end")
-        self.ignore_entry.insert(0, self.config_data.get("ignore_exts", ""))
-        self.ignore_entry.bind("<KeyRelease>", lambda e: self.remember_options())
-
-        edit_names_row = ctk.CTkFrame(adv_inner, fg_color=CARD_BG)
-        edit_names_row.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6, 6))
-        # Manage Watched Folders button
-        manage_row = ctk.CTkFrame(adv_inner, fg_color=CARD_BG)
-        manage_row.grid(row=3, column=0, columnspan=2, sticky="e", pady=(6, 6))
-
+        # ---- Manage Watched Folders ----
         self.manage_wf_btn = ctk.CTkButton(
-            manage_row,
+            adv_inner,
             text="Manage Watched Folders…",
             width=220,
             corner_radius=8,
@@ -303,38 +303,27 @@ class FolderFreshApp(ctk.CTk):
             hover_color="#2b3740",
             command=self.open_watched_folders_window
         )
-        self.manage_wf_btn.pack(side="right", padx=6)
+        self.manage_wf_btn.grid(row=1, column=0, sticky="w", pady=(0, 12))
 
-        # tray mode (in advanced)
-        self.manage_categories_btn = ctk.CTkButton(
-            edit_names_row,
-            text="Manage Categories",
-            width=180,
-            corner_radius=8,
-            fg_color="#374151",
-            hover_color="#2b3740",
-            command=self.open_category_manager
-        )
-        self.manage_categories_btn.pack(anchor="w", padx=(4, 0))
-
-        toggles = ctk.CTkFrame(self.advanced_frame, fg_color=CARD_BG)
-        toggles.pack(fill="x", padx=8, pady=(6, 8))
-
-        self.tray_mode = ctk.CTkCheckBox(toggles, text="Run in background (tray)", command=self.on_toggle_tray)
-        self.tray_mode.pack(side="left", padx=(6, 12))
-        if self.config_data.get("tray_mode", False):
-            self.tray_mode.select()
-        else:
-            self.tray_mode.deselect()
-
+        # ---- Startup checkbox ----
         self.startup_checkbox = ctk.CTkCheckBox(
             adv_inner,
             text="Run FolderFresh at Windows startup",
             command=self.toggle_startup
         )
-        self.startup_checkbox.grid(row=3, column=0, columnspan=2, sticky="w", padx=4, pady=(6, 6))
+        self.startup_checkbox.grid(row=2, column=0, sticky="w", pady=(0, 6))
         if self.config_data.get("startup", False):
             self.startup_checkbox.select()
+
+        # ---- Tray mode ----
+        self.tray_mode = ctk.CTkCheckBox(
+            adv_inner,
+            text="Run in background (tray)",
+            command=self.on_toggle_tray
+        )
+        self.tray_mode.grid(row=3, column=0, sticky="w", pady=(0, 0))
+        if self.config_data.get("tray_mode", False):
+            self.tray_mode.select()
 
         # help button (small circular icon button) - style B
         help_frame = ctk.CTkFrame(main_card, fg_color=CARD_BG)
@@ -444,253 +433,8 @@ class FolderFreshApp(ctk.CTk):
         for folder in self.config_data.get("watched_folders", []):
             if Path(folder).exists():
                 self.watcher_manager.watch_folder(folder)
-    def open_category_manager(self):
-        win = ctk.CTkToplevel(self)
-        win.title("Manage Categories")
-        win.geometry("750x700")
-        win.grab_set()
 
-        ctk.CTkLabel(
-            win,
-            text="Category Manager",
-            font=("Segoe UI Variable", 20, "bold")
-        ).pack(pady=12)
 
-        frame = ctk.CTkScrollableFrame(win, width=560, height=520)
-        frame.pack(padx=10, pady=10, fill="both", expand=True)
-
-        from .constants import CATEGORIES
-
-        defaults = list(CATEGORIES.keys())
-        overrides = self.config_data.get("custom_category_names", {})
-        enabled_map = self.config_data.get("category_enabled", {})
-        custom_ext_map = self.config_data.get("custom_categories", {})
-
-        # ==============================================================
-        #  RENDER FUNCTION (rebuilds entire content when changes happen)
-        # ==============================================================
-        def refresh():
-            for w in frame.winfo_children():
-                w.destroy()
-
-            # -----------------------------------------
-            # DEFAULT CATEGORIES
-            # -----------------------------------------
-            ctk.CTkLabel(
-                frame,
-                text="Default Categories",
-                font=("Segoe UI Variable", 16, "bold")
-            ).pack(anchor="w", pady=(4, 6), padx=6)
-
-            for cat in defaults:
-                row = ctk.CTkFrame(frame)
-                row.pack(fill="x", pady=4, padx=6)
-
-                # Enabled checkbox
-                var = ctk.BooleanVar(value=enabled_map.get(cat, True))
-                chk = ctk.CTkCheckBox(
-                    row,
-                    text="Enabled",
-                    variable=var,
-                    command=lambda c=cat, v=var: self.set_category_enabled(c, v.get())
-                )
-                chk.pack(side="left", padx=(0, 8))
-
-                # Label showing default category name
-                ctk.CTkLabel(row, text=cat, width=100).pack(side="left")
-
-                # Rename field with placeholder
-                rename_entry = ctk.CTkEntry(
-                    row,
-                    width=150,
-                    placeholder_text="New name"
-                )
-                rename_entry.pack(side="left", padx=(6, 6))
-                if cat in overrides:
-                    rename_entry.insert(0, overrides[cat])
-
-                # Extensions field with placeholder
-                default_exts = CATEGORIES[cat]
-                current_exts = custom_ext_map.get(cat, default_exts)
-
-                ext_entry = ctk.CTkEntry(
-                    row,
-                    width=200,
-                    placeholder_text=".ext1;.ext2"
-                )
-                ext_entry.pack(side="left", padx=(6, 6))
-                ext_entry.insert(0, ";".join(current_exts))
-
-                # SAVE BUTTON (default)
-                def save_default(c=cat, r=rename_entry, e=ext_entry):
-                    # Save rename
-                    name = r.get().strip()
-                    if name:
-                        overrides[c] = name
-                    else:
-                        overrides.pop(c, None)
-
-                    # Save extension override
-                    raw = e.get().strip()
-                    exts = [x.strip().lower() for x in raw.split(";") if x.strip()]
-                    self.config_data["custom_categories"][c] = exts
-
-                    self.config_data["custom_category_names"] = overrides
-                    save_config(self.config_data)
-                    refresh()
-
-                ctk.CTkButton(row, text="Save", width=60,
-                            command=save_default).pack(side="left", padx=6)
-
-            # -----------------------------------------
-            # CUSTOM CATEGORIES
-            # -----------------------------------------
-            ctk.CTkLabel(
-                frame,
-                text="Custom Categories",
-                font=("Segoe UI Variable", 16, "bold")
-            ).pack(anchor="w", pady=(12, 6), padx=6)
-
-            for cat, exts in list(custom_ext_map.items()):
-                if cat in defaults:
-                    # Handled above
-                    continue
-
-                row = ctk.CTkFrame(frame)
-                row.pack(fill="x", pady=4, padx=6)
-
-                # Enabled toggle
-                var = ctk.BooleanVar(value=enabled_map.get(cat, True))
-                chk = ctk.CTkCheckBox(
-                    row,
-                    text="Enabled",
-                    variable=var,
-                    command=lambda c=cat, v=var: self.set_category_enabled(c, v.get())
-                )
-                chk.pack(side="left", padx=(0, 8))
-
-                # Editable name
-                name_entry = ctk.CTkEntry(
-                    row,
-                    width=140,
-                    placeholder_text="Category name"
-                )
-                name_entry.pack(side="left", padx=6)
-                name_entry.insert(0, cat)
-
-                # Editable extensions
-                ext_entry = ctk.CTkEntry(
-                    row,
-                    width=200,
-                    placeholder_text=".ext1;.ext2"
-                )
-                ext_entry.pack(side="left", padx=6)
-                ext_entry.insert(0, ";".join(exts))
-
-                # SAVE custom category
-                def save_custom(old_name=cat, n=name_entry, e=ext_entry):
-                    new_name = n.get().strip()
-                    raw = e.get().strip()
-                    new_exts = [x.strip().lower() for x in raw.split(";") if x.strip()]
-
-                    # Rename
-                    if new_name != old_name:
-                        # Move extension rule
-                        self.config_data["custom_categories"].pop(old_name, None)
-                        self.config_data["custom_categories"][new_name] = new_exts
-
-                        # Preserve enabled status
-                        en = enabled_map.pop(old_name, True)
-                        enabled_map[new_name] = en
-                    else:
-                        self.config_data["custom_categories"][old_name] = new_exts
-
-                    save_config(self.config_data)
-                    refresh()
-
-                ctk.CTkButton(row, text="Save", width=60,
-                            command=save_custom).pack(side="left", padx=4)
-
-                # DELETE custom category
-                def delete_custom(x=cat):
-                    self.config_data["custom_categories"].pop(x, None)
-                    enabled_map.pop(x, None)
-                    save_config(self.config_data)
-                    refresh()
-
-                ctk.CTkButton(
-                    row, text="✕", width=35,
-                    fg_color="#8b0000", hover_color="#b30000",
-                    command=delete_custom
-                ).pack(side="left", padx=4)
-
-            # -----------------------------------------
-            # ADD NEW CATEGORY
-            # -----------------------------------------
-            ctk.CTkLabel(
-                frame,
-                text="Add New Category",
-                font=("Segoe UI Variable", 16, "bold")
-            ).pack(anchor="w", pady=(12, 4), padx=6)
-
-            add_row = ctk.CTkFrame(frame)
-            add_row.pack(fill="x", padx=6, pady=4)
-
-            new_name = ctk.CTkEntry(
-                add_row,
-                width=150,
-                placeholder_text="Category name"
-            )
-            new_name.pack(side="left", padx=6)
-
-            new_exts = ctk.CTkEntry(
-                add_row,
-                width=200,
-                placeholder_text=".ext1;.ext2"
-            )
-            new_exts.pack(side="left", padx=6)
-
-            def add_custom():
-                name = new_name.get().strip()
-                raw = new_exts.get().strip()
-                if not name:
-                    return
-                exts = [x.strip().lower() for x in raw.split(";") if x.strip()]
-
-                self.config_data["custom_categories"][name] = exts
-                enabled_map[name] = True
-                save_config(self.config_data)
-                refresh()
-
-            ctk.CTkButton(
-                add_row, text="Add", width=70,
-                fg_color="#2563eb", hover_color="#1e4fd8",
-                command=add_custom
-            ).pack(side="left", padx=4)
-
-        # initial render
-        refresh()
-
-        # -----------------------------------------
-        # RESET CATEGORIES BUTTON
-        # -----------------------------------------
-        def reset_categories():
-            self.config_data["custom_categories"] = {}
-            self.config_data["custom_category_names"] = {}
-            self.config_data["category_enabled"] = {}
-            save_config(self.config_data)
-            win.destroy()
-            self.open_category_manager()
-
-        ctk.CTkButton(
-            win,
-            text="Restore Default Categories",
-            width=260,
-            fg_color="#ef4444",
-            hover_color="#c72f2f",
-            corner_radius=8,
-            command=reset_categories
-        ).pack(pady=12)
 
 
 
@@ -762,10 +506,97 @@ class FolderFreshApp(ctk.CTk):
                     corner_radius=8, command=win.destroy).pack(side="right", padx=6)
 
     # UI helpers
-    def set_category_enabled(self, cat, val):
-        self.config_data.setdefault("category_enabled", {})
-        self.config_data["category_enabled"][cat] = bool(val)
-        save_config(self.config_data)
+    def open_profile_manager(self):
+        try:
+            from .profile_manager import ProfileManagerWindow
+            ProfileManagerWindow(self)
+        except Exception as e:
+            messagebox.showerror("Profiles", f"Could not open Profile Manager: {e}")
+
+
+    def reload_profile(self, profile_id: str | None = None):
+        """
+        Reload profiles.json, apply the active profile, update config_data,
+        and refresh UI checkboxes/entries.
+        """
+        try:
+            # reload file
+            self.profiles_doc = self.profile_store.load()
+
+            # switch active profile if requested
+            if profile_id:
+                self.profiles_doc["active_profile_id"] = profile_id
+                self.profile_store.save(self.profiles_doc)
+
+            # refresh active profile object
+            self.active_profile = self.profile_store.get_active_profile(self.profiles_doc)
+
+            # merge with global config
+            global_cfg = load_config()
+            self.config_data = self.profile_store.merge_profile_into_config(
+                self.active_profile,
+                global_cfg
+            )
+
+            # apply to UI
+            self.apply_profile_to_ui()
+
+        except Exception as e:
+            print("Reload error:", e)
+
+
+    def apply_profile_to_ui(self):
+        self.freeze_profile_events(True)
+        try:
+            settings = self.active_profile.get("settings", {})
+
+            # include_sub
+            if settings.get("include_sub", True):
+                self.include_sub.select()
+            else:
+                self.include_sub.deselect()
+
+            # skip_hidden
+            if settings.get("skip_hidden", True):
+                self.skip_hidden.select()
+            else:
+                self.skip_hidden.deselect()
+
+            # safe_mode
+            if settings.get("safe_mode", True):
+                self.safe_mode.select()
+            else:
+                self.safe_mode.deselect()
+
+            # smart_mode
+            if settings.get("smart_mode", False):
+                self.smart_mode.select()
+            else:
+                self.smart_mode.deselect()
+
+            # inputs
+            self.ignore_entry.delete(0, "end")
+            self.ignore_entry.insert(0, settings.get("ignore_exts", ""))
+
+            self.age_filter_entry.delete(0, "end")
+            self.age_filter_entry.insert(0, str(settings.get("age_filter_days", 0)))
+
+        finally:
+            self.freeze_profile_events(False)
+
+    def save_active_profile(self):
+        """
+        Saves the currently loaded profiles_doc and updates config_data
+        so that the UI and backend stay synced.
+        """
+        try:
+            self.profile_store.save(self.profiles_doc)
+            self.save_active_profile()
+
+        except Exception as e:
+            print("Profile save error:", e)
+
+
 
     def set_status(self, msg: str):
         self.status.configure(text=msg)
@@ -832,20 +663,39 @@ class FolderFreshApp(ctk.CTk):
             b.configure(state="normal")
 
 
-    # actions (delegate to actions.py)
+    def save_profile_setting(self, key, value):
+        if getattr(self, "closing", False):
+            return  # <-- ignore saves during shutdown
+
+        self.active_profile.setdefault("settings", {})[key] = value
+        self.profiles_doc["meta"]["generated_at"] = datetime.now().isoformat(timespec="seconds")
+        self.profile_store.save(self.profiles_doc)
+        self.config_data[key] = value
+    def freeze_profile_events(self, freeze=True):
+        self._profile_freeze = freeze
+
+
     def remember_options(self):
-        try:
-            self.config_data["age_filter_days"] = int(self.age_filter_entry.get() or 0)
-        except Exception:
-            self.config_data["age_filter_days"] = 0
-        self.config_data["include_sub"] = bool(self.include_sub.get())
-        self.config_data["skip_hidden"] = bool(self.skip_hidden.get())
-        self.config_data["safe_mode"] = bool(self.safe_mode.get())
-        self.config_data["watch_mode"] = bool(self.watch_mode.get())
-        self.config_data["ignore_exts"] = self.ignore_entry.get()
-        self.config_data["smart_mode"] = bool(self.smart_mode.get())
-        self.config_data["tray_mode"] = bool(self.tray_mode.get())
-        save_config(self.config_data)
+        # prevent recursion
+        if getattr(self, "_profile_freeze", False):
+            return
+
+        # profile settings
+        self.save_profile_setting("include_sub", bool(self.include_sub.get()))
+        self.save_profile_setting("skip_hidden", bool(self.skip_hidden.get()))
+        self.save_profile_setting("safe_mode", bool(self.safe_mode.get()))
+        self.save_profile_setting("smart_mode", bool(self.smart_mode.get()))
+
+        # global settings
+        global_cfg = load_config()
+        global_cfg["watch_mode"] = bool(self.watch_mode.get())
+        global_cfg["tray_mode"] = bool(self.tray_mode.get())
+        save_config(global_cfg)
+
+
+
+
+
 
     def on_preview(self):
         self.disable_buttons()
@@ -1073,23 +923,22 @@ class FolderFreshApp(ctk.CTk):
 
 
     def on_close(self):
+        
+        self.closing = True
+
+        
         try:
-            self.remember_options()
+            self.watcher_manager.stop_all()
         except Exception:
             pass
 
+        
         try:
             if getattr(self, "tray_mode", None) and self.tray_mode.get():
                 self.hide_to_tray()
                 return
         except Exception:
             pass
-
-        try:
-            self.watcher_manager.stop_all()
-        except Exception:
-            pass
-
 
         self.destroy()
 

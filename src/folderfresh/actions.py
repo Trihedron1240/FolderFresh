@@ -1,4 +1,4 @@
-
+# actions.py — fully patched with ignore_patterns support
 from pathlib import Path
 import os
 import shutil
@@ -10,13 +10,16 @@ from .utils import (
     scan_dir,
     file_is_old_enough,
     remove_empty_category_folders,
-    group_duplicates
+    group_duplicates,
+    is_onedrive_placeholder,
 )
 from .sorting import pick_category, pick_smart_category
 from .sorting import plan_moves
 from .constants import LOG_FILENAME
 from .naming import resolve_category
 from tkinter import messagebox
+
+
 def save_log(root: Path, moves: list[dict], mode: str) -> Path:
     log_path = root / LOG_FILENAME
     payload = {
@@ -38,8 +41,11 @@ def load_log(root: Path) -> dict | None:
             return json.load(f)
     except Exception:
         return None
-    
-# ========== PREVIEW ==========================================================
+
+
+# =============================================================================
+# PREVIEW
+# =============================================================================
 
 def do_preview(app):
     """
@@ -54,10 +60,20 @@ def do_preview(app):
     desktop = Path(os.path.join(os.path.expanduser("~"), "Desktop"))
     include_sub = False if folder == desktop else bool(app.include_sub.get())
 
-    min_days = int(app.age_filter_entry.get() or 0)
+    # -------------------------
+    # LOAD IGNORE SETTINGS
+    # -------------------------
 
+    # extensions (.exe; .tmp etc.)
     ignore_raw = app.config_data.get("ignore_exts", "")
     ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+
+    # patterns (substring filters)
+    pattern_list = app.config_data.get("ignore_patterns", [])
+    ignore_patterns = [p["pattern"].lower() for p in pattern_list if p.get("pattern")]
+
+    # age filter
+    min_days = int(app.config_data.get("age_filter_days", 0))
 
     last_mode = app.config_data.get("last_sort_mode", None)
     current_mode = "smart" if app.smart_mode.get() else "simple"
@@ -71,20 +87,42 @@ def do_preview(app):
         skip_categories
     )
 
-    files = [
-        f for f in files_all
-        if file_is_old_enough(f, min_days)
-        and f.suffix.lower() not in ignore_set
-    ]
+    # -------------------------
+    # APPLY FILTERS
+    # -------------------------
+    files = []
+    for f in files_all:
+        name = f.name.lower()
 
+        # age filter
+        if not file_is_old_enough(f, min_days):
+            continue
+
+        # ignore extensions
+        if f.suffix.lower() in ignore_set:
+            continue
+
+        # ignore patterns
+        if any(pat in name for pat in ignore_patterns):
+            continue
+
+        files.append(f)
+
+    # -------------------------
+    # CATEGORY RESOLUTION
+    # -------------------------
     moves = []
     use_smart = app.smart_mode.get()
 
     for p in files:
-        # SMART
+        # Skip OneDrive cloud-only placeholders
+        if is_onedrive_placeholder(p):
+            continue
+
+        # SMART category
         folder_name = pick_smart_category(p, cfg=app.config_data) if use_smart else None
 
-        # fallback to simple
+        # fallback
         if not folder_name:
             folder_name = pick_category(
                 p.suffix,
@@ -99,11 +137,13 @@ def do_preview(app):
 
         if p != dst:
             moves.append({"src": str(p), "dst": str(dst)})
+
     return moves
 
 
-
-# ========== ORGANISE =========================================================
+# =============================================================================
+# ORGANISE
+# =============================================================================
 
 def do_organise(app, moves):
     """
@@ -111,15 +151,41 @@ def do_organise(app, moves):
     Returns list of moves_done (including errors).
     """
     folder = app.selected_folder
-    min_days = int(app.age_filter_entry.get() or 0)
+
+    # -------------------------
+    # LOAD IGNORE SETTINGS
+    # -------------------------
+    ignore_raw = app.config_data.get("ignore_exts", "")
+    ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
+
+    pattern_list = app.config_data.get("ignore_patterns", [])
+    ignore_patterns = [p["pattern"].lower() for p in pattern_list if p.get("pattern")]
+
+    min_days = int(app.config_data.get("age_filter_days", 0))
 
     moves_done = []
 
     for m in moves:
         src = m["src"]
-        p = Path(src)
 
-        # Determine category using smart/simple *with config awareness*
+        # Skip cloud placeholders
+        if is_onedrive_placeholder(src):
+            continue
+
+        p = Path(src)
+        name = p.name.lower()
+
+        # apply ignore filters again for safety
+        if p.suffix.lower() in ignore_set:
+            continue
+
+        if any(pat in name for pat in ignore_patterns):
+            continue
+
+        if not file_is_old_enough(p, min_days):
+            continue
+
+        # Determine category with smart/simple
         if app.smart_mode.get():
             folder_name = pick_smart_category(p, cfg=app.config_data)
             if not folder_name:
@@ -135,10 +201,10 @@ def do_organise(app, moves):
                 cfg=app.config_data
             )
 
-        # Apply rename overrides
+        # Rename override
         folder_name = resolve_category(folder_name, app.config_data)
 
-        # Build final destination
+        # Destination
         new_dst = Path(app.selected_folder) / folder_name / p.name
         m["dst"] = str(new_dst)
 
@@ -159,35 +225,31 @@ def do_organise(app, moves):
                 "error": str(e)
             })
 
-    # Log only moves (not copy)
-    from .utils import save_log  # local import avoids circular issues
-
+    # Log the session
     mode = "copy" if app.safe_mode.get() else "move"
     save_log(Path(folder), moves_done, mode)
 
-    # Save mode for next preview
+    # Save mode so next preview knows whether to skip categories
     app.config_data["last_sort_mode"] = "smart" if app.smart_mode.get() else "simple"
     save_config(app.config_data)
 
-    # Remove empty folders
+    # Clean empty folders
     remove_empty_category_folders(folder)
 
     return moves_done
 
 
-# ========== UNDO =============================================================
+# =============================================================================
+# UNDO
+# =============================================================================
 
 def do_undo(app):
-    """
-    Undo last move session.
-    """
     folder = app.selected_folder
     log_path = folder / LOG_FILENAME
 
     if not log_path.exists():
         return None
 
-    import json
     data = json.load(open(log_path, "r", encoding="utf-8"))
 
     if data.get("mode") == "copy":
@@ -213,13 +275,16 @@ def do_undo(app):
         pass
 
     remove_empty_category_folders(folder)
-    # Reset last sort mode after undo so next sort scans fully
+
+    # Reset last sort mode
     app.config_data["last_sort_mode"] = None
     save_config(app.config_data)
     return success
 
 
-# ========== DUPLICATES =======================================================
+# =============================================================================
+# DUPLICATES
+# =============================================================================
 
 def do_find_duplicates(app):
     folder = app.selected_folder
@@ -227,30 +292,36 @@ def do_find_duplicates(app):
     ignore_raw = app.config_data.get("ignore_exts", "")
     ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
 
-    last_mode = app.config_data.get("last_sort_mode", None)
-    current_mode = "smart" if app.smart_mode.get() else "simple"
-    skip_categories = False
+    pattern_list = app.config_data.get("ignore_patterns", [])
+    ignore_patterns = [p["pattern"].lower() for p in pattern_list if p.get("pattern")]
 
     files_all = scan_dir(
         folder,
         app.include_sub.get(),
         app.skip_hidden.get(),
         ignore_set,
-        skip_categories
+        skip_categories=False
     )
 
-    files = [f for f in files_all if f.suffix.lower() not in ignore_set]
+    # apply ignore ext + pattern filters
+    files = []
+    for f in files_all:
+        name = f.name.lower()
+        if f.suffix.lower() in ignore_set:
+            continue
+        if any(pat in name for pat in ignore_patterns):
+            continue
+        files.append(f)
 
     groups = group_duplicates(files)
     return groups
 
-def open_log_file(folder: Path) -> bool:
-    """
-    Attempts to open the FolderFresh move log file.
-    Returns True if opened, False if not found.
-    """
 
-    # Correct pattern for your app
+# =============================================================================
+# LOG FILE VIEW
+# =============================================================================
+
+def open_log_file(folder: Path) -> bool:
     logs = sorted(
         folder.glob(".folderfresh_moves_log*.json"),
         key=lambda p: p.stat().st_mtime,
@@ -261,10 +332,11 @@ def open_log_file(folder: Path) -> bool:
         return False
 
     try:
-        os.startfile(logs[0])  # open newest log file
+        os.startfile(logs[0])
         return True
     except Exception:
         return False
+
 
 def view_log_file(self):
     if not self.selected_folder:
@@ -273,4 +345,3 @@ def view_log_file(self):
 
     if not open_log_file(Path(self.selected_folder)):
         messagebox.showinfo("Log File", "No FolderFresh log file found in this folder.")
-
