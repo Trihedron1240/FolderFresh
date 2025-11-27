@@ -1,5 +1,8 @@
 # FolderFresh — Smart Desktop & Folder Cleaner for Windows
 
+## License
+FolderFresh is licensed under GPL-3.0.
+Versions prior to 1.4.0 remain under the MIT license they were originally released with.
 Website: https://trihedron1240.github.io/FolderFresh/  
 
 
