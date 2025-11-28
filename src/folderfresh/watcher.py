@@ -208,17 +208,19 @@ class AutoTidyHandler(FileSystemEventHandler):
     # Watchdog callbacks
     # ---------------------------------------------------
     def on_created(self, event):
+
         if event.is_directory:
             return
         threading.Thread(
             target=lambda: self.delayed_handle(event.src_path),
-            daemon=True
+            daemon=False
         ).start()
 
     def on_moved(self, event):
+
         if event.is_directory:
             return
         threading.Thread(
             target=lambda: self.delayed_handle(event.dest_path),
-            daemon=True
+            daemon=False
         ).start()

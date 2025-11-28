@@ -1,4 +1,3 @@
-# gui.py (Windows-11-style, Option C with Smart + Auto-tidy in basic row, Tray in Advanced, Help as circular icon)
 from __future__ import annotations
 
 import os
@@ -104,7 +103,18 @@ class FolderFreshApp(ctk.CTk):
         self._handle_first_run()
         self._restore_last_folder()
         self._start_watched_folders()
+        # ------------------------------------------------------------
+        # Force Auto-Tidy to reinitialize properly if it was ON
+        # ------------------------------------------------------------
+        if self.config_data.get("watch_mode", False):
+            # Temporarily disable
+            self.watch_mode.deselect()
+            self.on_toggle_watch()
 
+            # Re-enable (this runs the full correct logic)
+            self.watch_mode.select()
+            self.on_toggle_watch()
+             
     def _initialize_config_and_profiles(self):
         """Load configuration and profile data."""
         from .profile_store import ProfileStore
@@ -1070,10 +1080,19 @@ class FolderFreshApp(ctk.CTk):
 
 
     def on_toggle_tray(self):
+
         tray.toggle_tray(self)
 
     def hide_to_tray(self):
         tray.hide_to_tray(self)
+        # ------------------------------------------------------------
+        # Auto-reinitialize Auto-Tidy when entering tray mode
+        # ------------------------------------------------------------
+        if self.watch_mode.get():
+            self.watch_mode.deselect()
+            self.on_toggle_watch()
+            self.watch_mode.select()
+            self.on_toggle_watch()
 
     def show_window(self):
         tray.show_window(self)
