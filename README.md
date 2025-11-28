@@ -168,7 +168,7 @@ FolderFresh is a community-driven project made to help users stay organised effo
 
 ## AI Assistance Disclosure
 
-Some UI and backend improvements were refined using AI-assisted development tools.  
+Some UI and backend improvements were refined using AI-assisted development tools, namely Claude Code and Chatgpt.  
 All logic has been manually reviewed, tested, and verified.  
 No proprietary or third-party code is used.
 
