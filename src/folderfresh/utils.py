@@ -1,14 +1,85 @@
 # utils.py
+import os
 import time
 import hashlib
 import json
 import winreg
 from pathlib import Path
 from datetime import datetime, timedelta
-
+import ctypes
+from ctypes import wintypes
 from .constants import LOG_FILENAME, DEFAULT_CATEGORIES
 
+# OneDrive Cloud Reparse Tag
+IO_REPARSE_TAG_CLOUD = 0x9000001A
 
+def is_onedrive_placeholder(path: Path) -> bool:
+    """
+    Returns True if the file is a OneDrive cloud-only placeholder.
+    """
+    # Only applies on Windows
+    if os.name != "nt":
+        return False
+
+    try:
+        # Check reparse tag
+        FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+        attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))
+
+        if attrs == -1:
+            return False
+
+        # If not a reparse point → not a placeholder
+        if not (attrs & FILE_ATTRIBUTE_REPARSE_POINT):
+            return False
+
+        # Query reparse data
+        # Use CreateFile + DeviceIoControl to read the tag
+        FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
+        FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
+        GENERIC_READ = 0x80000000
+
+        handle = ctypes.windll.kernel32.CreateFileW(
+            str(path),
+            GENERIC_READ,
+            0,
+            None,
+            3,  # OPEN_EXISTING
+            FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS,
+            None
+        )
+
+        if handle == -1:
+            return False
+
+        # Structure to receive reparse info
+        REPARSE_DATA_BUFFER_SIZE = 16384
+        buf = ctypes.create_string_buffer(REPARSE_DATA_BUFFER_SIZE)
+        bytes_returned = wintypes.DWORD()
+
+        FSCTL_GET_REPARSE_POINT = 0x000900A8
+        ok = ctypes.windll.kernel32.DeviceIoControl(
+            handle,
+            FSCTL_GET_REPARSE_POINT,
+            None,
+            0,
+            buf,
+            REPARSE_DATA_BUFFER_SIZE,
+            ctypes.byref(bytes_returned),
+            None
+        )
+        ctypes.windll.kernel32.CloseHandle(handle)
+
+        if not ok:
+            return False
+
+        # First 4 bytes after ReparseTag are the tag value
+        tag = ctypes.cast(buf, ctypes.POINTER(ctypes.c_ulong)).contents.value
+
+        return tag == IO_REPARSE_TAG_CLOUD
+
+    except Exception:
+        return False
 # ----------------------------- HIDDEN FILE CHECK ------------------------------
 
 def is_hidden_win(path: Path) -> bool:
@@ -67,6 +138,9 @@ def scan_dir(
 
     for p in iterator:
         try:
+            if is_onedrive_placeholder(p):
+                continue
+
             if p.suffix.lower() in ignore_set:
                 continue
             if not p.is_file():
