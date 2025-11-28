@@ -12,6 +12,7 @@ def load_config() -> dict:
         # Fall back to defaults
         cfg = {
             "watched_folders": [],
+            "folder_profile_map": {},          # ⭐ NEW
             "first_run": True,
             "appearance": "system",
             "tray_mode": False,
@@ -28,7 +29,7 @@ def load_config() -> dict:
             "category_enabled": {},
         }
 
-    # --- Migration for old versions ---
+    # --- Migration for older versions ---
     if "watched_folders" not in cfg:
         old = cfg.get("auto_tidy_folder")
         if old:
@@ -36,12 +37,16 @@ def load_config() -> dict:
         else:
             cfg["watched_folders"] = []
 
-    # --- Ensure new v1.4 keys exist (important for upgrades) ---
+    # ⭐ Ensure folder → profile map exists even on older configs
+    cfg.setdefault("folder_profile_map", {})
+
+    # --- Ensure new v1.4 keys exist ---
     cfg.setdefault("custom_categories", {})
     cfg.setdefault("custom_category_names", {})
     cfg.setdefault("category_enabled", {})
 
     return cfg
+
 
 
 

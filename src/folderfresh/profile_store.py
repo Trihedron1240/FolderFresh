@@ -128,6 +128,10 @@ class ProfileStore:
             doc["active_profile_id"] = ids[0]
 
         return doc
+    def list_profiles(self) -> list[Dict[str, Any]]:
+        """Return the list of profiles."""
+        doc = self.load()
+        return doc.get("profiles", [])
 
     def save(self, doc: Dict[str, Any]):
         backup_existing(self.path)
@@ -183,6 +187,8 @@ class ProfileStore:
         cfg["custom_categories"] = profile.get("custom_categories", {})
         cfg["custom_category_names"] = profile.get("category_overrides", {})
         cfg["category_enabled"] = profile.get("category_enabled", {})
+        cfg["ignore_patterns"] = profile.get("ignore_patterns", [])
+        cfg["dont_move_list"] = profile.get("dont_move_list", [])
 
         for k in ("watched_folders", "tray_mode", "appearance", "startup", "first_run"):
             cfg[k] = global_cfg.get(k, cfg.get(k))

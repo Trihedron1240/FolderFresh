@@ -14,10 +14,12 @@ def _now_iso():
 
 class ProfileManagerWindow(ctk.CTkToplevel):
     """
-    Clean, stable profile manager:
-    - Sidebar list
-    - Right pane editor
-    - Simple load/save cycle (no recursion)
+    Profile manager window with sidebar list and editor pane.
+
+    Features:
+    - Sidebar: List of profiles with quick actions
+    - Right pane: Detailed profile editor
+    - Simple load/save cycle with no recursion
     """
 
     def __init__(self, app):
@@ -25,87 +27,140 @@ class ProfileManagerWindow(ctk.CTkToplevel):
         self.app = app
         self.store: ProfileStore = app.profile_store
 
-        # Load once
+        # Load profile data
         self.doc = self.store.load()
         self.selected_id = self.doc.get("active_profile_id")
         self.profiles = {p["id"]: p for p in self.doc.get("profiles", [])}
+
+        # Configure window
         self.title("Manage Profiles")
         self.geometry("900x580")
         self.grab_set()
 
+        # Create main container
         container = ctk.CTkFrame(self)
         container.pack(fill="both", expand=True, padx=12, pady=12)
 
-        # Sidebar ------------------------
-        self.sidebar = ctk.CTkFrame(container, width=260)
-        self.sidebar.pack(side="left", fill="y")
-        self.sidebar.pack_propagate(False)
+        # Create UI sections
+        self._create_sidebar(container)
+        self._create_editor_pane(container)
 
-        btn_row = ctk.CTkFrame(self.sidebar)
-        btn_row.pack(fill="x", pady=(6, 4), padx=6)
-
-        ctk.CTkButton(btn_row, text="New", width=60,
-                      command=self.create_new_profile).pack(side="left", padx=4)
-
-        ctk.CTkButton(btn_row, text="Import", width=70,
-                      command=self.import_profiles).pack(side="left", padx=4)
-
-        ctk.CTkButton(btn_row, text="Export", width=70,
-                      command=self.export_profile).pack(side="left", padx=4)
-
-        self.list_frame = ctk.CTkScrollableFrame(self.sidebar)
-        self.list_frame.pack(fill="both", expand=True, padx=6, pady=6)
-
-        # Right pane ---------------------
-        self.right = ctk.CTkScrollableFrame(container)
-        self.right.pack(side="left", fill="both", expand=True, padx=(10, 0))
-
-        self.build_editor()
-
-        # Initial load
+        # Initialize display
         self.refresh_list()
         if self.selected_id:
             self.load_editor(self.selected_id)
 
-    # ------------------------------------------------------------
-    # Sidebar
-    # ------------------------------------------------------------
+    def _create_sidebar(self, parent):
+        """Create the sidebar with profile list and action buttons."""
+        self.sidebar = ctk.CTkFrame(parent, width=260)
+        self.sidebar.pack(side="left", fill="y", padx=(0, 8))
+        self.sidebar.pack_propagate(False)
+
+        # Action buttons row
+        btn_row = ctk.CTkFrame(self.sidebar)
+        btn_row.pack(fill="x", pady=(8, 6), padx=8)
+
+        ctk.CTkButton(
+            btn_row,
+            text="New",
+            width=60,
+            corner_radius=8,
+            command=self.create_new_profile
+        ).pack(side="left", padx=(0, 4))
+
+        ctk.CTkButton(
+            btn_row,
+            text="Import",
+            width=70,
+            corner_radius=8,
+            command=self.import_profiles
+        ).pack(side="left", padx=4)
+
+        ctk.CTkButton(
+            btn_row,
+            text="Export",
+            width=70,
+            corner_radius=8,
+            command=self.export_profile
+        ).pack(side="left", padx=(4, 0))
+
+        # Scrollable profile list
+        self.list_frame = ctk.CTkScrollableFrame(self.sidebar)
+        self.list_frame.pack(fill="both", expand=True, padx=8, pady=(0, 8))
+
+    def _create_editor_pane(self, parent):
+        """Create the right editor pane."""
+        self.right = ctk.CTkScrollableFrame(parent)
+        self.right.pack(side="left", fill="both", expand=True, padx=(10, 0))
+        self.build_editor()
+
+    # Sidebar management
     def refresh_list(self):
-        for w in self.list_frame.winfo_children():
-            w.destroy()
+        """Reload and display the profile list from storage."""
+        # Clear existing widgets
+        for widget in self.list_frame.winfo_children():
+            widget.destroy()
 
-        self.doc = self.store.load()   # reload from disk
+        # Reload from disk
+        self.doc = self.store.load()
         self.profiles = {p["id"]: p for p in self.doc.get("profiles", [])}
-        active = self.doc.get("active_profile_id")
+        active_id = self.doc.get("active_profile_id")
 
-        for p in self.profiles.values():
-            row = ctk.CTkFrame(self.list_frame)
-            row.pack(fill="x", pady=3, padx=4)
+        # Create profile list items
+        for profile in self.profiles.values():
+            self._create_profile_list_item(profile, active_id)
 
-            lbl = ctk.CTkLabel(row, text=p.get("name", "(unnamed)"), anchor="w")
-            lbl.pack(side="left", padx=4)
-            lbl.bind("<Button-1>", lambda e, pid=p["id"]: self.load_editor(pid))
+    def _create_profile_list_item(self, profile, active_id):
+        """Create a single profile list item with label and menu button."""
+        row = ctk.CTkFrame(self.list_frame)
+        row.pack(fill="x", pady=4, padx=4)
 
-            if p["id"] == active:
-                ctk.CTkLabel(row, text="(active)", text_color="#60a5fa").pack(side="left", padx=4)
+        # Profile name label (clickable)
+        label = ctk.CTkLabel(row, text=profile.get("name", "(unnamed)"), anchor="w")
+        label.pack(side="left", padx=6, pady=6)
+        label.bind("<Button-1>", lambda e, pid=profile["id"]: self.load_editor(pid))
 
-            # quick menu
-            menu_btn = ctk.CTkButton(row, text="⋯", width=32,
-                                     command=lambda pid=p["id"]: self.popup_menu(pid))
-            menu_btn.pack(side="right", padx=3)
+        # Active indicator
+        if profile["id"] == active_id:
+            ctk.CTkLabel(
+                row,
+                text="(active)",
+                text_color="#60a5fa"
+            ).pack(side="left", padx=4, pady=6)
+
+        # Menu button
+        menu_btn = ctk.CTkButton(
+            row,
+            text="⋯",
+            width=32,
+            corner_radius=6,
+            command=lambda pid=profile["id"]: self.popup_menu(pid)
+        )
+        menu_btn.pack(side="right", padx=4, pady=4)
 
     def popup_menu(self, pid: str):
+        """Display a context menu for profile actions."""
         menu = ctk.CTkToplevel(self)
         menu.overrideredirect(True)
         menu.attributes("-topmost", True)
         menu.configure(fg_color="#0f1720")
 
-        # Position
+        # Position at mouse cursor
         x = self.winfo_pointerx()
         y = self.winfo_pointery()
         menu.geometry(f"+{x}+{y}")
 
-        # ------ Close behaviour ------
+        # Setup menu close behavior
+        self._setup_menu_close_behavior(menu)
+
+        # Add menu items
+        self._add_menu_items(menu, pid)
+
+        # Focus for keyboard interaction
+        menu.focus_set()
+
+    def _setup_menu_close_behavior(self, menu):
+        """Setup close behavior for popup menu."""
         def close_menu(event=None):
             try:
                 self.unbind("<Button-1>", click_outside_id)
@@ -116,25 +171,25 @@ class ProfileManagerWindow(ctk.CTkToplevel):
             except:
                 pass
 
-        # Close on Escape
+        # Close on Escape key
         menu.bind("<Escape>", close_menu)
 
-        # Detect click outside (safe version)
+        # Detect clicks outside menu
         def check_click(event):
-            # if click is NOT inside popup → close
             if not menu.winfo_exists():
                 return
+
             # Check if click is inside the popup window
             widget = menu.winfo_containing(event.x_root, event.y_root)
 
-            # If widget is None or not a child of menu → close
+            # Close if click is outside menu
             if widget is None or not str(widget).startswith(str(menu)):
                 close_menu()
 
-        # Bind click-outside to parent window
+        # Bind click detection to parent window
         click_outside_id = self.bind("<Button-1>", check_click, add="+")
 
-        # Cleanup when window closes (unbind safely)
+        # Cleanup on menu destruction
         def cleanup(event):
             try:
                 self.unbind("<Button-1>", click_outside_id)
@@ -143,13 +198,19 @@ class ProfileManagerWindow(ctk.CTkToplevel):
 
         menu.bind("<Destroy>", cleanup)
 
-        # Helper for actions
+        # Store close function for menu items
+        menu.close_menu = close_menu
+
+        return click_outside_id
+
+    def _add_menu_items(self, menu, pid):
+        """Add action items to the popup menu."""
         def choose(action):
-            close_menu()
+            menu.close_menu()
             action()
 
-        # ---- Menu item builder ----
-        def add_btn(label, color=None, cmd=lambda: None):
+        def add_menu_button(label, cmd, color=None):
+            """Helper to create menu button."""
             btn = ctk.CTkButton(
                 menu,
                 text=label,
@@ -162,38 +223,38 @@ class ProfileManagerWindow(ctk.CTkToplevel):
             )
             btn.pack(fill="x", padx=4, pady=2)
 
-        # ---- Items ----
-        add_btn("Rename", cmd=lambda: self._rename_action(pid))
-        add_btn("Duplicate", cmd=lambda: self.duplicate_profile(pid))
+        # Add menu options
+        add_menu_button("Rename", lambda: self._rename_action(pid))
+        add_menu_button("Duplicate", lambda: self.duplicate_profile(pid))
 
+        # Only allow delete for non-builtin profiles
         if not self.profiles.get(pid, {}).get("is_builtin", False):
-            add_btn("Delete", color="#8b0000",
-                    cmd=lambda: self.delete_profile(pid))
+            add_menu_button("Delete", lambda: self.delete_profile(pid), color="#8b0000")
 
-        add_btn("Set Active", color="#2563eb",
-                cmd=lambda: self.set_active_profile(pid))
-
-        # Focus so Escape works
-        menu.focus_set()
-
-
+        add_menu_button("Set Active", lambda: self.set_active_profile(pid), color="#2563eb")
 
     def _rename_action(self, pid):
-        new = simpledialog.askstring("Rename", "New name:",
-                                    initialvalue=self.profiles[pid]["name"])
-        if new:
-            self.rename_profile(pid, new.strip())
+        """Prompt user to rename a profile."""
+        new_name = simpledialog.askstring(
+            "Rename",
+            "New name:",
+            initialvalue=self.profiles[pid]["name"]
+        )
+        if new_name:
+            self.rename_profile(pid, new_name.strip())
 
-    # ------------------------------------------------------------
-    # CRUD operations
-    # ------------------------------------------------------------
+    # Profile CRUD operations
     def create_new_profile(self):
-        base = self.profiles.get(self.doc.get("active_profile_id"), {})
+        """Create a new profile based on the current active profile."""
+        base_profile = self.profiles.get(self.doc.get("active_profile_id"), {})
         new_id = f"profile_{int(datetime.now().timestamp())}"
-        new_prof = json.loads(json.dumps(base))
 
+        # Deep copy base profile
+        new_profile = json.loads(json.dumps(base_profile))
+
+        # Set new profile metadata
         now = _now_iso()
-        new_prof.update({
+        new_profile.update({
             "id": new_id,
             "name": "New Profile",
             "description": "",
@@ -202,216 +263,315 @@ class ProfileManagerWindow(ctk.CTkToplevel):
             "is_builtin": False
         })
 
-        self.doc["profiles"].append(new_prof)
+        # Add to document and set as active
+        self.doc["profiles"].append(new_profile)
         self.doc["active_profile_id"] = new_id
 
+        # Save and refresh UI
         self.store.save(self.doc)
         self.refresh_list()
         self.load_editor(new_id)
 
     def duplicate_profile(self, pid):
-        src = self.profiles.get(pid)
-        if not src:
+        """Create a duplicate of an existing profile."""
+        source = self.profiles.get(pid)
+        if not source:
             return
 
         new_id = f"profile_{int(datetime.now().timestamp())}"
-        copy = json.loads(json.dumps(src))
+
+        # Deep copy source profile
+        duplicate = json.loads(json.dumps(source))
+
+        # Update metadata for duplicate
         now = _now_iso()
-        copy.update({
+        duplicate.update({
             "id": new_id,
-            "name": f"{src['name']} (copy)",
+            "name": f"{source['name']} (copy)",
             "created_at": now,
             "updated_at": now,
-            "is_builtin": False  # ← IMPORTANT FIX
+            "is_builtin": False
         })
 
-        self.doc["profiles"].append(copy)
+        # Add to document
+        self.doc["profiles"].append(duplicate)
         self.store.save(self.doc)
         self.refresh_list()
 
-
     def delete_profile(self, pid):
+        """Delete a profile (builtin profiles cannot be deleted)."""
         if self.profiles.get(pid, {}).get("is_builtin"):
             messagebox.showwarning("Protected", "Cannot delete built-in profile.")
             return
 
+        # Remove profile from list
         self.doc["profiles"] = [p for p in self.doc["profiles"] if p["id"] != pid]
 
-        # fix active if needed
+        # Update active profile if deleted profile was active
         if self.doc.get("active_profile_id") == pid:
             if self.doc["profiles"]:
                 self.doc["active_profile_id"] = self.doc["profiles"][0]["id"]
             else:
                 self.doc["active_profile_id"] = None
 
+        # Save and refresh UI
         self.store.save(self.doc)
         self.refresh_list()
 
-    def rename_profile(self, pid, new):
-        p = self.profiles.get(pid)
-        if not p:
+    def rename_profile(self, pid, new_name):
+        """Rename a profile."""
+        profile = self.profiles.get(pid)
+        if not profile:
             return
-        p["name"] = new
-        p["updated_at"] = _now_iso()
+
+        profile["name"] = new_name
+        profile["updated_at"] = _now_iso()
+
         self.store.save(self.doc)
         self.refresh_list()
 
     def set_active_profile(self, pid):
+        """Set a profile as the active profile."""
         self.doc["active_profile_id"] = pid
         self.store.save(self.doc)
         self.refresh_list()
+
         messagebox.showinfo("Active profile", "Active profile set.")
+
+        # Reload profile in main app
         try:
             self.app.reload_profile(pid)
         except:
             pass
 
-    # ------------------------------------------------------------
-    # Import/Export
-    # ------------------------------------------------------------
+    # Import/Export operations
     def import_profiles(self):
+        """Import profiles from a JSON file."""
         from tkinter import filedialog
-        p = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
-        if not p:
+
+        # Prompt for file
+        file_path = filedialog.askopenfilename(filetypes=[("JSON", "*.json")])
+        if not file_path:
             return
-        data = json.load(open(p, "r", encoding="utf-8"))
+
+        # Load and validate file
+        data = json.load(open(file_path, "r", encoding="utf-8"))
         if "profiles" not in data:
             messagebox.showerror("Import", "Invalid file.")
             return
 
-        for pf in data["profiles"]:
-            pf["id"] = f"profile_{int(datetime.now().timestamp())}"
-            self.doc["profiles"].append(pf)
+        # Import profiles with new IDs
+        for profile in data["profiles"]:
+            profile["id"] = f"profile_{int(datetime.now().timestamp())}"
+            self.doc["profiles"].append(profile)
 
+        # Save and refresh UI
         self.store.save(self.doc)
         self.refresh_list()
 
     def export_profile(self):
+        """Export the currently selected profile to a JSON file."""
         from tkinter import filedialog
+
         if not self.selected_id:
             return
-        pf = self.profiles.get(self.selected_id)
-        p = filedialog.asksaveasfilename(defaultextension=".json")
-        if not p:
+
+        profile = self.profiles.get(self.selected_id)
+
+        # Prompt for save location
+        file_path = filedialog.asksaveasfilename(defaultextension=".json")
+        if not file_path:
             return
-        json.dump({"profiles": [pf]}, open(p, "w", encoding="utf-8"), indent=2)
+
+        # Save profile to file
+        json.dump(
+            {"profiles": [profile]},
+            open(file_path, "w", encoding="utf-8"),
+            indent=2
+        )
         messagebox.showinfo("Export", "Exported.")
 
-    # ------------------------------------------------------------
     # Editor (Right Pane)
-    # ------------------------------------------------------------
     def build_editor(self):
-        """Build blank editor widgets."""
-        self.name_entry = ctk.CTkEntry(self.right, placeholder_text="Profile name")
-        self.name_entry.pack(fill="x", padx=10, pady=(6, 4))
+        """Build the profile editor widgets."""
+        # Profile name
+        self.name_entry = ctk.CTkEntry(
+            self.right,
+            placeholder_text="Profile name",
+            height=36,
+            corner_radius=8
+        )
+        self.name_entry.pack(fill="x", padx=12, pady=(12, 8))
 
-        self.desc = ctk.CTkTextbox(self.right, height=80)
+        # Description
+        self.desc = ctk.CTkTextbox(self.right, height=80, corner_radius=8)
         self.add_placeholder(self.desc, "Describe what this profile does…")
-        self.desc.pack(fill="x", padx=10, pady=(4, 10))
+        self.desc.pack(fill="x", padx=12, pady=(0, 12))
 
-        # settings
+        # Basic settings section
+        ctk.CTkLabel(
+            self.right,
+            text="Basic Settings",
+            font=("Segoe UI Variable", 13, "bold")
+        ).pack(anchor="w", padx=12, pady=(8, 6))
+
+        # Basic settings checkboxes
         self.include_sub = ctk.CTkCheckBox(self.right, text="Include subfolders")
-        self.include_sub.pack(anchor="w", padx=14)
+        self.include_sub.pack(anchor="w", padx=16, pady=4)
 
         self.skip_hidden = ctk.CTkCheckBox(self.right, text="Ignore hidden/system files")
-        self.skip_hidden.pack(anchor="w", padx=14)
+        self.skip_hidden.pack(anchor="w", padx=16, pady=4)
 
         self.safe_mode = ctk.CTkCheckBox(self.right, text="Safe Mode (copy)")
-        self.safe_mode.pack(anchor="w", padx=14)
+        self.safe_mode.pack(anchor="w", padx=16, pady=4)
 
         self.smart_mode = ctk.CTkCheckBox(self.right, text="Smart Sorting")
-        self.smart_mode.pack(anchor="w", padx=14)
+        self.smart_mode.pack(anchor="w", padx=16, pady=4)
 
-        row = ctk.CTkFrame(self.right)
-        row.pack(fill="x", padx=10, pady=6)
-        ctk.CTkLabel(row, text="Ignore types:").pack(side="left")
-        self.ignore_exts = ctk.CTkEntry(row, width=200, placeholder_text="e.g. .exe;.tmp;.log")
-        self.ignore_exts.pack(side="left", padx=6)
+        # Filters section
+        ctk.CTkLabel(
+            self.right,
+            text="Filters",
+            font=("Segoe UI Variable", 13, "bold")
+        ).pack(anchor="w", padx=12, pady=(16, 6))
 
-        row2 = ctk.CTkFrame(self.right)
-        row2.pack(fill="x", padx=10, pady=6)
-        ctk.CTkLabel(row2, text="Age filter (only moves files older than x days):").pack(side="left")
-        self.age_days = ctk.CTkEntry(row2, width=80, placeholder_text="0 = off")
-        self.age_days.pack(side="left", padx=6)
+        # Ignore file types
+        ignore_row = ctk.CTkFrame(self.right, fg_color="transparent")
+        ignore_row.pack(fill="x", padx=12, pady=6)
+        ctk.CTkLabel(ignore_row, text="Ignore types:").pack(side="left", padx=(4, 8))
+        self.ignore_exts = ctk.CTkEntry(
+            ignore_row,
+            width=300,
+            placeholder_text="e.g. .exe;.tmp;.log",
+            corner_radius=8
+        )
+        self.ignore_exts.pack(side="left", fill="x", expand=True)
 
-        # ignore patterns
-        ctk.CTkLabel(self.right, text="Ignore Patterns:").pack(anchor="w", padx=10, pady=(8, 2))
-        self.ignore_patterns = ctk.CTkTextbox(self.right, height=80)
-        self.add_placeholder(self.ignore_patterns, "Enter patterns to ignore (one per line)…")
-        self.ignore_patterns.pack(fill="x", padx=10)
+        # Age filter
+        age_row = ctk.CTkFrame(self.right, fg_color="transparent")
+        age_row.pack(fill="x", padx=12, pady=6)
+        ctk.CTkLabel(
+            age_row,
+            text="Age filter (only moves files older than):"
+        ).pack(side="left", padx=(4, 8))
+        self.age_days = ctk.CTkEntry(
+            age_row,
+            width=80,
+            placeholder_text="0 = off",
+            corner_radius=8
+        )
+        self.age_days.pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(age_row, text="days").pack(side="left")
 
-        # don't move
-        ctk.CTkLabel(self.right, text="Don't move list:").pack(anchor="w", padx=10, pady=(8, 2))
-        self.dont_move = ctk.CTkTextbox(self.right, height=80)
-        self.dont_move.insert("1.0", "Files or paths to exclude from moving…\nOne per line.")
-        self.dont_move.pack(fill="x", padx=10)
-        # Category Manager shortcut
+        # Advanced section
+        ctk.CTkLabel(
+            self.right,
+            text="Advanced Patterns",
+            font=("Segoe UI Variable", 13, "bold")
+        ).pack(anchor="w", padx=12, pady=(16, 6))
+
+        # Ignore patterns
+        ctk.CTkLabel(
+            self.right,
+            text="Ignore Patterns (one per line):"
+        ).pack(anchor="w", padx=12, pady=(4, 2))
+        self.ignore_patterns = ctk.CTkTextbox(self.right, height=80, corner_radius=8)
+        self.add_placeholder(self.ignore_patterns, "Enter filename patterns to ignore…\nExample: .tmp\nExample: backup_")
+        self.ignore_patterns.pack(fill="x", padx=12, pady=(0, 8))
+
+        # Don't move list
+        ctk.CTkLabel(
+            self.right,
+            text="Don't Move List (one per line):"
+        ).pack(anchor="w", padx=12, pady=(4, 2))
+        self.dont_move = ctk.CTkTextbox(self.right, height=80, corner_radius=8)
+        self.add_placeholder(self.dont_move, "Enter files or paths to exclude from moving…\nExample: important.txt\nExample: C:\\Temp\\keep_here")
+        self.dont_move.pack(fill="x", padx=12, pady=(0, 12))
+
+        # Category manager button
         ctk.CTkButton(
             self.right,
             text="Edit Categories…",
             width=180,
+            corner_radius=8,
             fg_color="#374151",
             hover_color="#2b3740",
             command=self.open_category_editor_for_profile,
-        ).pack(pady=(10, 6), padx=10, anchor="w")
+        ).pack(pady=(8, 6), padx=12, anchor="w")
 
+        # Save button
+        ctk.CTkButton(
+            self.right,
+            text="Save Changes",
+            height=36,
+            corner_radius=8,
+            fg_color="#2563eb",
+            hover_color="#1e4fd8",
+            command=self.save_editor
+        ).pack(pady=16, padx=12, fill="x")
 
-        # Save
-        ctk.CTkButton(self.right, text="Save Changes",
-                      fg_color="#2563eb", command=self.save_editor).pack(pady=14)
-    def add_placeholder(self, textbox, text):
-        textbox.placeholder = text
+    def add_placeholder(self, textbox, placeholder_text):
+        """Add placeholder text functionality to a textbox."""
+        textbox.placeholder = placeholder_text
 
         def on_focus_in(event):
-            if textbox.get("1.0", "end").strip() == text:
+            if textbox.get("1.0", "end").strip() == placeholder_text:
                 textbox.delete("1.0", "end")
                 textbox.configure(text_color="#ffffff")
 
         def on_focus_out(event):
             if not textbox.get("1.0", "end").strip():
-                textbox.insert("1.0", text)
-                textbox.configure(text_color="#7a8696")  # muted placeholder color
+                textbox.insert("1.0", placeholder_text)
+                textbox.configure(text_color="#7a8696")
 
         textbox.bind("<FocusIn>", on_focus_in)
         textbox.bind("<FocusOut>", on_focus_out)
 
-        # Initialize placeholder
-        textbox.insert("1.0", text)
+        # Initialize with placeholder
+        textbox.insert("1.0", placeholder_text)
         textbox.configure(text_color="#7a8696")
-            
+
     def open_category_editor_for_profile(self):
-        pid = self.selected_id
-        if not pid:
+        """Open the category editor for the selected profile."""
+        profile_id = self.selected_id
+        if not profile_id:
             messagebox.showerror("Categories", "Select a profile first.")
             return
 
-        # Load fresh profile
+        # Load fresh profile data
         self.doc = self.store.load()
         self.profiles = {p["id"]: p for p in self.doc.get("profiles", [])}
-        prof = self.profiles.get(pid)
-        if not prof:
+        profile = self.profiles.get(profile_id)
+
+        if not profile:
             messagebox.showerror("Categories", "Profile not found.")
             return
 
-        # Open isolated Category Manager window
+        # Open category manager window
         CategoryManagerWindow(self.app, self.selected_id)
 
 
 
     def load_editor(self, pid):
+        """Load a profile into the editor UI."""
         self.selected_id = pid
+
+        # Reload profile data
         self.doc = self.store.load()
         self.profiles = {p["id"]: p for p in self.doc.get("profiles", [])}
-        p = self.profiles.get(pid)
-        if not p:
+        profile = self.profiles.get(pid)
+
+        if not profile:
             return
 
-        s = p.get("settings", {})
+        settings = profile.get("settings", {})
 
+        # Load profile name
         self.name_entry.delete(0, "end")
-        self.name_entry.insert(0, p.get("name", ""))
+        self.name_entry.insert(0, profile.get("name", ""))
 
-        desc_text = p.get("description", "")
+        # Load description (with placeholder handling)
+        desc_text = profile.get("description", "")
         self.desc.delete("1.0", "end")
 
         if desc_text.strip():
@@ -421,71 +581,115 @@ class ProfileManagerWindow(ctk.CTkToplevel):
             self.desc.insert("1.0", self.desc.placeholder)
             self.desc.configure(text_color="#7a8696")
 
+        # Load checkboxes
+        self._set_checkbox(self.include_sub, settings.get("include_sub", True))
+        self._set_checkbox(self.skip_hidden, settings.get("skip_hidden", True))
+        self._set_checkbox(self.safe_mode, settings.get("safe_mode", True))
+        self._set_checkbox(self.smart_mode, settings.get("smart_mode", False))
 
-        # checkboxes
-        self.include_sub.select() if s.get("include_sub", True) else self.include_sub.deselect()
-        self.skip_hidden.select() if s.get("skip_hidden", True) else self.skip_hidden.deselect()
-        self.safe_mode.select() if s.get("safe_mode", True) else self.safe_mode.deselect()
-        self.smart_mode.select() if s.get("smart_mode", False) else self.smart_mode.deselect()
-
+        # Load ignore extensions
         self.ignore_exts.delete(0, "end")
-        self.ignore_exts.insert(0, s.get("ignore_exts", ""))
+        self.ignore_exts.insert(0, settings.get("ignore_exts", ""))
 
+        # Load age filter
         self.age_days.delete(0, "end")
-        self.age_days.insert(0, str(s.get("age_filter_days", 0)))
+        self.age_days.insert(0, str(settings.get("age_filter_days", 0)))
 
-        # patterns
+        # Load ignore patterns (with placeholder handling)
+        patterns = profile.get("ignore_patterns", [])
         self.ignore_patterns.delete("1.0", "end")
-        for pat in p.get("ignore_patterns", []):
-            self.ignore_patterns.insert("end", pat.get("pattern", "") + "\n")
 
-        # dont move list
+        if patterns:
+            for pattern in patterns:
+                self.ignore_patterns.insert("end", pattern.get("pattern", "") + "\n")
+            self.ignore_patterns.configure(text_color="#ffffff")
+        else:
+            self.ignore_patterns.insert("1.0", self.ignore_patterns.placeholder)
+            self.ignore_patterns.configure(text_color="#7a8696")
+
+        # Load don't move list (with placeholder handling)
+        dont_move = profile.get("dont_move_list", [])
         self.dont_move.delete("1.0", "end")
-        for path in p.get("dont_move_list", []):
-            self.dont_move.insert("end", path + "\n")
+
+        if dont_move:
+            for path in dont_move:
+                self.dont_move.insert("end", path + "\n")
+            self.dont_move.configure(text_color="#ffffff")
+        else:
+            self.dont_move.insert("1.0", self.dont_move.placeholder)
+            self.dont_move.configure(text_color="#7a8696")
+
+    def _set_checkbox(self, checkbox, value):
+        """Helper to set checkbox state."""
+        if value:
+            checkbox.select()
+        else:
+            checkbox.deselect()
 
     def save_editor(self):
-        """Save UI → doc → disk. Zero recursion."""
-        pid = self.selected_id
+        """Save editor changes to profile storage."""
+        profile_id = self.selected_id
+
+        # Reload and find profile
         self.doc = self.store.load()
         profiles = self.doc.get("profiles", [])
-        p = next((x for x in profiles if x["id"] == pid), None)
-        if not p:
+        profile = next((p for p in profiles if p["id"] == profile_id), None)
+
+        if not profile:
             return
 
-        p["name"] = self.name_entry.get().strip()
-        p["description"] = self.desc.get("1.0", "end").strip()
-        p["updated_at"] = _now_iso()
+        # Save basic information
+        profile["name"] = self.name_entry.get().strip()
 
-        s = p.setdefault("settings", {})
-        s["include_sub"] = bool(self.include_sub.get())
-        s["skip_hidden"] = bool(self.skip_hidden.get())
-        s["safe_mode"] = bool(self.safe_mode.get())
-        s["smart_mode"] = bool(self.smart_mode.get())
-        s["ignore_exts"] = self.ignore_exts.get().strip()
+        # Save description (skip if it's the placeholder)
+        desc_text = self.desc.get("1.0", "end").strip()
+        if desc_text != self.desc.placeholder:
+            profile["description"] = desc_text
+        else:
+            profile["description"] = ""
 
+        profile["updated_at"] = _now_iso()
+
+        # Save settings
+        settings = profile.setdefault("settings", {})
+        settings["include_sub"] = bool(self.include_sub.get())
+        settings["skip_hidden"] = bool(self.skip_hidden.get())
+        settings["safe_mode"] = bool(self.safe_mode.get())
+        settings["smart_mode"] = bool(self.smart_mode.get())
+        settings["ignore_exts"] = self.ignore_exts.get().strip()
+
+        # Save age filter (with validation)
         try:
-            s["age_filter_days"] = int(self.age_days.get() or 0)
+            settings["age_filter_days"] = int(self.age_days.get() or 0)
         except:
-            s["age_filter_days"] = 0
+            settings["age_filter_days"] = 0
 
-        # patterns
-        ips = [line.strip() for line in self.ignore_patterns.get("1.0", "end").splitlines()
-               if line.strip()]
-        p["ignore_patterns"] = [{"pattern": x} for x in ips]
+        # Save ignore patterns (skip placeholder text)
+        pattern_text = self.ignore_patterns.get("1.0", "end").strip()
+        pattern_lines = [
+            line.strip()
+            for line in pattern_text.splitlines()
+            if line.strip() and not line.strip().startswith("Enter filename") and not line.strip().startswith("Example:")
+        ]
+        profile["ignore_patterns"] = [{"pattern": p} for p in pattern_lines]
 
-        # dont move
-        donts = [line.strip() for line in self.dont_move.get("1.0", "end").splitlines()
-                 if line.strip()]
-        p["dont_move_list"] = donts
+        # Save don't move list (skip placeholder text)
+        dont_move_text = self.dont_move.get("1.0", "end").strip()
+        dont_move_lines = [
+            line.strip()
+            for line in dont_move_text.splitlines()
+            if line.strip() and not line.strip().startswith("Enter files") and not line.strip().startswith("Example:")
+        ]
+        profile["dont_move_list"] = dont_move_lines
 
+        # Persist changes
         self.store.save(self.doc)
         self.refresh_list()
 
-        # update live config if active
-        if self.doc.get("active_profile_id") == pid:
+        # Update live config if this is the active profile
+        if self.doc.get("active_profile_id") == profile_id:
             try:
-                self.app.reload_profile(pid)
+                self.app.reload_profile(profile_id)
             except:
                 pass
 

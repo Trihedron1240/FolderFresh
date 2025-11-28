@@ -1,9 +1,9 @@
-# actions.py — fully patched with ignore_patterns support
 from pathlib import Path
 import os
 import shutil
 import time
 import json
+import fnmatch
 from datetime import datetime
 from .config import save_config
 from .utils import (
@@ -18,6 +18,32 @@ from .sorting import plan_moves
 from .constants import LOG_FILENAME
 from .naming import resolve_category
 from tkinter import messagebox
+
+
+def _matches_any_pattern(target: str, patterns: list[str]) -> bool:
+    """
+    Check if target matches any pattern.
+    Patterns containing *, ?, [, ] use fnmatch.
+    Otherwise substring. Case-insensitive.
+    """
+    target = target.lower()
+
+    for pat in patterns:
+        if not pat:
+            continue
+        pat = pat.lower().strip()
+
+        # glob pattern
+        if any(ch in pat for ch in "*?[]"):
+            if fnmatch.fnmatch(target, pat):
+                return True
+        else:
+            # substring
+            if pat in target:
+                return True
+
+    return False
+
 
 
 def save_log(root: Path, moves: list[dict], mode: str) -> Path:
@@ -68,9 +94,12 @@ def do_preview(app):
     ignore_raw = app.config_data.get("ignore_exts", "")
     ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
 
-    # patterns (substring filters)
+    # patterns (substring or wildcard filters)
     pattern_list = app.config_data.get("ignore_patterns", [])
-    ignore_patterns = [p["pattern"].lower() for p in pattern_list if p.get("pattern")]
+    ignore_patterns = [p["pattern"] for p in pattern_list if p.get("pattern")]
+
+    # dont_move_list (paths/filenames to never move)
+    dont_move_list = [s.lower().strip() for s in app.config_data.get("dont_move_list", [])]
 
     # age filter
     min_days = int(app.config_data.get("age_filter_days", 0))
@@ -92,7 +121,6 @@ def do_preview(app):
     # -------------------------
     files = []
     for f in files_all:
-        name = f.name.lower()
 
         # age filter
         if not file_is_old_enough(f, min_days):
@@ -102,10 +130,18 @@ def do_preview(app):
         if f.suffix.lower() in ignore_set:
             continue
 
-        # ignore patterns
-        if any(pat in name for pat in ignore_patterns):
+        # ignore patterns (wildcard or substring)
+        name = f.name.lower()
+        fullpath = str(f).lower()
+        if _matches_any_pattern(name, ignore_patterns) or _matches_any_pattern(fullpath, ignore_patterns):
             continue
 
+
+        # dont_move_list (substring + fullpath matching)
+        name = f.name.lower()
+        fullpath = str(f).lower()
+        if name in dont_move_list:
+            continue   
         files.append(f)
 
     # -------------------------
@@ -159,7 +195,9 @@ def do_organise(app, moves):
     ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
 
     pattern_list = app.config_data.get("ignore_patterns", [])
-    ignore_patterns = [p["pattern"].lower() for p in pattern_list if p.get("pattern")]
+    ignore_patterns = [p["pattern"] for p in pattern_list if p.get("pattern")]
+
+    dont_move_list = [s.lower().strip() for s in app.config_data.get("dont_move_list", [])]
 
     min_days = int(app.config_data.get("age_filter_days", 0))
 
@@ -173,13 +211,18 @@ def do_organise(app, moves):
             continue
 
         p = Path(src)
-        name = p.name.lower()
 
         # apply ignore filters again for safety
         if p.suffix.lower() in ignore_set:
             continue
 
-        if any(pat in name for pat in ignore_patterns):
+
+        # dont_move_list (substring + fullpath matching)
+        name = p.name.lower()
+        fullpath = str(p).lower()
+        if _matches_any_pattern(name, ignore_patterns) or _matches_any_pattern(fullpath, ignore_patterns):
+            continue
+        if name in dont_move_list:
             continue
 
         if not file_is_old_enough(p, min_days):
@@ -293,7 +336,9 @@ def do_find_duplicates(app):
     ignore_set = {ext.strip().lower() for ext in ignore_raw.split(";") if ext.strip()}
 
     pattern_list = app.config_data.get("ignore_patterns", [])
-    ignore_patterns = [p["pattern"].lower() for p in pattern_list if p.get("pattern")]
+    ignore_patterns = [p["pattern"] for p in pattern_list if p.get("pattern")]
+
+    dont_move_list = [s.lower().strip() for s in app.config_data.get("dont_move_list", [])]
 
     files_all = scan_dir(
         folder,
@@ -306,10 +351,16 @@ def do_find_duplicates(app):
     # apply ignore ext + pattern filters
     files = []
     for f in files_all:
-        name = f.name.lower()
         if f.suffix.lower() in ignore_set:
             continue
-        if any(pat in name for pat in ignore_patterns):
+
+        # dont_move_list (substring + fullpath matching)
+        name = f.name.lower()
+        fullpath = str(f).lower()
+        if _matches_any_pattern(name, ignore_patterns) or _matches_any_pattern(fullpath, ignore_patterns):
+            continue
+
+        if name in dont_move_list:
             continue
         files.append(f)
 
