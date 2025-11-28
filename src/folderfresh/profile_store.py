@@ -1,13 +1,3 @@
-"""
-profile_store.py — CLEAN REWRITE (v1.4.0)
-Reliable profile storage with:
- - atomic writes
- - automatic backups
- - no recursion
- - simple schema with defaults
- - fully compatible with FolderFresh 1.3.0+
-"""
-
 from __future__ import annotations
 
 import json
@@ -16,7 +6,8 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
-
+from folderfresh.rule_engine.rule_store import rule_to_dict, dict_to_rule
+from folderfresh.rule_engine import Rule
 from .config import load_config, save_config
 
 PROFILES_FILE = Path.home() / ".folderfresh_profiles.json"
@@ -72,6 +63,7 @@ def default_profiles_doc() -> Dict[str, Any]:
                 "settings": {
                     "smart_mode": False,
                     "safe_mode": True,
+                    "dry_run": True,
                     "include_sub": True,
                     "skip_hidden": True,
                     "ignore_exts": "",
@@ -82,6 +74,7 @@ def default_profiles_doc() -> Dict[str, Any]:
                 "category_enabled": {},
                 "ignore_patterns": [],
                 "dont_move_list": [],
+                "rules": []
             }
         ],
     }
@@ -176,6 +169,7 @@ class ProfileStore:
         for k in (
             "smart_mode",
             "safe_mode",
+            "dry_run",
             "include_sub",
             "skip_hidden",
             "ignore_exts",
@@ -194,3 +188,40 @@ class ProfileStore:
             cfg[k] = global_cfg.get(k, cfg.get(k))
 
         return cfg
+    # ========================================================
+    # RULE ENGINE INTEGRATION
+    # ========================================================
+
+    def get_rules(self, profile: Dict[str, Any]) -> list[Rule]:
+        """
+        Convert the stored 'rules' list (JSON) into Rule objects.
+        Returns an empty list if profile has no rules yet.
+        """
+        entries = profile.get("rules", [])
+        return [dict_to_rule(entry) for entry in entries]
+
+    def set_rules(self, profile: Dict[str, Any], rules: list[Rule]):
+        """
+        Convert a list of Rule objects into JSON-serializable dicts
+        and store them inside the profile. Then save the entire
+        profiles.json file to persist changes.
+        """
+        # Update the profile's rules field
+        profile["rules"] = [rule_to_dict(r) for r in rules]
+
+        # Update modified timestamp
+        profile["updated_at"] = now_iso()
+
+        # Load the full document to ensure we save the correct state
+        doc = self.load()
+
+        # Find the active profile in the document and update it
+        active_id = doc.get("active_profile_id")
+        for p in doc["profiles"]:
+            if p["id"] == active_id:
+                p["rules"] = [rule_to_dict(r) for r in rules]
+                p["updated_at"] = now_iso()
+                break
+
+        # Save the updated document
+        self.save(doc)

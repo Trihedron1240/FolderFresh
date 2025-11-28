@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(__NEW_LINE__ echo '=== Documentation Directory Structure ===' tree c:/Users/tristan/Desktop/FolderFresh/docs)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

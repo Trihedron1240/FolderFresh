@@ -1,7 +1,4 @@
 from watchdog.observers import Observer
-from .watcher import AutoTidyHandler
-
-from watchdog.observers import Observer
 from pathlib import Path
 from .watcher import AutoTidyHandler
 

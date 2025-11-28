@@ -1,0 +1,83 @@
+import json
+from pathlib import Path
+from .backbone import (
+    Rule,
+    NameContainsCondition,
+    ExtensionIsCondition,
+    FileSizeGreaterThanCondition,
+    RenameAction,
+    MoveAction,
+    CopyAction,
+)
+
+
+# Mapping to reconstruct classes from saved JSON
+CONDITION_MAP = {
+    "NameContains": NameContainsCondition,
+    "ExtensionIs": ExtensionIsCondition,
+    "FileSizeGreaterThan": FileSizeGreaterThanCondition,
+}
+
+ACTION_MAP = {
+    "Rename": RenameAction,
+    "Move": MoveAction,
+    "Copy": CopyAction,
+}
+
+
+def rule_to_dict(rule: Rule):
+    """Convert a Rule object into a JSON-serializable dict."""
+    return {
+        "name": rule.name,
+        "match_mode": rule.match_mode,
+        "stop_on_match": rule.stop_on_match,
+        "conditions": [
+            {
+                "type": cond.__class__.__name__.replace("Condition", ""),
+                "args": cond.__dict__,
+            }
+            for cond in rule.conditions
+        ],
+        "actions": [
+            {
+                "type": act.__class__.__name__.replace("Action", ""),
+                "args": act.__dict__,
+            }
+            for act in rule.actions
+        ],
+    }
+
+
+def dict_to_rule(data: dict) -> Rule:
+    """Convert a saved dict into a Rule object."""
+    conditions = [
+        CONDITION_MAP[c["type"]](**c["args"])
+        for c in data["conditions"]
+    ]
+
+    actions = [
+        ACTION_MAP[a["type"]](**a["args"])
+        for a in data["actions"]
+    ]
+
+    return Rule(
+        name=data["name"],
+        match_mode=data.get("match_mode", "all"),
+        stop_on_match=data.get("stop_on_match", False),
+        conditions=conditions,
+        actions=actions,
+    )
+
+
+def save_rules(path: Path, rules: list[Rule]):
+    """Save list of rules to a JSON file."""
+    data = [rule_to_dict(r) for r in rules]
+    path.write_text(json.dumps(data, indent=4))
+
+
+def load_rules(path: Path) -> list[Rule]:
+    """Load rules from disk. Return empty list if file doesn’t exist."""
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text())
+    return [dict_to_rule(entry) for entry in data]

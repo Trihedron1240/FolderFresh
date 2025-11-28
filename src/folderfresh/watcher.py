@@ -1,4 +1,5 @@
 # watcher.py
+import os
 import time
 import shutil
 import threading
@@ -10,6 +11,10 @@ from .sorting import pick_smart_category, pick_category
 from .constants import DEFAULT_CATEGORIES
 from .naming import resolve_category
 
+from folderfresh.rule_engine import RuleExecutor
+from folderfresh.fileinfo import get_fileinfo
+from folderfresh.profile_store import ProfileStore
+from folderfresh.activity_log import log_activity
 
 # =====================================================================
 # AutoTidyHandler — handler for a *single watched folder*
@@ -200,10 +205,60 @@ class AutoTidyHandler(FileSystemEventHandler):
     # Delayed execution wrapper
     # ---------------------------------------------------
     def delayed_handle(self, path):
+        """
+        Handle file event: run auto-tidy first, then execute rules.
+        All output is logged to ActivityLog for real-time monitoring.
+        """
         cfg = self.get_folder_config()
         time.sleep(0.6)
         self.handle_file(Path(path), cfg)
 
+        # ====================================================
+        # RULE ENGINE EXECUTION WITH ACTIVITY LOG
+        # ====================================================
+        try:
+            # Verify file still exists
+            if not os.path.exists(path) or not os.path.isfile(path):
+                log_activity(f"INFO: File no longer exists: {path}")
+                return
+
+            # Load profile storage
+            store = ProfileStore()
+            doc = store.load()
+            profile = store.get_active_profile(doc)
+
+            # Get rules attached to active profile
+            rules = store.get_rules(profile)
+
+            # Skip if profile has no rules
+            if not rules:
+                return
+
+            # Build complete fileinfo dictionary
+            try:
+                fileinfo = get_fileinfo(path)
+            except Exception as e:
+                log_activity(f"ERROR: Failed to read file info for '{path}': {str(e)}")
+                return
+
+            # Get merged config with profile settings
+            merged_cfg = cfg
+
+            # Run rule executor with merged config
+            executor = RuleExecutor()
+            log_lines = executor.execute(rules, fileinfo, merged_cfg)
+
+            # All log lines are already forwarded to ActivityLog by RuleExecutor
+            # (see rule_engine/backbone.py execute() method)
+            # Optional: print to console for debugging
+            for line in log_lines:
+                if line.strip():
+                    print("[WATCHER RULE]", line)
+
+        except Exception as e:
+            error_msg = f"ERROR: Rule engine error processing '{os.path.basename(path)}': {str(e)}"
+            print("[WATCHER ERROR]", error_msg)
+            log_activity(error_msg)
     # ---------------------------------------------------
     # Watchdog callbacks
     # ---------------------------------------------------
@@ -222,5 +277,14 @@ class AutoTidyHandler(FileSystemEventHandler):
             return
         threading.Thread(
             target=lambda: self.delayed_handle(event.dest_path),
+            daemon=False
+        ).start()
+
+    def on_modified(self, event):
+        """Handle file modification events."""
+        if event.is_directory:
+            return
+        threading.Thread(
+            target=lambda: self.delayed_handle(event.src_path),
             daemon=False
         ).start()

@@ -6,7 +6,7 @@ import customtkinter as ctk
 from tkinter import simpledialog, messagebox
 from .category_manager import CategoryManagerWindow
 from .profile_store import ProfileStore
-from .config import load_config
+from .rule_manager import RuleManager
 
 def _now_iso():
     return datetime.now().isoformat(timespec="seconds")
@@ -425,6 +425,12 @@ class ProfileManagerWindow(ctk.CTkToplevel):
         self.safe_mode = ctk.CTkCheckBox(self.right, text="Safe Mode (copy)")
         self.safe_mode.pack(anchor="w", padx=16, pady=4)
 
+        self.dry_run = ctk.CTkCheckBox(
+            self.right,
+            text="Dry Run Mode (no real file changes)"
+        )
+        self.dry_run.pack(anchor="w", padx=16, pady=4)
+
         self.smart_mode = ctk.CTkCheckBox(self.right, text="Smart Sorting")
         self.smart_mode.pack(anchor="w", padx=16, pady=4)
 
@@ -499,6 +505,17 @@ class ProfileManagerWindow(ctk.CTkToplevel):
             command=self.open_category_editor_for_profile,
         ).pack(pady=(8, 6), padx=12, anchor="w")
 
+        # Rule manager button
+        ctk.CTkButton(
+            self.right,
+            text="Open Rule Manager",
+            width=180,
+            corner_radius=8,
+            fg_color="#374151",
+            hover_color="#2b3740",
+            command=self.open_rule_manager,
+            ).pack(pady=(0, 16), padx=12, anchor="w")
+
         # Save button
         ctk.CTkButton(
             self.right,
@@ -509,6 +526,13 @@ class ProfileManagerWindow(ctk.CTkToplevel):
             hover_color="#1e4fd8",
             command=self.save_editor
         ).pack(pady=16, padx=12, fill="x")
+
+    def open_rule_manager(self):
+        """Open the Rule Manager for the selected profile."""
+        if not self.selected_id:
+            messagebox.showerror("Rule Manager", "Select a profile first.")
+            return
+        RuleManager(self, profile_id=self.selected_id)
 
     def add_placeholder(self, textbox, placeholder_text):
         """Add placeholder text functionality to a textbox."""
@@ -585,6 +609,7 @@ class ProfileManagerWindow(ctk.CTkToplevel):
         self._set_checkbox(self.include_sub, settings.get("include_sub", True))
         self._set_checkbox(self.skip_hidden, settings.get("skip_hidden", True))
         self._set_checkbox(self.safe_mode, settings.get("safe_mode", True))
+        self._set_checkbox(self.dry_run, settings.get("dry_run", True))
         self._set_checkbox(self.smart_mode, settings.get("smart_mode", False))
 
         # Load ignore extensions
@@ -655,6 +680,7 @@ class ProfileManagerWindow(ctk.CTkToplevel):
         settings["include_sub"] = bool(self.include_sub.get())
         settings["skip_hidden"] = bool(self.skip_hidden.get())
         settings["safe_mode"] = bool(self.safe_mode.get())
+        settings["dry_run"] = bool(self.dry_run.get())
         settings["smart_mode"] = bool(self.smart_mode.get())
         settings["ignore_exts"] = self.ignore_exts.get().strip()
 
