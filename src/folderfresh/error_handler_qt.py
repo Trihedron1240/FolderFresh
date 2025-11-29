@@ -8,6 +8,18 @@ from PySide6.QtWidgets import QMessageBox
 from folderfresh.logger_qt import log_error, log_warning, log_info, log_critical, log_debug
 
 
+def _suppress_dialog_sound() -> None:
+    """Suppress the system notification sound for message boxes on Windows."""
+    try:
+        import ctypes
+        import platform
+
+        if platform.system() == "Windows":
+            ctypes.windll.user32.MessageBeep(0)  # Beep with 0 means no sound
+    except Exception:
+        pass
+
+
 class QtErrorHandler:
     """Centralized error handling for PySide6 application"""
 
@@ -35,6 +47,7 @@ class QtErrorHandler:
         error_msg = f"Error during {operation}:\n{file_path}\n\n{str(error)}"
         log_error(f"File operation failed: {operation} - {file_path}", exc_info=True)
 
+        _suppress_dialog_sound()
         if recovery_fn:
             reply = QMessageBox.critical(
                 parent,
@@ -68,6 +81,7 @@ class QtErrorHandler:
         """
         log_error(f"Rule execution failed: {rule_name}", exc_info=True)
 
+        _suppress_dialog_sound()
         QMessageBox.warning(
             parent,
             "Rule Execution Failed",
@@ -93,6 +107,7 @@ class QtErrorHandler:
         """
         log_error(f"Configuration error: {str(error)}", exc_info=True)
 
+        _suppress_dialog_sound()
         if recovery_fn:
             reply = QMessageBox.critical(
                 parent,
@@ -125,6 +140,7 @@ class QtErrorHandler:
         """
         log_warning(f"Failed to watch folder: {folder_path}", exc_info=True)
 
+        _suppress_dialog_sound()
         QMessageBox.warning(
             parent,
             "Watch Error",
@@ -147,6 +163,7 @@ class QtErrorHandler:
         """
         log_error(f"Export failed ({export_type})", exc_info=True)
 
+        _suppress_dialog_sound()
         QMessageBox.critical(
             parent,
             "Export Failed",
@@ -167,6 +184,7 @@ class QtErrorHandler:
         """
         log_error("Undo operation failed", exc_info=True)
 
+        _suppress_dialog_sound()
         QMessageBox.critical(
             parent,
             "Undo Failed",
@@ -190,6 +208,7 @@ class QtErrorHandler:
         """
         log_warning(f"Validation failed: {field_name} - {error}")
 
+        _suppress_dialog_sound()
         QMessageBox.warning(
             parent,
             "Validation Error",
@@ -210,6 +229,7 @@ class QtErrorHandler:
         """
         log_critical(f"Fatal error: {str(error)}", exc_info=True)
 
+        _suppress_dialog_sound()
         QMessageBox.critical(
             parent,
             "Fatal Error",
@@ -225,6 +245,7 @@ class QtErrorHandler:
     ) -> None:
         """Show info message"""
         log_info(f"{title}: {message}")
+        _suppress_dialog_sound()
         QMessageBox.information(parent, title, message)
 
     @staticmethod
@@ -235,6 +256,7 @@ class QtErrorHandler:
     ) -> None:
         """Show warning message"""
         log_warning(f"{title}: {message}")
+        _suppress_dialog_sound()
         QMessageBox.warning(parent, title, message)
 
     @staticmethod
@@ -245,6 +267,7 @@ class QtErrorHandler:
     ) -> None:
         """Show error message"""
         log_error(f"{title}: {message}")
+        _suppress_dialog_sound()
         QMessageBox.critical(parent, title, message)
 
     @staticmethod
@@ -259,6 +282,7 @@ class QtErrorHandler:
         Returns:
             True if user confirmed
         """
+        _suppress_dialog_sound()
         reply = QMessageBox.question(
             parent,
             title,
