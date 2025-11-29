@@ -1,9 +1,15 @@
 from pathlib import Path
+import os
 import threading
 import pystray
 from PIL import Image, ImageDraw
 
 from .config import save_config
+
+# ========== CI ENVIRONMENT DETECTION ================================================
+# Force dummy backend in headless CI environments (no display server)
+if os.getenv("CI") == "true":
+    os.environ["PYSTRAY_BACKEND"] = "dummy"
 
 # ========== TRAY IMAGE ========================================================
 

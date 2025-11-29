@@ -43,9 +43,10 @@ jobs:
           python -c "import customtkinter; print('✓ customtkinter')"
           python -c "import PIL; print('✓ Pillow')"
           python -c "import watchdog; print('✓ watchdog')"
-          python -c "import pystray; print('✓ pystray')"
           python -c "import pytest; print('✓ pytest')"
           python -c "from folderfresh.rule_engine import Rule; print('✓ folderfresh')"
+        env:
+          CI: "true"
 
       - name: Run tests with coverage
         run: |
