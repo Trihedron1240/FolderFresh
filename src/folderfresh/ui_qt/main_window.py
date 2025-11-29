@@ -88,13 +88,19 @@ class MainWindow(QMainWindow):
         content_scroll = QScrollArea()
         content_scroll.setWidgetResizable(True)
         content_scroll.setFrameStyle(QFrame.NoFrame)
-        content_scroll.setStyleSheet(f"QScrollArea {{ background-color: {Colors.PANEL_BG}; }}")
+        content_scroll.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: {Colors.PANEL_BG};
+                border: none;
+            }}
+        """)
 
         # Content container
         content_widget = QWidget()
+        content_widget.setStyleSheet(f"background-color: {Colors.PANEL_BG};")
         content_layout = QVBoxLayout(content_widget)
-        content_layout.setContentsMargins(16, 16, 16, 16)
-        content_layout.setSpacing(12)
+        content_layout.setContentsMargins(12, 12, 12, 12)
+        content_layout.setSpacing(8)
 
         # Header section (title + folder selection)
         self._create_header_section(content_layout)
@@ -124,9 +130,16 @@ class MainWindow(QMainWindow):
     def _create_header_section(self, parent_layout) -> None:
         """Create header with title and folder selection."""
         header_frame = CardFrame()
+        header_frame.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Colors.CARD_BG};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 6px;
+            }}
+        """)
         header_layout = QHBoxLayout(header_frame)
-        header_layout.setContentsMargins(12, 12, 12, 12)
-        header_layout.setSpacing(12)
+        header_layout.setContentsMargins(10, 10, 10, 10)
+        header_layout.setSpacing(10)
 
         # Title
         title_label = StyledLabel(
@@ -155,9 +168,16 @@ class MainWindow(QMainWindow):
     def _create_main_card(self, parent_layout) -> None:
         """Create main card with options, buttons, and preview."""
         main_card = CardFrame()
+        main_card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Colors.CARD_BG};
+                border: 1px solid {Colors.BORDER};
+                border-radius: 6px;
+            }}
+        """)
         main_layout = QVBoxLayout(main_card)
-        main_layout.setContentsMargins(12, 12, 12, 12)
-        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(8)
 
         # Basic options row
         self._create_basic_options(main_layout)
@@ -175,7 +195,7 @@ class MainWindow(QMainWindow):
 
     def _create_basic_options(self, parent_layout) -> None:
         """Create basic options checkboxes."""
-        options_frame = HorizontalFrame(spacing=16)
+        options_frame = HorizontalFrame(spacing=12)
 
         self.include_sub_check = StyledCheckBox("Include subfolders", checked=True)
         self.include_sub_check.stateChanged.connect(lambda: self.options_changed.emit())
@@ -207,7 +227,7 @@ class MainWindow(QMainWindow):
 
     def _create_action_buttons(self, parent_layout) -> None:
         """Create main action buttons row."""
-        buttons_frame = HorizontalFrame(spacing=6)
+        buttons_frame = HorizontalFrame(spacing=8)
 
         self.preview_btn = StyledButton("Preview", bg_color=Colors.ACCENT)
         self.preview_btn.clicked.connect(lambda: self.preview_requested.emit())
@@ -243,7 +263,7 @@ class MainWindow(QMainWindow):
 
     def _create_advanced_section(self, parent_layout) -> None:
         """Create collapsible advanced options section."""
-        adv_frame = VerticalFrame(spacing=12)
+        adv_frame = VerticalFrame(spacing=8)
 
         # Toggle button
         self.advanced_btn = StyledButton("Advanced Options ▼", bg_color=Colors.BORDER_LIGHT)
@@ -251,11 +271,11 @@ class MainWindow(QMainWindow):
         adv_frame.add_widget(self.advanced_btn)
 
         # Hidden content frame
-        self.advanced_content = VerticalFrame(spacing=8)
+        self.advanced_content = VerticalFrame(spacing=6)
         self.advanced_content.setVisible(False)
 
         # Buttons in advanced section
-        advanced_buttons = HorizontalFrame(spacing=8)
+        advanced_buttons = HorizontalFrame(spacing=6)
 
         manage_profiles_btn = StyledButton("Manage Profiles", bg_color=Colors.ACCENT)
         manage_profiles_btn.clicked.connect(lambda: self.profiles_requested.emit())
@@ -269,7 +289,7 @@ class MainWindow(QMainWindow):
         self.advanced_content.add_widget(advanced_buttons)
 
         # Checkboxes in advanced section
-        advanced_checks = HorizontalFrame(spacing=16)
+        advanced_checks = HorizontalFrame(spacing=12)
 
         self.startup_check = StyledCheckBox("Run FolderFresh at Windows startup", checked=False)
         self.startup_check.stateChanged.connect(lambda: self.options_changed.emit())

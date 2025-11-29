@@ -13,12 +13,12 @@ from PySide6.QtCore import Qt
 # Handle both relative imports (when used as module) and direct execution
 try:
     from .application import FolderFreshApplication
-    from .styles import Colors, Fonts
+    from .stylesheet_cohesive import apply_cohesive_theme
 except ImportError:
     # Direct execution - add parent package to path
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from folderfresh.ui_qt.application import FolderFreshApplication
-    from folderfresh.ui_qt.styles import Colors, Fonts
+    from folderfresh.ui_qt.stylesheet_cohesive import apply_cohesive_theme
 
 
 def setup_qt_app() -> QApplication:
@@ -48,81 +48,14 @@ def setup_stylesheet(app: QApplication) -> None:
     """
     Setup global application stylesheet.
 
+    Applies cohesive dark theme that eliminates white space
+    and creates unified, seamless UI appearance.
+
     Args:
         app: QApplication instance
     """
-    stylesheet = f"""
-    * {{
-        font-family: {Fonts.PRIMARY_FAMILY};
-    }}
-
-    QMainWindow {{
-        background-color: {Colors.PANEL_BG};
-        color: {Colors.TEXT};
-    }}
-
-    QDialog {{
-        background-color: {Colors.PANEL_BG};
-        color: {Colors.TEXT};
-    }}
-
-    QLabel {{
-        color: {Colors.TEXT};
-    }}
-
-    QLineEdit, QTextEdit, QComboBox {{
-        background-color: {Colors.CARD_BG};
-        color: {Colors.TEXT};
-        border: 1px solid {Colors.BORDER};
-        border-radius: 6px;
-        padding: 6px;
-    }}
-
-    QLineEdit:focus, QTextEdit:focus, QComboBox:focus {{
-        border: 2px solid {Colors.ACCENT};
-        background-color: {Colors.PANEL_BG};
-    }}
-
-    QPushButton {{
-        background-color: {Colors.ACCENT};
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 8px 16px;
-        font-weight: bold;
-    }}
-
-    QPushButton:hover {{
-        background-color: #1e4fd8;
-    }}
-
-    QPushButton:pressed {{
-        background-color: #1565c0;
-    }}
-
-    QScrollArea {{
-        background-color: {Colors.PANEL_BG};
-        border: none;
-    }}
-
-    QScrollBar:vertical {{
-        background-color: {Colors.PANEL_ALT};
-        width: 12px;
-        border-radius: 6px;
-    }}
-
-    QScrollBar::handle:vertical {{
-        background-color: {Colors.BORDER};
-        border-radius: 6px;
-        min-height: 20px;
-    }}
-
-    QScrollBar::handle:vertical:hover {{
-        background-color: {Colors.BORDER_LIGHT};
-    }}
-    """
-
-    app.setStyleSheet(stylesheet)
+    # Apply cohesive dark theme with no white space
+    apply_cohesive_theme(app)
 
 
 def launch_qt_app(

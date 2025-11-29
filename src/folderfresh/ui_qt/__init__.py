@@ -28,6 +28,7 @@ from .main_qt import launch_qt_app, setup_qt_app, setup_stylesheet
 # Styling and utilities
 from .styles import Colors, Fonts, DesignTokens
 from .component_showcase import ComponentShowcaseWindow
+from .stylesheet_cohesive import get_global_stylesheet, apply_cohesive_theme
 from .dialogs import (
     show_confirmation_dialog,
     show_info_dialog,
@@ -98,6 +99,8 @@ __all__ = [
     "Fonts",
     "DesignTokens",
     "ComponentShowcaseWindow",
+    "get_global_stylesheet",
+    "apply_cohesive_theme",
     # Dialogs
     "show_confirmation_dialog",
     "show_info_dialog",
