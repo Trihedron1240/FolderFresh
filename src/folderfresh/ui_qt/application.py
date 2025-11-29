@@ -148,6 +148,10 @@ class FolderFreshApplication:
         custom_categories, category_overrides, and category_enabled
         from the active profile, not stale data from the old config file.
 
+        Transforms profile-style category_overrides (with metadata) into
+        the old-style custom_category_names (just name strings) for compatibility
+        with the legacy naming.py resolve_category() function.
+
         Returns:
             Config dictionary with profile-specific category data merged in
         """
@@ -165,8 +169,21 @@ class FolderFreshApplication:
                     if profile.get("id") == active_id:
                         # Merge category data from profile
                         merged_config["custom_categories"] = profile.get("custom_categories", {})
-                        merged_config["category_overrides"] = profile.get("category_overrides", {})
                         merged_config["category_enabled"] = profile.get("category_enabled", {})
+
+                        # Transform category_overrides format for legacy compatibility
+                        # Profile format: {"cat_name": {"name": "Display Name", "extensions": [...]}}
+                        # Legacy format: {"cat_name": "Display Name"}
+                        category_overrides = profile.get("category_overrides", {})
+                        custom_category_names = {}
+                        for cat_name, override_data in category_overrides.items():
+                            if isinstance(override_data, dict) and "name" in override_data:
+                                custom_category_names[cat_name] = override_data["name"]
+                            elif isinstance(override_data, str):
+                                # Handle old-style string overrides
+                                custom_category_names[cat_name] = override_data
+
+                        merged_config["custom_category_names"] = custom_category_names
                         break
         except Exception as e:
             # If profile loading fails, just use the config as-is
