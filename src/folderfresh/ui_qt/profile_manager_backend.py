@@ -52,7 +52,7 @@ class ProfileManagerBackend(QObject):
             self.profiles_reloaded.emit()
         except Exception as e:
             log_error(f"Failed to load profiles: {e}")
-            show_error_dialog("Load Error", f"Failed to load profiles:\n{e}")
+            show_error_dialog(None, "Load Error", f"Failed to load profiles:\n{e}")
 
     def _set_active_profile(self) -> None:
         """Set the currently active profile"""
@@ -101,7 +101,7 @@ class ProfileManagerBackend(QObject):
             # Check for duplicate names
             for p in self.profiles_doc.get("profiles", []):
                 if p["name"].lower() == name.lower():
-                    show_error_dialog(f"Profile '{name}' already exists")
+                    show_error_dialog(None, "Duplicate Profile", f"Profile '{name}' already exists")
                     return None
 
             # Create new profile
@@ -125,13 +125,13 @@ class ProfileManagerBackend(QObject):
 
             log_info(f"Profile created: {name} ({new_profile['id']})")
             self.profile_created.emit(new_profile["id"])
-            show_info_dialog(f"Profile '{name}' created successfully")
+            show_info_dialog(None, "Profile Created", f"Profile '{name}' created successfully")
 
             return new_profile["id"]
 
         except Exception as e:
             log_error(f"Failed to create profile: {e}")
-            show_error_dialog(f"Failed to create profile:\n{e}")
+            show_error_dialog(None, "Create Profile Failed", f"Failed to create profile:\n{e}")
             return None
 
     def update_profile(self, profile_id: str, **kwargs) -> bool:
@@ -157,7 +157,7 @@ class ProfileManagerBackend(QObject):
                 # Check for duplicates
                 for p in self.profiles_doc.get("profiles", []):
                     if p["id"] != profile_id and p["name"].lower() == new_name.lower():
-                        show_error_dialog(f"Profile '{new_name}' already exists")
+                        show_error_dialog(None, "Duplicate Profile", f"Profile '{new_name}' already exists")
                         return False
                 profile["name"] = new_name
 
@@ -174,7 +174,7 @@ class ProfileManagerBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to update profile: {e}")
-            show_error_dialog(f"Failed to update profile:\n{e}")
+            show_error_dialog(None, "Update Profile Failed", f"Failed to update profile:\n{e}")
             return False
 
     def delete_profile(self, profile_id: str) -> bool:
@@ -190,12 +190,12 @@ class ProfileManagerBackend(QObject):
         try:
             profile = self.get_profile_by_id(profile_id)
             if not profile:
-                show_error_dialog(f"Profile not found: {profile_id}")
+                show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_id}")
                 return False
 
             # Cannot delete active profile
             if profile_id == self.profiles_doc.get("active_profile_id"):
-                show_error_dialog(f"Cannot delete active profile '{profile['name']}'")
+                show_error_dialog(None, "Cannot Delete", f"Cannot delete active profile '{profile['name']}'")
                 return False
 
             # Confirm deletion
@@ -215,13 +215,13 @@ class ProfileManagerBackend(QObject):
 
             log_info(f"Profile deleted: {profile['name']}")
             self.profile_deleted.emit(profile_id)
-            show_info_dialog(f"Profile '{profile['name']}' deleted")
+            show_info_dialog(None, "Profile Deleted", f"Profile '{profile['name']}' deleted")
 
             return True
 
         except Exception as e:
             log_error(f"Failed to delete profile: {e}")
-            show_error_dialog(f"Failed to delete profile:\n{e}")
+            show_error_dialog(None, "Delete Profile Failed", f"Failed to delete profile:\n{e}")
             return False
 
     def set_active_profile(self, profile_id: str) -> bool:
@@ -237,7 +237,7 @@ class ProfileManagerBackend(QObject):
         try:
             profile = self.get_profile_by_id(profile_id)
             if not profile:
-                show_error_dialog(f"Profile not found: {profile_id}")
+                show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_id}")
                 return False
 
             self.profiles_doc["active_profile_id"] = profile_id
@@ -251,7 +251,7 @@ class ProfileManagerBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to set active profile: {e}")
-            show_error_dialog(f"Failed to set active profile:\n{e}")
+            show_error_dialog(None, "Set Active Profile Failed", f"Failed to set active profile:\n{e}")
             return False
 
     def duplicate_profile(self, profile_id: str) -> Optional[str]:
@@ -267,7 +267,7 @@ class ProfileManagerBackend(QObject):
         try:
             profile = self.get_profile_by_id(profile_id)
             if not profile:
-                show_error_dialog(f"Profile not found: {profile_id}")
+                show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_id}")
                 return None
 
             # Create duplicate
@@ -294,7 +294,7 @@ class ProfileManagerBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to duplicate profile: {e}")
-            show_error_dialog(f"Failed to duplicate profile:\n{e}")
+            show_error_dialog(None, "Duplicate Profile Failed", f"Failed to duplicate profile:\n{e}")
             return None
 
     def reload_profiles(self) -> None:
@@ -309,5 +309,5 @@ class ProfileManagerBackend(QObject):
             return True
         except Exception as e:
             log_error(f"Failed to save profiles: {e}")
-            show_error_dialog(f"Failed to save profiles:\n{e}")
+            show_error_dialog(None, "Save Profiles Failed", f"Failed to save profiles:\n{e}")
             return False
