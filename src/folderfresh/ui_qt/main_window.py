@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QCloseEvent
 
 from .sidebar import SidebarWidget
 from .status_bar import StatusBar
@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
 
     # Signals for main actions (no logic in UI, just event notification)
     folder_chosen = Signal(Path)
+    folder_open_requested = Signal()  # Open the selected folder in file explorer
     preview_requested = Signal()
     organise_requested = Signal()
     undo_requested = Signal()
@@ -63,6 +64,7 @@ class MainWindow(QMainWindow):
 
         self.selected_folder: Optional[Path] = None
         self.advanced_visible = False
+        self.tray_mode_enabled = False  # Track if tray mode is currently active
 
         self._init_ui()
 
@@ -317,7 +319,7 @@ class MainWindow(QMainWindow):
         footer_frame = HorizontalFrame(spacing=8)
 
         credit_label = StyledLabel(
-            "Made with ❤️ by Trihedron1240  |  Visit FolderFresh on GitHub",
+            "Made by Trihedron1240  |  Visit FolderFresh on GitHub",
             font_size=Fonts.SIZE_SMALL,
         )
         credit_label.setStyleSheet(
@@ -345,8 +347,12 @@ class MainWindow(QMainWindow):
         self.folder_chosen.emit(None)
 
     def _on_open_folder(self) -> None:
-        """Handle open folder button (emits signal, no logic)."""
-        self.folder_chosen.emit(None)
+        """Handle open folder button - open selected folder in file explorer."""
+        if self.selected_folder:
+            self.folder_open_requested.emit()
+        else:
+            # If no folder selected, open the dialog to choose one
+            self.folder_chosen.emit(None)
 
     def _toggle_advanced(self) -> None:
         """Toggle advanced options visibility."""
@@ -356,6 +362,19 @@ class MainWindow(QMainWindow):
         # Update button text
         arrow = "▲" if self.advanced_visible else "▼"
         self.advanced_btn.setText(f"Advanced Options {arrow}")
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """
+        Handle window close event.
+        If tray mode is enabled, hide the window instead of closing.
+        """
+        if self.tray_mode_enabled:
+            # Hide instead of close when tray mode is active
+            event.ignore()
+            self.hide()
+        else:
+            # Allow close when tray mode is disabled
+            event.accept()
 
     # ========== PUBLIC METHODS FOR BACKEND INTEGRATION ==========
 
@@ -463,6 +482,27 @@ class MainWindow(QMainWindow):
             self.startup_check.setChecked(options["startup"])
         if "tray_mode" in options:
             self.tray_mode_check.setChecked(options["tray_mode"])
+
+    def set_tray_mode_enabled(self, enabled: bool) -> None:
+        """
+        Update tray mode state (affects window close behavior).
+
+        Args:
+            enabled: True if tray mode is active, False otherwise
+        """
+        self.tray_mode_enabled = enabled
+
+    def set_undo_button_state(self, enabled: bool, button_text: str) -> None:
+        """
+        Update undo button state and text.
+
+        Args:
+            enabled: True if undo is available, False otherwise
+            button_text: Text to display on the button
+        """
+        if hasattr(self, 'undo_btn'):
+            self.undo_btn.setEnabled(enabled)
+            self.undo_btn.setText(button_text)
 
 
 if __name__ == "__main__":
