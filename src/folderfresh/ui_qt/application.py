@@ -876,11 +876,47 @@ class FolderFreshApplication:
                 log_window.undo_last_requested.connect(
                     lambda: self.main_window_backend.perform_undo()
                 )
+                log_window.undo_history_requested.connect(
+                    self._on_show_undo_history
+                )
 
             log_window.closed.connect(lambda: self._on_window_closed("activity_log"))
 
             self.active_windows["activity_log"] = log_window
             log_window.show()
+
+    def _on_show_undo_history(self) -> None:
+        """Show undo history as a dialog."""
+        try:
+            if not self.main_window_backend:
+                return
+
+            from folderfresh.ui_qt.dialogs import show_info_dialog
+
+            history = self.main_window_backend.get_undo_history()
+            menu_items = self.main_window_backend.get_undo_menu_items(max_items=10)
+
+            if not menu_items:
+                show_info_dialog(
+                    self.main_window,
+                    "Undo History",
+                    "No undo history available"
+                )
+                return
+
+            # Format history for display
+            history_text = "Recent Undo History:\n\n"
+            for i, item in enumerate(menu_items, 1):
+                history_text += f"{i}. {item}\n"
+
+            show_info_dialog(
+                self.main_window,
+                "Undo History",
+                history_text
+            )
+
+        except Exception as e:
+            log_error(f"Failed to show undo history: {e}")
 
     @Slot()
     def _on_report_bug(self) -> None:
