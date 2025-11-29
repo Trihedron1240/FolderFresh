@@ -28,6 +28,7 @@ class HelpWindow(QDialog):
     # Signals
     view_log_clicked = Signal()
     report_bug_clicked = Signal()
+    closed = Signal()
 
     def __init__(self, parent=None):
         """
@@ -143,5 +144,6 @@ For more information, visit the GitHub repository or check the activity log.
 
     def closeEvent(self, event):
         """Handle window close event."""
+        self.closed.emit()
         self.accept()
         event.accept()
