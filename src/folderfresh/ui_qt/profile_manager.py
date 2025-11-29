@@ -1,0 +1,498 @@
+"""
+PySide6 profile manager window for FolderFresh.
+Two-pane interface for managing multiple profiles.
+"""
+
+from typing import Dict, List, Optional, Any
+
+from PySide6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QSplitter,
+    QFrame,
+)
+from PySide6.QtCore import Qt, Signal
+
+from .styles import Colors, Fonts
+from .base_widgets import (
+    StyledButton,
+    DangerButton,
+    StyledLineEdit,
+    StyledTextEdit,
+    HeadingLabel,
+    MutedLabel,
+    StyledLabel,
+    VerticalFrame,
+    HorizontalFrame,
+    CardFrame,
+    ScrollableFrame,
+)
+from .dialogs import ask_text_dialog, show_confirmation_dialog, show_info_dialog, show_warning_dialog
+
+
+class ProfileManagerWindow(QDialog):
+    """Dialog for managing profiles with sidebar and editor pane."""
+
+    # Signals
+    profile_selected = Signal(str)  # Emits profile ID
+    profile_created = Signal(str)  # Emits new profile ID
+    profile_deleted = Signal(str)  # Emits deleted profile ID
+    profile_renamed = Signal(str, str)  # Emits (profile_id, new_name)
+    profile_duplicated = Signal(str)  # Emits new profile ID
+    active_profile_changed = Signal(str)  # Emits active profile ID
+    profile_changed = Signal()  # Emits when any profile changes
+    closed = Signal()
+
+    def __init__(self, parent=None, profiles: List[Dict[str, Any]] = None, active_profile_id: str = None):
+        """
+        Initialize profile manager.
+
+        Args:
+            parent: Parent widget
+            profiles: List of profile dictionaries
+            active_profile_id: ID of currently active profile
+        """
+        super().__init__(parent)
+        self.setWindowTitle("Manage Profiles")
+        self.setGeometry(200, 100, 1000, 700)
+        self.setMinimumSize(800, 500)
+        self.setStyleSheet(f"QDialog {{ background-color: {Colors.PANEL_BG}; }}")
+        self.setModal(True)
+
+        self.profiles = {p["id"]: p for p in (profiles or [])}
+        self.active_profile_id = active_profile_id
+        self.selected_profile_id: Optional[str] = None
+        self.profile_list_items: Dict[str, CardFrame] = {}
+
+        self._init_ui()
+
+    def _init_ui(self) -> None:
+        """Initialize UI with splitter."""
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(12, 12, 12, 12)
+        main_layout.setSpacing(12)
+
+        # Title
+        title = HeadingLabel("Manage Profiles")
+        main_layout.addWidget(title)
+
+        # Splitter for sidebar + editor
+        splitter = QSplitter(Qt.Horizontal)
+
+        # Left sidebar (profile list)
+        sidebar_widget = QFrame()
+        sidebar_layout = QVBoxLayout(sidebar_widget)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(8)
+
+        # Sidebar buttons
+        sidebar_buttons = HorizontalFrame(spacing=6)
+
+        new_btn = StyledButton("+ New", bg_color=Colors.ACCENT)
+        new_btn.clicked.connect(self._on_new_profile)
+        sidebar_buttons.add_widget(new_btn)
+
+        import_btn = StyledButton("Import", bg_color=Colors.ACCENT)
+        import_btn.clicked.connect(self._on_import_profiles)
+        sidebar_buttons.add_widget(import_btn)
+
+        export_btn = StyledButton("Export", bg_color=Colors.ACCENT)
+        export_btn.clicked.connect(self._on_export_profile)
+        sidebar_buttons.add_widget(export_btn)
+
+        sidebar_layout.addWidget(sidebar_buttons)
+
+        # Profile list (scrollable)
+        self.profiles_scroll = ScrollableFrame(spacing=6)
+        sidebar_layout.addWidget(self.profiles_scroll, 1)
+
+        sidebar_widget.setLayout(sidebar_layout)
+        sidebar_widget.setMaximumWidth(280)
+        splitter.addWidget(sidebar_widget)
+
+        # Right editor pane
+        self.editor_scroll = ScrollableFrame(spacing=12)
+        splitter.addWidget(self.editor_scroll)
+
+        # Set splitter proportions
+        splitter.setSizes([280, 700])
+        splitter.setCollapsible(0, False)
+
+        main_layout.addWidget(splitter, 1)
+
+        # Bottom buttons
+        bottom_buttons = HorizontalFrame(spacing=8)
+        bottom_buttons.add_stretch()
+
+        close_btn = StyledButton("Close", bg_color=Colors.BORDER_LIGHT)
+        close_btn.clicked.connect(self._on_close)
+        bottom_buttons.add_widget(close_btn)
+
+        main_layout.addWidget(bottom_buttons)
+
+        # Render initial state
+        self._refresh_profile_list()
+
+    def _refresh_profile_list(self) -> None:
+        """Rebuild profile list."""
+        self.profiles_scroll.clear()
+        self.profile_list_items.clear()
+
+        for profile_id in sorted(self.profiles.keys(), key=lambda pid: self.profiles[pid].get("name", "")):
+            self._create_profile_list_item(profile_id)
+
+        self.profiles_scroll.add_stretch()
+
+    def _create_profile_list_item(self, profile_id: str) -> None:
+        """
+        Create a profile list item.
+
+        Args:
+            profile_id: Profile ID
+        """
+        profile = self.profiles.get(profile_id, {})
+        profile_name = profile.get("name", "Unknown")
+
+        # Main item frame
+        item_frame = CardFrame()
+        item_layout = QHBoxLayout(item_frame)
+        item_layout.setContentsMargins(12, 12, 12, 12)
+        item_layout.setSpacing(8)
+
+        # Profile name label
+        name_label = StyledLabel(
+            profile_name,
+            font_size=Fonts.SIZE_NORMAL,
+            bold=True,
+        )
+        item_layout.addWidget(name_label, 1)
+
+        # Active indicator
+        if profile_id == self.active_profile_id:
+            active_label = MutedLabel("(active)")
+            active_label.setMaximumWidth(80)
+            item_layout.addWidget(active_label)
+
+        # Menu button
+        menu_btn = StyledButton("⋯", bg_color=Colors.BORDER_LIGHT)
+        menu_btn.setMaximumWidth(40)
+        menu_btn.clicked.connect(lambda: self._show_profile_menu(profile_id))
+        item_layout.addWidget(menu_btn)
+
+        item_frame.setLayout(item_layout)
+
+        # Make clickable for selection
+        item_frame.setCursor(Qt.PointingHandCursor)
+        item_frame.profile_id = profile_id
+        item_frame.mousePressEvent = lambda event: self._on_profile_clicked(profile_id)
+
+        # Highlight if selected
+        if profile_id == self.selected_profile_id:
+            item_frame.setStyleSheet(
+                f"""
+                QFrame {{
+                    background-color: {Colors.ACCENT};
+                    border-radius: 8px;
+                    border: 2px solid {Colors.ACCENT};
+                }}
+                QLabel {{
+                    color: white;
+                }}
+                """
+            )
+
+        self.profiles_scroll.add_widget(item_frame)
+        self.profile_list_items[profile_id] = item_frame
+
+    def _on_profile_clicked(self, profile_id: str) -> None:
+        """Handle profile selection."""
+        self.selected_profile_id = profile_id
+        self.profile_selected.emit(profile_id)
+        self._refresh_profile_list()
+        self._render_editor_pane(profile_id)
+
+    def _show_profile_menu(self, profile_id: str) -> None:
+        """Show context menu for profile."""
+        # Simplified menu - in real app would use QMenu
+        profile = self.profiles.get(profile_id, {})
+        is_builtin = profile.get("is_builtin", False)
+
+        # For now, just show quick action buttons
+        # A full implementation would use QMenu for popup
+        self._on_profile_clicked(profile_id)
+
+    def _render_editor_pane(self, profile_id: str) -> None:
+        """
+        Render profile editor in right pane.
+
+        Args:
+            profile_id: Profile to edit
+        """
+        self.editor_scroll.clear()
+
+        profile = self.profiles.get(profile_id)
+        if not profile:
+            self.editor_scroll.add_widget(
+                StyledLabel("No profile selected", font_size=Fonts.SIZE_SMALL)
+            )
+            return
+
+        # Profile name section
+        name_section = VerticalFrame(spacing=8)
+
+        name_label = StyledLabel("Profile Name:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        name_section.add_widget(name_label)
+
+        name_entry = StyledLineEdit(
+            placeholder="Profile name",
+            font_size=Fonts.SIZE_NORMAL,
+        )
+        name_entry.setText(profile.get("name", ""))
+        name_section.add_widget(name_entry)
+
+        self.editor_scroll.add_widget(name_section)
+
+        # Description section
+        desc_section = VerticalFrame(spacing=8)
+
+        desc_label = StyledLabel("Description:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        desc_section.add_widget(desc_label)
+
+        desc_entry = StyledTextEdit()
+        desc_entry.setPlainText(profile.get("description", ""))
+        desc_entry.setMaximumHeight(100)
+        desc_section.add_widget(desc_entry)
+
+        self.editor_scroll.add_widget(desc_section)
+
+        # Info section
+        info_section = VerticalFrame(spacing=6)
+
+        info_label = StyledLabel("Profile Info:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        info_section.add_widget(info_label)
+
+        info_text = f"""ID: {profile.get('id', 'unknown')}
+Created: {profile.get('created_at', 'unknown')}
+Updated: {profile.get('updated_at', 'unknown')}
+Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
+
+        info_display = MutedLabel(info_text)
+        info_display.setWordWrap(True)
+        info_section.add_widget(info_display)
+
+        self.editor_scroll.add_widget(info_section)
+
+        # Action buttons
+        action_section = HorizontalFrame(spacing=8)
+
+        rename_btn = StyledButton("Rename", bg_color=Colors.ACCENT)
+        rename_btn.clicked.connect(lambda: self._on_rename_profile(profile_id, name_entry))
+        action_section.add_widget(rename_btn)
+
+        dup_btn = StyledButton("Duplicate", bg_color=Colors.ACCENT)
+        dup_btn.clicked.connect(lambda: self._on_duplicate_profile(profile_id))
+        action_section.add_widget(dup_btn)
+
+        if not profile.get("is_builtin", False):
+            del_btn = DangerButton("Delete")
+            del_btn.clicked.connect(lambda: self._on_delete_profile(profile_id))
+            action_section.add_widget(del_btn)
+
+        if profile_id != self.active_profile_id:
+            activate_btn = StyledButton("Set Active", bg_color=Colors.SUCCESS)
+            activate_btn.clicked.connect(lambda: self._on_set_active(profile_id))
+            action_section.add_widget(activate_btn)
+
+        action_section.add_stretch()
+
+        self.editor_scroll.add_widget(action_section)
+
+        # Save button
+        save_btn = StyledButton("Save Changes", bg_color=Colors.SUCCESS)
+        save_btn.clicked.connect(
+            lambda: self._on_save_profile(profile_id, name_entry, desc_entry)
+        )
+        self.editor_scroll.add_widget(save_btn)
+
+        self.editor_scroll.add_stretch()
+
+    def _on_new_profile(self) -> None:
+        """Create new profile."""
+        name = ask_text_dialog(
+            self,
+            title="New Profile",
+            prompt="Enter profile name:",
+            placeholder="My Profile",
+        )
+
+        if not name:
+            return
+
+        # Create new profile dict
+        import time
+        new_id = f"profile_{int(time.time())}"
+
+        new_profile = {
+            "id": new_id,
+            "name": name,
+            "description": "",
+            "rules": [],
+            "created_at": "",  # Backend will set
+            "updated_at": "",  # Backend will set
+            "is_builtin": False,
+        }
+
+        self.profiles[new_id] = new_profile
+        self._refresh_profile_list()
+        self.profile_created.emit(new_id)
+
+    def _on_rename_profile(self, profile_id: str, name_entry: StyledLineEdit) -> None:
+        """Rename profile."""
+        new_name = name_entry.text().strip()
+
+        if not new_name:
+            show_warning_dialog(self, "Rename", "Profile name cannot be empty.")
+            return
+
+        if profile_id in self.profiles:
+            old_name = self.profiles[profile_id]["name"]
+            self.profiles[profile_id]["name"] = new_name
+            self._refresh_profile_list()
+            self.profile_renamed.emit(profile_id, new_name)
+            show_info_dialog(self, "Renamed", f"Profile '{old_name}' renamed to '{new_name}'.")
+
+    def _on_duplicate_profile(self, profile_id: str) -> None:
+        """Duplicate profile."""
+        source = self.profiles.get(profile_id)
+        if not source:
+            return
+
+        import time
+        import json
+
+        new_id = f"profile_{int(time.time())}"
+
+        # Deep copy
+        duplicate = json.loads(json.dumps(source))
+        duplicate.update({
+            "id": new_id,
+            "name": f"{source['name']} (copy)",
+            "is_builtin": False,
+        })
+
+        self.profiles[new_id] = duplicate
+        self._refresh_profile_list()
+        self.profile_duplicated.emit(new_id)
+        show_info_dialog(self, "Duplicated", f"Profile duplicated as '{duplicate['name']}'.")
+
+    def _on_delete_profile(self, profile_id: str) -> None:
+        """Delete profile."""
+        profile = self.profiles.get(profile_id)
+        if not profile:
+            return
+
+        if profile.get("is_builtin", False):
+            show_warning_dialog(self, "Protected", "Cannot delete built-in profile.")
+            return
+
+        if not show_confirmation_dialog(
+            self,
+            "Delete Profile",
+            f"Delete profile '{profile.get('name')}'?",
+        ):
+            return
+
+        del self.profiles[profile_id]
+
+        # Update active profile if needed
+        if profile_id == self.active_profile_id and self.profiles:
+            new_active = next(iter(self.profiles.keys()))
+            self.active_profile_id = new_active
+
+        self.selected_profile_id = None
+        self._refresh_profile_list()
+        self.editor_scroll.clear()
+        self.profile_deleted.emit(profile_id)
+
+    def _on_set_active(self, profile_id: str) -> None:
+        """Set profile as active."""
+        self.active_profile_id = profile_id
+        self._refresh_profile_list()
+        self._render_editor_pane(profile_id)
+        self.active_profile_changed.emit(profile_id)
+        show_info_dialog(self, "Active Profile", "Profile set as active.")
+
+    def _on_save_profile(
+        self,
+        profile_id: str,
+        name_entry: StyledLineEdit,
+        desc_entry: StyledTextEdit,
+    ) -> None:
+        """Save profile changes."""
+        new_name = name_entry.text().strip()
+        new_desc = desc_entry.toPlainText().strip()
+
+        if not new_name:
+            show_warning_dialog(self, "Save", "Profile name cannot be empty.")
+            return
+
+        if profile_id in self.profiles:
+            self.profiles[profile_id]["name"] = new_name
+            self.profiles[profile_id]["description"] = new_desc
+
+            self._refresh_profile_list()
+            self.profile_changed.emit()
+            show_info_dialog(self, "Saved", "Profile changes saved.")
+
+    def _on_import_profiles(self) -> None:
+        """Import profiles from file."""
+        # Placeholder for import functionality
+        show_info_dialog(
+            self,
+            "Import",
+            "Import functionality would be implemented in backend integration.",
+        )
+
+    def _on_export_profile(self) -> None:
+        """Export profile to file."""
+        # Placeholder for export functionality
+        show_info_dialog(
+            self,
+            "Export",
+            "Export functionality would be implemented in backend integration.",
+        )
+
+    def _on_close(self) -> None:
+        """Handle close button."""
+        self.closed.emit()
+        self.accept()
+
+    def closeEvent(self, event) -> None:
+        """Handle window close."""
+        self.closed.emit()
+        self.accept()
+        event.accept()
+
+    # ========== PUBLIC METHODS FOR BACKEND INTEGRATION ==========
+
+    def set_profiles(self, profiles: List[Dict[str, Any]]) -> None:
+        """
+        Set profiles list.
+
+        Args:
+            profiles: List of profile dictionaries
+        """
+        self.profiles = {p["id"]: p for p in profiles}
+        self.selected_profile_id = None
+        self._refresh_profile_list()
+
+    def get_profiles(self) -> List[Dict[str, Any]]:
+        """Get all profiles."""
+        return list(self.profiles.values())
+
+    def set_active_profile(self, profile_id: str) -> None:
+        """Set active profile."""
+        self.active_profile_id = profile_id
+        self._refresh_profile_list()
