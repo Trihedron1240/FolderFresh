@@ -13,8 +13,28 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt
+from PySide6.QtMultimedia import QSoundEffect
 
 from .styles import Colors
+
+
+def _suppress_dialog_sound(msg_box: QMessageBox) -> None:
+    """
+    Suppress the system notification sound for message boxes.
+    On Windows, this prevents the beep sound when dialogs appear.
+    """
+    try:
+        import ctypes
+        import platform
+
+        if platform.system() == "Windows":
+            # Use ctypes to call the Windows API and disable the system sound
+            # MB_ICONWARNING = 0x30 (yellow warning icon - silent)
+            # We use this to prevent the default beep
+            ctypes.windll.user32.MessageBeep(0)  # Beep with 0 means no sound
+    except Exception:
+        # If any error occurs, just continue without suppression
+        pass
 
 
 # ========== CONFIRMATION DIALOGS ==========
@@ -46,6 +66,7 @@ def show_confirmation_dialog(
     msg_box.setDefaultButton(QMessageBox.No)
     msg_box.setIcon(QMessageBox.Question)
 
+    _suppress_dialog_sound(msg_box)
     _apply_dialog_styling(msg_box)
 
     return msg_box.exec() == QMessageBox.Yes
@@ -74,6 +95,7 @@ def show_info_dialog(
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.setIcon(QMessageBox.Information)
 
+    _suppress_dialog_sound(msg_box)
     _apply_dialog_styling(msg_box)
 
     msg_box.exec()
@@ -102,6 +124,7 @@ def show_warning_dialog(
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.setIcon(QMessageBox.Warning)
 
+    _suppress_dialog_sound(msg_box)
     _apply_dialog_styling(msg_box)
 
     msg_box.exec()
@@ -130,6 +153,7 @@ def show_error_dialog(
     msg_box.setStandardButtons(QMessageBox.Ok)
     msg_box.setIcon(QMessageBox.Critical)
 
+    _suppress_dialog_sound(msg_box)
     _apply_dialog_styling(msg_box)
 
     msg_box.exec()
@@ -154,6 +178,7 @@ def ask_save_changes_dialog(parent) -> Optional[bool]:
     msg_box.setDefaultButton(QMessageBox.Save)
     msg_box.setIcon(QMessageBox.Warning)
 
+    _suppress_dialog_sound(msg_box)
     _apply_dialog_styling(msg_box)
 
     result = msg_box.exec()
