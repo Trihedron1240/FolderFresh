@@ -29,6 +29,13 @@ CONDITION_CATEGORIES = {
         "Content Contains",
         "Date Pattern",
     ],
+    "Metadata & Tags": [
+        "Color Is",
+        "Has Tag",
+        "Metadata Contains",
+        "Metadata Field Equals",
+        "Is Duplicate",
+    ],
 }
 
 

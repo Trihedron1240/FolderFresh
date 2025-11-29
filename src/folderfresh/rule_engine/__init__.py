@@ -43,3 +43,29 @@ from .tier1_conditions import (
     ContentContainsCondition,
     DatePatternCondition,
 )
+
+# Tier-2 Metadata
+from .tier2_metadata import (
+    METADATA_DB,
+    calculate_quick_hash,
+    calculate_full_hash,
+    extract_file_metadata,
+)
+
+# Tier-2 Actions
+from .tier2_actions import (
+    ColorLabelAction,
+    AddTagAction,
+    RemoveTagAction,
+    DeleteToTrashAction,
+    MarkAsDuplicateAction,
+)
+
+# Tier-2 Conditions
+from .tier2_conditions import (
+    ColorIsCondition,
+    HasTagCondition,
+    MetadataContainsCondition,
+    MetadataFieldEqualsCondition,
+    IsDuplicateCondition,
+)

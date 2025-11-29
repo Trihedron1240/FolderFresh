@@ -13,6 +13,12 @@ from folderfresh.rule_engine import (
     ArchiveAction,
     ExtractAction,
     CreateFolderAction,
+    # Tier-2 Actions
+    ColorLabelAction,
+    AddTagAction,
+    RemoveTagAction,
+    DeleteToTrashAction,
+    MarkAsDuplicateAction,
 )
 
 ACTION_TYPES = {
@@ -26,6 +32,12 @@ ACTION_TYPES = {
     "Archive to ZIP": ArchiveAction,
     "Extract Archive": ExtractAction,
     "Create Folder": CreateFolderAction,
+    # Tier-2 Advanced Actions
+    "Set Color Label": ColorLabelAction,
+    "Add Tag": AddTagAction,
+    "Remove Tag": RemoveTagAction,
+    "Delete to Trash": DeleteToTrashAction,
+    "Mark as Duplicate": MarkAsDuplicateAction,
 }
 
 
@@ -202,6 +214,37 @@ class ActionEditor(ctk.CTkToplevel):
                 "Example: 'Documents/<year>/<month>' or 'Photos/<name>'\n\n"
                 "Idempotent: Skips if folder already exists"
             ),
+            # Tier-2 Advanced Actions
+            "Set Color Label": (
+                "Action: Apply a color label to the file\n\n"
+                "Parameter: Color name (red, blue, green, yellow, orange, purple)\n\n"
+                "Example: 'red' or 'blue'\n\n"
+                "Idempotent: Skips if file already has that color"
+            ),
+            "Add Tag": (
+                "Action: Add a tag/label to the file\n\n"
+                "Parameter: Tag name (any string)\n\n"
+                "Example: 'important', 'urgent', 'confidential'\n\n"
+                "Idempotent: Skips if tag already exists"
+            ),
+            "Remove Tag": (
+                "Action: Remove a tag/label from the file\n\n"
+                "Parameter: Tag name to remove\n\n"
+                "Example: 'archived', 'temporary'\n\n"
+                "Idempotent: Skips if tag doesn't exist"
+            ),
+            "Delete to Trash": (
+                "Action: Safely delete to recycle bin\n\n"
+                "This action has NO parameters - file is sent to recycle bin.\n\n"
+                "Safe mode: Skips deletion (preview only)\n"
+                "Note: Uses send2trash for safe deletion with undo capability"
+            ),
+            "Mark as Duplicate": (
+                "Action: Mark file as a duplicate\n\n"
+                "This action has NO parameters - adds a 'duplicate' tag.\n\n"
+                "Useful for identifying files with matching content/hash\n"
+                "Idempotent: Skips if already marked"
+            ),
         }
 
         labels = {
@@ -214,13 +257,19 @@ class ActionEditor(ctk.CTkToplevel):
             "Archive to ZIP": "Destination folder:",
             "Extract Archive": "Destination folder:",
             "Create Folder": "Folder path:",
+            "Set Color Label": "Color name (red, blue, green, yellow, orange, purple):",
+            "Add Tag": "Tag name:",
+            "Remove Tag": "Tag name to remove:",
+            "Delete to Trash": "(No parameter needed)",
+            "Mark as Duplicate": "(No parameter needed)",
         }
 
         # Update label
         self.param_label.configure(text=labels.get(choice, "Parameter:"))
 
-        # For Delete File action, disable/hide parameter entry
-        if choice == "Delete File":
+        # For actions with no parameters, disable/hide parameter entry
+        no_param_actions = {"Delete File", "Delete to Trash", "Mark as Duplicate"}
+        if choice in no_param_actions:
             self.param_entry.configure(state="disabled")
         else:
             self.param_entry.configure(state="normal")
@@ -236,8 +285,10 @@ class ActionEditor(ctk.CTkToplevel):
         choice = self.type_menu.get()
         param = self.param_entry.get().strip()
 
-        # DeleteFileAction takes no parameters
-        if choice == "Delete File":
+        # Actions that don't require parameters
+        no_param_actions = {"Delete File", "Delete to Trash", "Mark as Duplicate"}
+
+        if choice in no_param_actions:
             # No parameter validation needed
             param = None
         else:
@@ -250,7 +301,7 @@ class ActionEditor(ctk.CTkToplevel):
             ActionClass = ACTION_TYPES[choice]
 
             # Create actual action object
-            if choice == "Delete File":
+            if choice in no_param_actions:
                 action_obj = ActionClass()
             else:
                 action_obj = ActionClass(param)

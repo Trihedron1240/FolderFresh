@@ -20,6 +20,12 @@ from folderfresh.rule_engine import (
     # Tier-1 Conditions
     ContentContainsCondition,
     DatePatternCondition,
+    # Tier-2 Conditions
+    ColorIsCondition,
+    HasTagCondition,
+    MetadataContainsCondition,
+    MetadataFieldEqualsCondition,
+    IsDuplicateCondition,
 )
 
 CONDITION_TYPES = {
@@ -40,6 +46,12 @@ CONDITION_TYPES = {
     # Tier-1 Conditions
     "Content Contains": ContentContainsCondition,
     "Date Pattern": DatePatternCondition,
+    # Tier-2 Conditions
+    "Color Is": ColorIsCondition,
+    "Has Tag": HasTagCondition,
+    "Metadata Contains": MetadataContainsCondition,
+    "Metadata Field Equals": MetadataFieldEqualsCondition,
+    "Is Duplicate": IsDuplicateCondition,
 }
 
 
