@@ -102,13 +102,13 @@ class ActivityLogBackend(QObject):
 
             log_info("Activity log cleared")
             self.log_cleared.emit()
-            show_info_dialog("Activity log cleared")
+            show_info_dialog(None, "Activity Log Cleared", "Activity log cleared")
 
             return True
 
         except Exception as e:
             log_error(f"Failed to clear log: {e}")
-            show_error_dialog(f"Failed to clear log:\n{e}")
+            show_error_dialog(None, "Clear Log Failed", f"Failed to clear log:\n{e}")
             return False
 
     def export_log(self, file_path: str = None, format: str = "txt") -> bool:
@@ -132,7 +132,7 @@ class ActivityLogBackend(QObject):
                 file_path = save_file_dialog(
                     None,
                     "Export Activity Log",
-                    filter=filter_str
+                    file_filter=filter_str
                 )
                 if not file_path:
                     return False
@@ -145,13 +145,13 @@ class ActivityLogBackend(QObject):
 
             log_info(f"Activity log exported: {file_path}")
             self.log_exported.emit(file_path)
-            show_info_dialog(f"Log exported to:\n{file_path}")
+            show_info_dialog(None, "Log Exported", f"Log exported to:\n{file_path}")
 
             return True
 
         except Exception as e:
             log_error(f"Failed to export log: {e}")
-            show_error_dialog(f"Failed to export log:\n{e}")
+            show_error_dialog(None, "Export Log Failed", f"Failed to export log:\n{e}")
             return False
 
     def _export_csv(self, file_path: str) -> None:
