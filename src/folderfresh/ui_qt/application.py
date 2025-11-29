@@ -80,6 +80,11 @@ class FolderFreshApplication:
         self._initialize_backends()
         self._connect_signals()
 
+    @property
+    def config_data(self) -> Dict[str, Any]:
+        """Public accessor for configuration data."""
+        return self._config_data
+
     def _setup_main_window(self) -> None:
         """Setup and display main window."""
         self.main_window = MainWindow()
