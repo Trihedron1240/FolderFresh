@@ -51,6 +51,7 @@ class MainWindow(QMainWindow):
     duplicates_requested = Signal()
     desktop_clean_requested = Signal()
     profiles_requested = Signal()
+    categories_requested = Signal()
     watched_folders_requested = Signal()
     help_requested = Signal()
     options_changed = Signal()

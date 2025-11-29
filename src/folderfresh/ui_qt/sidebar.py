@@ -22,6 +22,7 @@ class SidebarWidget(QWidget):
     rules_clicked = Signal()
     preview_clicked = Signal()
     activity_log_clicked = Signal()
+    categories_clicked = Signal()
 
     def __init__(self):
         super().__init__()
@@ -58,6 +59,11 @@ class SidebarWidget(QWidget):
         self.activity_log_btn = self._create_nav_button("📝 Activity Log")
         self.activity_log_btn.clicked.connect(self.activity_log_clicked.emit)
         layout.addWidget(self.activity_log_btn)
+
+        # Categories button
+        self.categories_btn = self._create_nav_button("🏷️ Categories")
+        self.categories_btn.clicked.connect(self.categories_clicked.emit)
+        layout.addWidget(self.categories_btn)
 
         # Spacer to push buttons to top
         layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -100,6 +106,7 @@ class SidebarWidget(QWidget):
             "rules": self.rules_btn,
             "preview": self.preview_btn,
             "activity_log": self.activity_log_btn,
+            "categories": self.categories_btn,
         }
 
         for btn in buttons.values():

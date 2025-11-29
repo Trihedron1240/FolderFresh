@@ -127,6 +127,7 @@ class FolderFreshApplication:
             self.main_window.sidebar.rules_clicked.connect(self._on_rules_requested)
             self.main_window.sidebar.preview_clicked.connect(self._on_preview_requested)
             self.main_window.sidebar.activity_log_clicked.connect(self._on_view_activity_log)
+            self.main_window.sidebar.categories_clicked.connect(self._on_categories_requested)
 
     def _initialize_backends(self) -> None:
         """Initialize all backend modules."""
@@ -685,6 +686,39 @@ class FolderFreshApplication:
 
             self.active_windows["profiles"] = profiles_window
             profiles_window.show()
+
+    @Slot()
+    def _on_categories_requested(self) -> None:
+        """Open categories manager window for the active profile."""
+        if "categories" not in self.active_windows or not self.active_windows["categories"].isVisible():
+            categories_window = CategoryManagerWindow(parent=self.main_window)
+
+            # Connect to category manager backend if available
+            if self.category_manager_backend:
+                # Connect signals from window to backend
+                categories_window.category_created.connect(
+                    lambda name, color: self.category_manager_backend.create_category(name, color)
+                )
+                categories_window.category_deleted.connect(
+                    lambda cid: self.category_manager_backend.delete_category(cid)
+                )
+                categories_window.category_renamed.connect(
+                    lambda cid, name: self.category_manager_backend.update_category(cid, name=name)
+                )
+                categories_window.category_color_changed.connect(
+                    lambda cid, color: self.category_manager_backend.update_category(cid, color=color)
+                )
+
+                # Connect backend signals to window
+                self.category_manager_backend.categories_reloaded.connect(
+                    lambda cats: categories_window.refresh_categories(cats)
+                )
+
+            # Close handler
+            categories_window.closed.connect(lambda: self._on_window_closed("categories"))
+
+            self.active_windows["categories"] = categories_window
+            categories_window.show()
 
     @Slot(str)
     def _on_profile_selected(self, profile_id: str) -> None:
