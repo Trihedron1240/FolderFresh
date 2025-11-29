@@ -134,6 +134,7 @@ class FolderFreshApplication:
         try:
             self.main_window_backend = MainWindowBackend()
             self.profile_manager_backend = ProfileManagerBackend()
+            self.category_manager_backend = CategoryManagerBackend()
             self.rule_manager_backend = RuleManagerBackend()
             self.watched_folders_backend = WatchedFoldersBackend()
             self.activity_log_backend = ActivityLogBackend(auto_refresh=True)
@@ -691,28 +692,17 @@ class FolderFreshApplication:
     def _on_categories_requested(self) -> None:
         """Open categories manager window for the active profile."""
         if "categories" not in self.active_windows or not self.active_windows["categories"].isVisible():
-            categories_window = CategoryManagerWindow(parent=self.main_window)
+            # Create window with backend for proper data loading
+            profile_name = "Active Profile"
+            if self.active_profile_id and self.active_profile_id in self.profiles:
+                profile_name = self.profiles[self.active_profile_id].get("name", "Active Profile")
 
-            # Connect to category manager backend if available
-            if self.category_manager_backend:
-                # Connect signals from window to backend
-                categories_window.category_created.connect(
-                    lambda name, color: self.category_manager_backend.create_category(name, color)
-                )
-                categories_window.category_deleted.connect(
-                    lambda cid: self.category_manager_backend.delete_category(cid)
-                )
-                categories_window.category_renamed.connect(
-                    lambda cid, name: self.category_manager_backend.update_category(cid, name=name)
-                )
-                categories_window.category_color_changed.connect(
-                    lambda cid, color: self.category_manager_backend.update_category(cid, color=color)
-                )
-
-                # Connect backend signals to window
-                self.category_manager_backend.categories_reloaded.connect(
-                    lambda cats: categories_window.refresh_categories(cats)
-                )
+            categories_window = CategoryManagerWindow(
+                parent=self.main_window,
+                backend=self.category_manager_backend,
+                profile_id=self.active_profile_id,
+                profile_name=profile_name
+            )
 
             # Close handler
             categories_window.closed.connect(lambda: self._on_window_closed("categories"))
