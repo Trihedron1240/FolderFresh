@@ -900,14 +900,21 @@ class FolderFreshApplication:
                 show_info_dialog(
                     self.main_window,
                     "Undo History",
-                    "No undo history available"
+                    "No undo history available.\n\n"
+                    "Undo history stores operations that can be reversed.\n"
+                    "Once an action is undone, it is removed from the history.\n"
+                    "For a complete activity log, see the Activity Log window."
                 )
                 return
 
             # Format history for display
-            history_text = "Recent Undo History:\n\n"
+            history_text = "Operations that can be undone (newest first):\n\n"
             for i, item in enumerate(menu_items, 1):
                 history_text += f"{i}. {item}\n"
+
+            history_text += "\n" + "="*50 + "\n"
+            history_text += "Once you undo an operation, it will be removed from this list.\n"
+            history_text += "For a complete activity log, see the Activity Log window."
 
             show_info_dialog(
                 self.main_window,
