@@ -320,6 +320,40 @@ class ConditionEditor(ctk.CTkToplevel):
                 "  • '2025-11-*': files created in November 2025\n"
                 "  • '*-12-25': Christmas files from any year"
             ),
+            # Tier-2 Conditions
+            "Color Is": (
+                "Matches files with a specific color label.\n\n"
+                "Parameter: Color name (red, blue, green, yellow, orange, purple)\n\n"
+                "Example: type 'red' to match all red-labeled files\n\n"
+                "Use 'Set Color Label' action to apply colors"
+            ),
+            "Has Tag": (
+                "Matches files that have a specific tag.\n\n"
+                "Parameter: Tag name (any string)\n\n"
+                "Examples: 'important', 'urgent', 'review', 'archived'\n\n"
+                "Use 'Add Tag' action to apply tags"
+            ),
+            "Metadata Contains": (
+                "Matches files by metadata content (case-insensitive).\n\n"
+                "Parameter 1: Field name (e.g., 'author', 'exif.CameraModel')\n"
+                "Parameter 2: Keyword to search for\n\n"
+                "Supports nested fields with dot notation\n"
+                "Extracted from EXIF, PDF, Office, etc."
+            ),
+            "Metadata Field Equals": (
+                "Matches files by exact metadata field value.\n\n"
+                "Parameter 1: Field name (e.g., 'status', 'pdf_pages')\n"
+                "Parameter 2: Exact value to match\n\n"
+                "Case-insensitive matching\n"
+                "Supports nested fields with dot notation"
+            ),
+            "Is Duplicate": (
+                "Matches files detected as duplicates by hash.\n\n"
+                "Parameter: Match type (quick or full)\n"
+                "  • 'quick': compares first 1MB hash (fast)\n"
+                "  • 'full': compares entire file hash (slow)\n\n"
+                "Use 'Mark as Duplicate' action to tag duplicates"
+            ),
         }
 
         labels = {
