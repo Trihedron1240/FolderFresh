@@ -128,6 +128,22 @@ class WatchedFoldersBackend(QObject):
                 return p["id"]
         return "default"
 
+    def _get_profile_name_by_id(self, profile_id: str) -> Optional[str]:
+        """
+        Get profile name from profile ID.
+
+        Args:
+            profile_id: Profile ID
+
+        Returns:
+            Profile name or None if not found
+        """
+        profiles = self.profiles_doc.get("profiles", [])
+        for p in profiles:
+            if p.get("id") == profile_id:
+                return p.get("name", profile_id)
+        return None
+
     def add_watched_folder(self, folder_path: str = None) -> bool:
         """
         Add folder to watch list
@@ -241,13 +257,13 @@ class WatchedFoldersBackend(QObject):
             show_error_dialog(None, "Remove Watched Folder Failed", f"Failed to remove watched folder:\n{e}")
             return False
 
-    def set_folder_profile(self, folder_path: str, profile_name: str) -> bool:
+    def set_folder_profile(self, folder_path: str, profile_id: str) -> bool:
         """
         Set profile for specific folder
 
         Args:
             folder_path: Folder path
-            profile_name: Profile name
+            profile_id: Profile ID (from dropdown.currentData())
 
         Returns:
             True if successful
@@ -257,10 +273,10 @@ class WatchedFoldersBackend(QObject):
                 show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
                 return False
 
-            # Verify profile exists
-            available = self.get_available_profiles()
-            if profile_name not in available:
-                show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_name}")
+            # Convert profile ID to profile name
+            profile_name = self._get_profile_name_by_id(profile_id)
+            if not profile_name:
+                show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_id}")
                 return False
 
             # Update mapping
