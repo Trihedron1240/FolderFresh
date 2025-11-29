@@ -1108,7 +1108,7 @@ class FolderFreshApplication:
         """Handle activity log updated from backend."""
         self.log_entries = entries
         if "activity_log" in self.active_windows:
-            self.active_windows["activity_log"].refresh_log(entries)
+            self.active_windows["activity_log"].set_log_entries(entries)
 
     @Slot()
     def _on_activity_log_cleared(self) -> None:
