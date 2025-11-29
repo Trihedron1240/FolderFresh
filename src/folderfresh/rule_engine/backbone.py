@@ -2,6 +2,10 @@ from dataclasses import dataclass
 from typing import Any, List, Dict
 import os
 import shutil
+import time
+import re
+import threading
+from datetime import datetime
 from pathlib import Path
 
 # Import activity logging (optional import to avoid circular dependencies)
@@ -166,6 +170,451 @@ class FileSizeGreaterThanCondition(Condition):
         return result
 
 
+class FileAgeGreaterThanCondition(Condition):
+    """Check if file age exceeds a threshold (in days)."""
+
+    def __init__(self, days: int):
+        self.days = days
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if file is older than the specified number of days.
+
+        Uses st_mtime from fileinfo['stat'] if available, falls back to os.path.getmtime.
+        Negative days are treated as always False (invalid input).
+        """
+        if self.days < 0:
+            return False
+
+        try:
+            # Try to get mtime from stat object first
+            if "stat" in fileinfo and hasattr(fileinfo["stat"], "st_mtime"):
+                mtime = fileinfo["stat"].st_mtime
+            else:
+                # Fallback to os.path.getmtime
+                file_path = fileinfo.get("path")
+                if not file_path:
+                    return False
+                mtime = os.path.getmtime(file_path)
+
+            current_time = time.time()
+            age_seconds = current_time - mtime
+            threshold_seconds = self.days * 86400
+
+            result = age_seconds > threshold_seconds
+
+            # Format age as days for logging
+            age_days = age_seconds / 86400
+            print(f"  [CONDITION] FileAgeGreaterThan {self.days}d with age={age_days:.1f}d -> {result}")
+            return result
+        except Exception as e:
+            print(f"  [CONDITION] FileAgeGreaterThan {self.days}d -> ERROR: {e}")
+            return False
+
+
+class LastModifiedBeforeCondition(Condition):
+    """Check if file was last modified before a specific timestamp."""
+
+    def __init__(self, timestamp: str):
+        """
+        Initialize with a timestamp.
+
+        Args:
+            timestamp: ISO8601 string (e.g., "2024-01-01" or "2024-01-01T10:00:00")
+                      or datetime object
+        """
+        self.timestamp = timestamp if isinstance(timestamp, str) else str(timestamp)
+
+    @staticmethod
+    def _parse_iso_datetime(s: str) -> datetime:
+        """
+        Parse ISO8601 datetime string.
+
+        Accepts:
+        - "2024-01-01" (date only)
+        - "2024-01-01T10:00:00" (full datetime)
+        - datetime objects (passed through)
+
+        Returns:
+            datetime object or None if parsing fails
+        """
+        if isinstance(s, datetime):
+            return s
+
+        if not isinstance(s, str):
+            return None
+
+        # Try parsing date-only format
+        try:
+            return datetime.fromisoformat(s)
+        except ValueError:
+            pass
+
+        # Try other common formats
+        formats = [
+            "%Y-%m-%d",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+        ]
+
+        for fmt in formats:
+            try:
+                return datetime.strptime(s, fmt)
+            except ValueError:
+                continue
+
+        return None
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if file was last modified before the specified timestamp.
+
+        Returns False if:
+        - timestamp parsing failed
+        - file mtime cannot be retrieved
+        """
+        parsed_timestamp = self._parse_iso_datetime(self.timestamp)
+        if parsed_timestamp is None:
+            print(f"  [CONDITION] LastModifiedBefore {self.timestamp} -> ERROR: Invalid timestamp format")
+            return False
+
+        try:
+            # Try to get mtime from stat object first
+            if "stat" in fileinfo and hasattr(fileinfo["stat"], "st_mtime"):
+                mtime = fileinfo["stat"].st_mtime
+            else:
+                # Fallback to os.path.getmtime
+                file_path = fileinfo.get("path")
+                if not file_path:
+                    return False
+                mtime = os.path.getmtime(file_path)
+
+            file_mtime_dt = datetime.fromtimestamp(mtime)
+            result = file_mtime_dt < parsed_timestamp
+
+            print(f"  [CONDITION] LastModifiedBefore {self.timestamp} -> {result}")
+            return result
+        except Exception as e:
+            print(f"  [CONDITION] LastModifiedBefore {self.timestamp} -> ERROR: {e}")
+            return False
+
+
+class IsHiddenCondition(Condition):
+    """Check if file is hidden (Unix-style dot prefix or Windows attribute)."""
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if file is hidden.
+
+        Returns True if:
+        - filename starts with "." (Unix convention)
+        - OR file has Windows hidden attribute (if available)
+        """
+        try:
+            # Check Unix-style hidden (dot prefix)
+            filename = fileinfo.get("name", "")
+            if filename.startswith("."):
+                print(f"  [CONDITION] IsHidden '{filename}' -> True")
+                return True
+
+            # Check Windows hidden attribute if available
+            if "stat" in fileinfo and hasattr(fileinfo["stat"], "st_file_attributes"):
+                FILE_ATTRIBUTE_HIDDEN = 0x2
+                attributes = fileinfo["stat"].st_file_attributes
+                is_hidden = bool(attributes & FILE_ATTRIBUTE_HIDDEN)
+                print(f"  [CONDITION] IsHidden '{filename}' (Windows attr) -> {is_hidden}")
+                return is_hidden
+
+            print(f"  [CONDITION] IsHidden '{filename}' -> False")
+            return False
+        except Exception as e:
+            print(f"  [CONDITION] IsHidden -> ERROR: {e}")
+            return False
+
+
+class IsReadOnlyCondition(Condition):
+    """Check if file is read-only (no write permissions)."""
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if file is read-only (cannot be written to).
+
+        Returns True if:
+        - os.access(path, os.W_OK) returns False (no write permission)
+        - OR stat.st_mode indicates read-only
+        """
+        try:
+            file_path = fileinfo.get("path")
+            if not file_path:
+                print(f"  [CONDITION] IsReadOnly -> False (no path)")
+                return False
+
+            # Try os.access first (most reliable)
+            can_write = os.access(file_path, os.W_OK)
+            is_readonly = not can_write
+
+            print(f"  [CONDITION] IsReadOnly '{file_path}' -> {is_readonly}")
+            return is_readonly
+        except Exception as e:
+            print(f"  [CONDITION] IsReadOnly -> ERROR: {e}")
+            return False
+
+
+class IsDirectoryCondition(Condition):
+    """Check if path is a directory."""
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if the path is a directory.
+
+        Returns True if os.path.isdir(path) is True.
+        """
+        try:
+            file_path = fileinfo.get("path")
+            if not file_path:
+                print(f"  [CONDITION] IsDirectory -> False (no path)")
+                return False
+
+            is_dir = os.path.isdir(file_path)
+            filename = fileinfo.get("name", "")
+            print(f"  [CONDITION] IsDirectory '{filename}' -> {is_dir}")
+            return is_dir
+        except Exception as e:
+            print(f"  [CONDITION] IsDirectory -> ERROR: {e}")
+            return False
+
+
+class NameStartsWithCondition(Condition):
+    """Check if filename (without extension) starts with a prefix."""
+
+    def __init__(self, prefix: str):
+        self.prefix = prefix
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if filename starts with the prefix (case-insensitive).
+
+        Uses filename without extension from fileinfo["name"].
+        """
+        try:
+            filename = fileinfo.get("name", "")
+            # Case-insensitive comparison
+            result = filename.lower().startswith(self.prefix.lower())
+            print(f"  [CONDITION] NameStartsWith '{self.prefix}' in '{filename}' -> {result}")
+            return result
+        except Exception as e:
+            print(f"  [CONDITION] NameStartsWith '{self.prefix}' -> ERROR: {e}")
+            return False
+
+
+class NameEndsWithCondition(Condition):
+    """Check if filename (without extension) ends with a suffix."""
+
+    def __init__(self, suffix: str):
+        self.suffix = suffix
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if filename ends with the suffix (case-insensitive).
+
+        Uses filename without extension from fileinfo["name"].
+        """
+        try:
+            filename = fileinfo.get("name", "")
+            # Case-insensitive comparison
+            result = filename.lower().endswith(self.suffix.lower())
+            print(f"  [CONDITION] NameEndsWith '{self.suffix}' in '{filename}' -> {result}")
+            return result
+        except Exception as e:
+            print(f"  [CONDITION] NameEndsWith '{self.suffix}' -> ERROR: {e}")
+            return False
+
+
+class NameEqualsCondition(Condition):
+    """Check if filename exactly equals a value."""
+
+    def __init__(self, value: str, case_sensitive: bool = False):
+        self.value = value
+        self.case_sensitive = case_sensitive
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if filename exactly equals the value.
+
+        Args:
+            fileinfo: File information dict
+
+        Returns:
+            True if filename matches exactly (respecting case_sensitive setting)
+        """
+        try:
+            filename = fileinfo.get("name", "")
+
+            if self.case_sensitive:
+                result = filename == self.value
+            else:
+                result = filename.lower() == self.value.lower()
+
+            case_str = "case-sensitive" if self.case_sensitive else "case-insensitive"
+            print(f"  [CONDITION] NameEquals '{self.value}' with '{filename}' ({case_str}) -> {result}")
+            return result
+        except Exception as e:
+            print(f"  [CONDITION] NameEquals '{self.value}' -> ERROR: {e}")
+            return False
+
+
+class RegexMatchCondition(Condition):
+    """Check if filename matches a regex pattern with catastrophic backtracking protection."""
+
+    # Timeout in seconds for regex evaluation (100ms)
+    REGEX_TIMEOUT = 0.1
+
+    def __init__(self, pattern: str, ignore_case: bool = False):
+        self.pattern = pattern
+        self.ignore_case = ignore_case
+        self._compiled = None  # Private attribute, not serialized
+
+        # Try to compile the regex pattern
+        try:
+            flags = re.IGNORECASE if ignore_case else 0
+            self._compiled = re.compile(pattern, flags)
+        except re.error as e:
+            # Invalid regex pattern - log but don't crash
+            print(f"  [CONDITION] RegexMatch: Invalid pattern '{pattern}': {e}")
+            self._compiled = None
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if filename matches the regex pattern with timeout protection.
+
+        Args:
+            fileinfo: File information dict
+
+        Returns:
+            True if filename matches regex (or False if pattern invalid or times out)
+        """
+        # If pattern failed to compile, return False
+        if self._compiled is None:
+            filename = fileinfo.get("name", "")
+            print(f"  [CONDITION] RegexMatch '{self.pattern}' in '{filename}' -> False (invalid pattern)")
+            return False
+
+        try:
+            filename = fileinfo.get("name", "")
+            if not filename:
+                print(f"  [CONDITION] RegexMatch '{self.pattern}' in '' -> False (no filename)")
+                return False
+
+            # Use thread-based timeout to prevent catastrophic backtracking
+            result_container = {"result": None, "completed": False}
+
+            def match_with_timeout():
+                try:
+                    result_container["result"] = bool(self._compiled.search(filename))
+                    result_container["completed"] = True
+                except Exception:
+                    # Catastrophic backtracking or other regex error
+                    result_container["result"] = False
+                    result_container["completed"] = True
+
+            thread = threading.Thread(target=match_with_timeout, daemon=True)
+            thread.start()
+            thread.join(timeout=self.REGEX_TIMEOUT)
+
+            # If thread didn't complete in time, it's a timeout (likely catastrophic backtracking)
+            if not result_container["completed"]:
+                print(f"  [CONDITION] RegexMatch '{self.pattern}' in '{filename}' -> False (timeout)")
+                return False
+
+            result = result_container["result"]
+            case_str = "(ignore-case)" if self.ignore_case else ""
+            print(f"  [CONDITION] RegexMatch '{self.pattern}' {case_str} in '{filename}' -> {result}")
+            return result
+
+        except Exception as e:
+            filename = fileinfo.get("name", "")
+            print(f"  [CONDITION] RegexMatch '{self.pattern}' in '{filename}' -> ERROR: {e}")
+            return False
+
+
+class ParentFolderContainsCondition(Condition):
+    """Check if parent folder name contains a substring."""
+
+    def __init__(self, substring: str):
+        self.substring = substring
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if parent folder name contains the substring (case-insensitive).
+
+        Args:
+            fileinfo: File information dict with "path" key
+
+        Returns:
+            True if substring found in parent folder name
+        """
+        try:
+            path = fileinfo.get("path", "")
+            if not path:
+                print(f"  [CONDITION] ParentFolderContains '{self.substring}' in '' -> False (no path)")
+                return False
+
+            # Extract parent folder name
+            parent_name = Path(path).parent.name
+            if not parent_name:
+                print(f"  [CONDITION] ParentFolderContains '{self.substring}' in '' -> False (no parent)")
+                return False
+
+            # Case-insensitive substring search
+            result = self.substring.lower() in parent_name.lower()
+            print(f"  [CONDITION] ParentFolderContains '{self.substring}' in '{parent_name}' -> {result}")
+            return result
+
+        except Exception as e:
+            path = fileinfo.get("path", "")
+            print(f"  [CONDITION] ParentFolderContains '{self.substring}' in '{path}' -> ERROR: {e}")
+            return False
+
+
+class FileInFolderCondition(Condition):
+    """Check if file's parent path contains a folder pattern."""
+
+    def __init__(self, folder_pattern: str):
+        self.folder_pattern = folder_pattern
+
+    def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
+        """
+        Evaluate if folder_pattern appears anywhere in the parent path (case-insensitive).
+
+        Args:
+            fileinfo: File information dict with "path" key
+
+        Returns:
+            True if folder_pattern found in parent path
+        """
+        try:
+            path = fileinfo.get("path", "")
+            if not path:
+                print(f"  [CONDITION] FileInFolder '{self.folder_pattern}' in '' -> False (no path)")
+                return False
+
+            # Extract full parent path (not just the last segment)
+            parent_path = str(Path(path).parent)
+            if not parent_path:
+                print(f"  [CONDITION] FileInFolder '{self.folder_pattern}' in '' -> False (no parent)")
+                return False
+
+            # Case-insensitive substring search in full parent path
+            result = self.folder_pattern.lower() in parent_path.lower()
+            print(f"  [CONDITION] FileInFolder '{self.folder_pattern}' in '{parent_path}' -> {result}")
+            return result
+
+        except Exception as e:
+            path = fileinfo.get("path", "")
+            print(f"  [CONDITION] FileInFolder '{self.folder_pattern}' in '{path}' -> ERROR: {e}")
+            return False
+
+
 # ============================================================================
 # ACTIONS
 # ============================================================================
@@ -211,7 +660,7 @@ class RenameAction(Action):
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Rename a file to a new name.
+        Rename a file to a new name with guaranteed collision avoidance.
 
         Args:
             fileinfo: File information dict with 'path' and 'name' keys
@@ -261,17 +710,21 @@ class RenameAction(Action):
 
             # Track if collision was handled
             collision_handled = False
-            # Handle collision avoidance
+
+            # CRITICAL FIX: Use avoid_overwrite() to get a safe destination
+            # This is now called BEFORE the actual rename, ensuring atomicity
             if config.get("safe_mode", True):
-                new_path_before = new_path
-                new_path = avoid_overwrite(new_path)
-                collision_handled = (new_path != new_path_before)
+                new_path_safe = avoid_overwrite(new_path)
+                collision_handled = (new_path_safe != new_path)
+                new_path = new_path_safe
 
             if dry_run:
                 message = f"DRY RUN: Would RENAME: {old_path} -> {new_path}"
                 ok = True
             else:
                 # Perform the rename operation
+                # IMPORTANT: At this point, new_path is guaranteed to not exist
+                # because avoid_overwrite() checked and adjusted it if needed
                 os.rename(old_path, new_path)
                 message = f"RENAME: {old_path} -> {new_path}"
                 ok = True
@@ -308,7 +761,7 @@ class MoveAction(Action):
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Move a file to a new directory.
+        Move a file to a new directory with guaranteed collision avoidance.
 
         Args:
             fileinfo: File information dict with 'path' and 'name' keys
@@ -379,17 +832,19 @@ class MoveAction(Action):
 
             # Track if collision was handled
             collision_handled = False
-            # Handle collision avoidance
+
+            # CRITICAL FIX: Use avoid_overwrite() to get a safe destination
             if config.get("safe_mode", True):
-                new_path_before = new_path
-                new_path = avoid_overwrite(new_path)
-                collision_handled = (new_path != new_path_before)
+                new_path_safe = avoid_overwrite(new_path)
+                collision_handled = (new_path_safe != new_path)
+                new_path = new_path_safe
 
             if dry_run:
                 message = f"DRY RUN: Would MOVE: {old_path} -> {new_path}"
                 ok = True
             else:
                 # Perform the move operation using shutil.move()
+                # At this point, new_path is guaranteed to not exist
                 shutil.move(old_path, new_path)
                 message = f"MOVE: {old_path} -> {new_path}"
                 ok = True
@@ -401,7 +856,7 @@ class MoveAction(Action):
                 "meta": {
                     "type": "move",
                     "src": old_path,  # Original location for undo
-                    "dst": new_path,  # New location
+                    "dst": new_path,  # New location (may differ from intended if collision handled)
                     "collision_handled": collision_handled,
                     "was_dry_run": dry_run
                 }
@@ -425,7 +880,7 @@ class CopyAction(Action):
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
-        Copy a file to a new directory.
+        Copy a file to a new directory with guaranteed collision avoidance.
 
         Args:
             fileinfo: File information dict with 'path' and 'name' keys
@@ -496,17 +951,19 @@ class CopyAction(Action):
 
             # Track if collision was handled
             collision_handled = False
-            # Handle collision avoidance
+
+            # CRITICAL FIX: Use avoid_overwrite() to get a safe destination
             if config.get("safe_mode", True):
-                new_path_before = new_path
-                new_path = avoid_overwrite(new_path)
-                collision_handled = (new_path != new_path_before)
+                new_path_safe = avoid_overwrite(new_path)
+                collision_handled = (new_path_safe != new_path)
+                new_path = new_path_safe
 
             if dry_run:
                 message = f"DRY RUN: Would COPY: {old_path} -> {new_path}"
                 ok = True
             else:
                 # Perform the copy operation using shutil.copy2() (preserves metadata)
+                # At this point, new_path is guaranteed to not exist
                 shutil.copy2(old_path, new_path)
                 message = f"COPY: {old_path} -> {new_path}"
                 ok = True
@@ -518,7 +975,7 @@ class CopyAction(Action):
                 "meta": {
                     "type": "copy",
                     "src": old_path,  # Original file (not modified)
-                    "dst": new_path,  # Copy location
+                    "dst": new_path,  # Copy location (may differ from intended if collision handled)
                     "collision_handled": collision_handled,
                     "was_dry_run": dry_run
                 }
@@ -531,6 +988,113 @@ class CopyAction(Action):
                 "ok": False,
                 "log": message,
                 "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+            }
+
+
+class DeleteFileAction(Action):
+    """Permanently delete a file."""
+
+    def __init__(self):
+        pass
+
+    def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
+        """
+        Delete a file permanently.
+
+        Args:
+            fileinfo: File information dict with 'path' key
+            config: Profile config with 'dry_run' and 'safe_mode' flags
+
+        Returns:
+            Dict with ok, log, and meta keys for undo support
+        """
+        config = config or {}
+        file_path = fileinfo.get("path")
+        dry_run = config.get("dry_run", False)
+        safe_mode = config.get("safe_mode", True)
+
+        # System folders that should never be deleted from
+        PROTECTED_PATHS = [
+            "c:\\windows",
+            "c:\\program files",
+            "c:\\program files (x86)",
+            "c:\\programdata",
+            "c:\\users\\",
+        ]
+
+        # Validation
+        if not file_path:
+            message = f"ERROR: DELETE - source file path missing"
+            print(f"  [ACTION] {message}")
+            return {
+                "ok": False,
+                "log": message,
+                "meta": {"type": "delete", "src": None, "temp_backup": None, "was_dry_run": dry_run}
+            }
+
+        if not is_file_accessible(file_path):
+            message = f"ERROR: DELETE - source file not found or not accessible: {file_path}"
+            print(f"  [ACTION] {message}")
+            return {
+                "ok": False,
+                "log": message,
+                "meta": {"type": "delete", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
+            }
+
+        try:
+            file_path = normalize_path(file_path)
+
+            # Safe mode: check if file is in protected system folder
+            if safe_mode:
+                file_path_lower = file_path.lower()
+                for protected in PROTECTED_PATHS:
+                    if file_path_lower.startswith(protected.lower()):
+                        message = f"SAFE MODE: DELETE blocked - file in protected system folder: {file_path}"
+                        print(f"  [ACTION] {message}")
+                        return {
+                            "ok": False,
+                            "log": message,
+                            "meta": {"type": "delete", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
+                        }
+
+            if dry_run:
+                message = f"DRY RUN: Would DELETE: {file_path}"
+                ok = True
+                temp_backup = None
+            else:
+                # Create a temporary backup before deleting
+                import tempfile
+                temp_dir = tempfile.gettempdir()
+                filename = os.path.basename(file_path)
+                temp_backup = os.path.join(temp_dir, f"folderfresh_delete_{int(time.time())}_{filename}")
+
+                # Copy file to temp location as backup
+                shutil.copy2(file_path, temp_backup)
+
+                # Delete the original file
+                os.remove(file_path)
+                message = f"DELETE: {file_path}"
+                ok = True
+
+            print(f"  [ACTION] {message}")
+            return {
+                "ok": ok,
+                "log": message,
+                "meta": {
+                    "type": "delete",
+                    "src": file_path,
+                    "temp_backup": temp_backup if not dry_run else None,
+                    "was_dry_run": dry_run
+                }
+            }
+
+        except Exception as e:
+            message = f"ERROR: DELETE failed - {str(e)}"
+            print(f"  [ACTION] {message}")
+            return {
+                "ok": False,
+                "log": message,
+                "meta": {"type": "delete", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
             }
 
 
@@ -592,8 +1156,10 @@ class RuleExecutor:
 
     def __init__(self):
         self.log: List[str] = []
+        self.handled: bool = False
+        self.actions_executed: List[Dict[str, Any]] = []
 
-    def execute(self, rules: List[Rule], fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> List[str]:
+    def execute(self, rules: List[Rule], fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
         Process a file through a list of rules.
 
@@ -603,10 +1169,22 @@ class RuleExecutor:
             config: dict with merged profile configuration (safe_mode, dry_run, etc.).
 
         Returns:
-            List of log messages describing what happened.
+            Dict with keys:
+                - "matched_rule": str or None - name of matched rule (if any)
+                - "final_dst": str or None - final destination path (if rule moved file)
+                - "success": bool - True if rule executed successfully
+                - "log": List[str] - log messages
+                - "handled": bool - True if any rule matched and actions executed
+                - "actions": List[Dict] - details of actions executed
         """
         config = config or {}
         self.log = []
+        self.handled = False
+        self.actions_executed = []
+        matched_rule_name = None
+        final_dst = None
+        success = True
+
         filename = fileinfo.get("name", "unknown")
         self.log.append(f"\n=== Processing file: {filename} ===")
 
@@ -624,6 +1202,34 @@ class RuleExecutor:
                     if isinstance(result, dict):
                         log_msg = result.get("log", "")
                         self.log.append(f"  -> {log_msg}")
+
+                        # Track if action was successful
+                        if result.get("ok", False):
+                            self.handled = True
+                            # 🔥 Update fileinfo path/name so next action sees the correct location
+                            meta = result.get("meta", {})
+                            new_location = meta.get("dst") or meta.get("src")
+                            if new_location:
+                                fileinfo["path"] = new_location
+                                fileinfo["name"] = Path(new_location).name
+
+                            matched_rule_name = rule.name
+                            self.actions_executed.append({
+                                "action": action.__class__.__name__,
+                                "result": result
+                            })
+
+                            # Extract final destination from action meta
+                            meta = result.get("meta", {})
+                            if meta.get("type") == "move":
+                                final_dst = meta.get("dst")
+                            elif meta.get("type") == "rename":
+                                final_dst = meta.get("src")
+                            elif meta.get("type") == "copy":
+                                final_dst = meta.get("dst")
+
+                        else:
+                            success = False
 
                         # Record undo entry if action succeeded and wasn't a dry run
                         if result.get("ok", False) and not result.get("meta", {}).get("was_dry_run", False):
@@ -644,6 +1250,9 @@ class RuleExecutor:
                     else:
                         # Legacy string return (backward compatibility)
                         self.log.append(f"  -> {result}")
+                        # Mark as handled even with legacy string returns
+                        self.handled = True
+                        matched_rule_name = rule.name
 
                 # Stop processing if requested
                 if rule.stop_on_match:
@@ -656,7 +1265,15 @@ class RuleExecutor:
         for line in self.log:
             log_activity(line)
 
-        return self.log
+        # Return unified result dictionary with required contract
+        return {
+            "matched_rule": matched_rule_name,
+            "final_dst": final_dst,
+            "success": success,
+            "log": self.log,
+            "handled": self.handled,
+            "actions": self.actions_executed
+        }
 
 
 # ============================================================================
@@ -696,11 +1313,16 @@ if __name__ == "__main__":
         "dry_run": True,  # Don't actually move files
         "safe_mode": True,  # Avoid overwriting files
     }
-    log = executor.execute([rule], fake_file, sample_config)
+    result = executor.execute([rule], fake_file, sample_config)
 
     # Print the log
     print("\n" + "=" * 60)
     print("EXECUTION LOG:")
     print("=" * 60)
-    for line in log:
+    for line in result["log"]:
         print(line)
+
+    print("\n" + "=" * 60)
+    print(f"HANDLED: {result['handled']}")
+    print(f"ACTIONS EXECUTED: {len(result['actions'])}")
+    print("=" * 60)

@@ -1,5 +1,7 @@
 # FolderFresh — Smart Desktop & Folder Cleaner for Windows
 
+[![FolderFresh CI](https://github.com/Trihedron1240/FolderFresh/actions/workflows/tests.yml/badge.svg)](https://github.com/Trihedron1240/FolderFresh/actions/workflows/tests.yml)
+
 ## License
 FolderFresh is licensed under **GPL-3.0**.  
 Versions prior to 1.4.0 remain under the MIT license they were originally released with.  
@@ -93,31 +95,6 @@ Smart Sorting uses intelligent heuristics — no configuration required.
 - **Don’t-Move List** (full protection for selected files)  
 - **Clean Desktop** — one click  
 - Optional **system tray mode**
-
----
-
-## Documentation
-
-Complete documentation is available in the **[docs/](./docs/)** directory:
-
-### Quick Links
-- **[Full Documentation Index](./docs/README.md)** — Start here!
-- **[Undo System Guide](./docs/undo/undo_system_guide.md)** — Comprehensive undo/rollback documentation
-- **[Activity Log Guide](./docs/activity_log/guide.md)** — Track all file operations
-- **[Dry Run Mode](./docs/dry_run/dry_run_guide.md)** — Test rules safely without changes
-- **[Rule Engine](./docs/rules/)** — Create and manage custom sorting rules
-- **[Watcher Integration](./docs/watcher/watcher_ruleengine_integration.md)** — Auto-organize with real-time monitoring
-
-### Documentation Structure
-- **Activity Log** — Audit trails and operation tracking
-- **Dry Run Mode** — Safe testing of rules and operations
-- **Rules** — Rule creation, persistence, and simulation
-- **Undo/Rollback** — Complete operation reversal with collision handling
-- **UI Guides** — User interface component documentation
-- **Validation** — Input validation and error handling
-- **Watcher Integration** — File monitoring and rule automation
-
-All documentation includes both user guides and technical implementation details.
 
 ---
 

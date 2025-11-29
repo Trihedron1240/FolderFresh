@@ -32,12 +32,14 @@ class TestRuleExecutorBasic:
 
         # Execute
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify logs
         assert isinstance(logs, list)
         assert len(logs) > 0
         assert any("screenshot" in log.lower() for log in logs)
+        assert result.get("handled", False)  # Verify rule was handled
 
         # Verify file was moved
         assert not os.path.exists(src_file)
@@ -55,7 +57,8 @@ class TestRuleExecutorBasic:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify logs mention no match
         assert any("No match" in log for log in logs)
@@ -69,9 +72,10 @@ class TestRuleExecutorBasic:
         fileinfo = get_fileinfo(src_file)
 
         executor = RuleExecutor()
-        logs = executor.execute([], fileinfo, basic_config)
+        result = executor.execute([], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
-        assert isinstance(logs, list)
+        assert isinstance(logs, list)  # logs is now extracted from result
         assert len(logs) > 0  # Should at least have file processing header
 
 
@@ -96,7 +100,8 @@ class TestRuleExecutorMultipleRules:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Should match (both conditions true)
         assert any("MATCHED" in log for log in logs)
@@ -119,7 +124,8 @@ class TestRuleExecutorMultipleRules:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Should match (second condition true)
         assert any("MATCHED" in log for log in logs)
@@ -143,7 +149,8 @@ class TestRuleExecutorMultipleRules:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule1, rule2], fileinfo, basic_config)
+        result = executor.execute([rule1, rule2], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Rule 1 should appear in logs
         assert any("Rule 1" in log for log in logs)
@@ -169,7 +176,8 @@ class TestRuleExecutorMultipleRules:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify both actions logged
         rename_logged = any("RENAME" in log for log in logs)
@@ -196,7 +204,8 @@ class TestRuleExecutorDryRun:
 
         dry_run_config = {"dry_run": True, "safe_mode": True}
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, dry_run_config)
+        result = executor.execute([rule], fileinfo, dry_run_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify logs mention DRY RUN
         assert any("DRY RUN" in log for log in logs)
@@ -221,7 +230,8 @@ class TestRuleExecutorDryRun:
 
         dry_run_config = {"dry_run": True, "safe_mode": True}
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, dry_run_config)
+        result = executor.execute([rule], fileinfo, dry_run_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # All actions should be DRY RUN
         assert all("DRY RUN" in log or "ERROR" in log or "RENAME" not in log.upper()
@@ -252,7 +262,8 @@ class TestRuleExecutorActivityLogIntegration:
         ACTIVITY_LOG.clear()
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify logs were added to ActivityLog
         activity_logs = ACTIVITY_LOG.get_log()
@@ -304,10 +315,11 @@ class TestRuleExecutorErrorHandling:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Should complete without crashing
-        assert isinstance(logs, list)
+        assert isinstance(logs, list)  # logs is now extracted from result
 
     def test_executor_continues_after_action_error(self, test_structure, test_file_factory, basic_config, clear_activity_log):
         """Test executor continues after action error."""
@@ -324,7 +336,8 @@ class TestRuleExecutorErrorHandling:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Both actions should appear in logs
         assert any("MOVE" in log for log in logs)

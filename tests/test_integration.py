@@ -33,7 +33,8 @@ class TestWatcherSimulation:
         # Execute rules (as watcher would)
         fileinfo = get_fileinfo(pdf_file)
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify file was moved
         assert not os.path.exists(pdf_file)
@@ -128,7 +129,8 @@ class TestComplexRuleScenarios:
 
         executor = RuleExecutor()
         fileinfo = get_fileinfo(png_file)
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Should match all conditions
         assert any("MATCHED" in log for log in logs)
@@ -150,7 +152,8 @@ class TestComplexRuleScenarios:
 
         executor = RuleExecutor()
         fileinfo = get_fileinfo(old_small_file)
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Should match (at least one condition true)
         assert any("MATCHED" in log for log in logs)
@@ -176,7 +179,8 @@ class TestComplexRuleScenarios:
 
         executor = RuleExecutor()
         fileinfo = get_fileinfo(txt_file)
-        logs = executor.execute([rule1, rule2], fileinfo, basic_config)
+        result = executor.execute([rule1, rule2], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Rule 1 should execute and rename
         assert any("RENAME" in log for log in logs)
@@ -207,7 +211,8 @@ class TestSafetyAndCollisions:
         )
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Should successfully move with collision avoidance
         assert any("MATCHED" in log for log in logs)
@@ -232,7 +237,8 @@ class TestSafetyAndCollisions:
 
         executor = RuleExecutor()
         fileinfo = get_fileinfo(txt_file)
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # At least first action should succeed
         assert any("RENAME" in log for log in logs)
@@ -255,7 +261,8 @@ class TestActivityLogWithRealOperations:
 
         executor = RuleExecutor()
         fileinfo = get_fileinfo(pdf_file)
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Check Activity Log
         activity_logs = ACTIVITY_LOG.get_log()

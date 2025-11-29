@@ -3,30 +3,61 @@ from pathlib import Path
 from .backbone import (
     Rule,
     NameContainsCondition,
+    NameStartsWithCondition,
+    NameEndsWithCondition,
+    NameEqualsCondition,
+    RegexMatchCondition,
+    ParentFolderContainsCondition,
+    FileInFolderCondition,
     ExtensionIsCondition,
     FileSizeGreaterThanCondition,
+    FileAgeGreaterThanCondition,
+    LastModifiedBeforeCondition,
+    IsHiddenCondition,
+    IsReadOnlyCondition,
+    IsDirectoryCondition,
     RenameAction,
     MoveAction,
     CopyAction,
+    DeleteFileAction,
 )
 
 
 # Mapping to reconstruct classes from saved JSON
 CONDITION_MAP = {
     "NameContains": NameContainsCondition,
+    "NameStartsWith": NameStartsWithCondition,
+    "NameEndsWith": NameEndsWithCondition,
+    "NameEquals": NameEqualsCondition,
+    "RegexMatch": RegexMatchCondition,
+    "ParentFolderContains": ParentFolderContainsCondition,
+    "FileInFolder": FileInFolderCondition,
     "ExtensionIs": ExtensionIsCondition,
     "FileSizeGreaterThan": FileSizeGreaterThanCondition,
+    "FileAgeGreaterThan": FileAgeGreaterThanCondition,
+    "LastModifiedBefore": LastModifiedBeforeCondition,
+    "IsHidden": IsHiddenCondition,
+    "IsReadOnly": IsReadOnlyCondition,
+    "IsDirectory": IsDirectoryCondition,
 }
 
 ACTION_MAP = {
     "Rename": RenameAction,
     "Move": MoveAction,
     "Copy": CopyAction,
+    "Delete": DeleteFileAction,
 }
 
 
 def rule_to_dict(rule: Rule):
     """Convert a Rule object into a JSON-serializable dict."""
+    def get_args_for_condition(cond):
+        """Get serializable args for a condition, excluding compiled regex."""
+        args = cond.__dict__.copy()
+        # Exclude _compiled for RegexMatchCondition (it will be recompiled on deserialization)
+        args.pop("_compiled", None)
+        return args
+
     return {
         "name": rule.name,
         "match_mode": rule.match_mode,
@@ -34,7 +65,7 @@ def rule_to_dict(rule: Rule):
         "conditions": [
             {
                 "type": cond.__class__.__name__.replace("Condition", ""),
-                "args": cond.__dict__,
+                "args": get_args_for_condition(cond),
             }
             for cond in rule.conditions
         ],

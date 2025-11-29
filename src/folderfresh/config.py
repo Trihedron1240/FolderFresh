@@ -27,6 +27,11 @@ def load_config() -> dict:
             "custom_category_names": {},
             "custom_categories": {},
             "category_enabled": {},
+            # File stabilization settings
+            "stabilization_timeout": 30.0,        # Max seconds to wait for file stability
+            "stabilization_attempts": 10,        # Number of stability checks
+            "stabilization_interval": 0.5,       # Seconds between checks
+            "stabilization_min_age": 1.0,        # Minimum file age (seconds)
         }
 
     # --- Migration for older versions ---
@@ -44,6 +49,12 @@ def load_config() -> dict:
     cfg.setdefault("custom_categories", {})
     cfg.setdefault("custom_category_names", {})
     cfg.setdefault("category_enabled", {})
+
+    # --- Ensure file stabilization settings exist ---
+    cfg.setdefault("stabilization_timeout", 30.0)
+    cfg.setdefault("stabilization_attempts", 10)
+    cfg.setdefault("stabilization_interval", 0.5)
+    cfg.setdefault("stabilization_min_age", 1.0)
 
     return cfg
 

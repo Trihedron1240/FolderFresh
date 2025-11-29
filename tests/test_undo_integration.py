@@ -155,7 +155,8 @@ class TestRuleExecutorUndoRecording:
         UNDO_MANAGER.clear_history()
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify undo entry was recorded
         assert len(UNDO_MANAGER) == 1, "Should have 1 undo entry"
@@ -178,7 +179,8 @@ class TestRuleExecutorUndoRecording:
         UNDO_MANAGER.clear_history()
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, dry_run_config)
+        result = executor.execute([rule], fileinfo, dry_run_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Verify NO undo entry was recorded
         assert len(UNDO_MANAGER) == 0, "Should have 0 undo entries (dry run)"
@@ -200,7 +202,8 @@ class TestRuleExecutorUndoRecording:
         UNDO_MANAGER.clear_history()
 
         executor = RuleExecutor()
-        logs = executor.execute([rule], fileinfo, basic_config)
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
 
         # Should have at least 1 undo entry (rename succeeded)
         assert len(UNDO_MANAGER) >= 1

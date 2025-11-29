@@ -55,8 +55,19 @@ def hide_to_tray(app):
         app.after(0, app.show_window)
 
     def on_toggle_watch(icon, item=None):
-        app.after(0, lambda: app.watch_mode.toggle())
-        app.after(0, app.on_toggle_watch)
+        """
+        Handle Auto-Tidy toggle from tray menu.
+
+        Ensures widget state updates BEFORE calling on_toggle_watch to avoid race conditions.
+        """
+        # Toggle the widget (this updates the state immediately)
+        if app.watch_mode.get():
+            app.watch_mode.deselect()
+        else:
+            app.watch_mode.select()
+
+        # Schedule the handler with a small delay to ensure widget state is updated
+        app.after(50, app.on_toggle_watch)
 
     def on_exit(icon, item=None):
         try:

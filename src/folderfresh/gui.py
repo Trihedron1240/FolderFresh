@@ -1063,20 +1063,45 @@ class FolderFreshApp(ctk.CTk):
         self.set_status("Desktop ready")
 
     def on_toggle_watch(self):
+        """
+        Toggle Auto-Tidy watch mode with proper state management.
+
+        Prevents race conditions and ensures config is always synchronized.
+        """
         enabled = bool(self.watch_mode.get())
+
+        # Only process if state actually changed
+        current_state = self.config_data.get("watch_mode", False)
+        if enabled == current_state:
+            # No change needed
+            return
+
+        # Update config and save
         self.config_data["watch_mode"] = enabled
         save_config(self.config_data)
 
         if enabled:
             # Start watching all folders
-            for folder in self.config_data.get("watched_folders", []):
-                if Path(folder).exists():
-                    self.watcher_manager.watch_folder(folder)
-            self.set_status("Auto-tidy enabled")
+            folders_to_watch = [f for f in self.config_data.get("watched_folders", [])
+                               if Path(f).exists()]
+
+            if folders_to_watch:
+                for folder in folders_to_watch:
+                    try:
+                        self.watcher_manager.watch_folder(folder)
+                    except Exception as e:
+                        print(f"[WATCHER ERROR] Failed to watch {folder}: {e}")
+
+                self.set_status(f"✓ Auto-tidy enabled ({len(folders_to_watch)} folder(s))")
+            else:
+                self.set_status("⚠️  Auto-tidy: No watched folders found")
         else:
             # Stop ALL watchers
-            self.watcher_manager.stop_all()
-            self.set_status("Auto-tidy paused")
+            try:
+                self.watcher_manager.stop_all()
+            except Exception as e:
+                print(f"[WATCHER ERROR] Failed to stop watchers: {e}")
+            self.set_status("⏸ Auto-tidy paused")
 
 
     def on_toggle_tray(self):
@@ -1099,36 +1124,101 @@ class FolderFreshApp(ctk.CTk):
 
     # summaries
     def make_summary(self, moves: list[dict]) -> str:
+        """
+        Generate a preview summary showing both rule-handled and sorting-fallback files.
+
+        Distinguishes between:
+        - Rule-handled files (mode="rule") - handled by custom rules
+        - Sorting-fallback files (mode="sort") - handled by standard sorting
+        """
         if not moves:
             return "Nothing to organise."
-        counts: dict[str, int] = {}
+
+        # Separate rule-handled vs sorting moves
+        rule_moves = [m for m in moves if m.get("mode") == "rule"]
+        sort_moves = [m for m in moves if m.get("mode") == "sort"]
+
         lines: list[str] = []
-        for m in moves:
-            dst_folder = Path(m["dst"]).parent.name
-            counts[dst_folder] = counts.get(dst_folder, 0) + 1
-            lines.append(f"• {Path(m['src']).name}  →  {dst_folder}/")
-        lines.append("\nSummary:")
-        for k in sorted(counts):
-            v = counts[k]
-            lines.append(f"  - {k}: {v} file(s)")
+
+        # =====================================================================
+        # RULE-HANDLED FILES (rules matched)
+        # =====================================================================
+        if rule_moves:
+            lines.append("🎯 FILES HANDLED BY RULES:")
+            rule_counts: dict[str, int] = {}
+
+            for m in rule_moves:
+                rule_name = m.get("rule_name", "Unknown Rule")
+                filename = Path(m["src"]).name
+
+                # Group by rule
+                rule_counts[rule_name] = rule_counts.get(rule_name, 0) + 1
+                lines.append(f"  ✓ {filename}  [Rule: {rule_name}]")
+
+            lines.append("\n  Rule Summary:")
+            for rule_name in sorted(rule_counts):
+                count = rule_counts[rule_name]
+                lines.append(f"    - {rule_name}: {count} file(s)")
+
+        # =====================================================================
+        # SORTING-HANDLED FILES (fallback to standard sorting)
+        # =====================================================================
+        if sort_moves:
+            if rule_moves:
+                lines.append("\n" + "—" * 50)
+            lines.append("📁 FILES SORTED BY CATEGORY:")
+            sort_counts: dict[str, int] = {}
+
+            for m in sort_moves:
+                dst_folder = Path(m["dst"]).parent.name
+                filename = Path(m["src"]).name
+
+                # Group by category
+                sort_counts[dst_folder] = sort_counts.get(dst_folder, 0) + 1
+                lines.append(f"  • {filename}  →  {dst_folder}/")
+
+            lines.append("\n  Sort Summary:")
+            for k in sorted(sort_counts):
+                v = sort_counts[k]
+                lines.append(f"    - {k}: {v} file(s)")
+
+        # =====================================================================
+        # OVERALL SUMMARY
+        # =====================================================================
+        total_rule = len(rule_moves)
+        total_sort = len(sort_moves)
+        total = total_rule + total_sort
+
+        lines.append("\n" + "=" * 50)
+        if total_rule > 0 and total_sort > 0:
+            lines.append(f"Total: {total} file(s) [{total_rule} by rules, {total_sort} by sorting]")
+        elif total_rule > 0:
+            lines.append(f"Total: {total_rule} file(s) [All handled by rules]")
+        else:
+            lines.append(f"Total: {total_sort} file(s) [All sorted by category]")
+
         return "\n".join(lines)
 
     def finish_summary(self, moves_done: list[dict]) -> str:
+        """Show completion summary with rule vs sorting breakdown."""
         errors = [m for m in moves_done if m.get("error")]
         ok = [m for m in moves_done if not m.get("error")]
-        msg = ["All done!\n"]
+
+        msg = ["✅ All done!\n"]
         if ok:
             msg.append(self.make_summary(ok))
         if errors:
-            msg.append("\nSome files could not be moved:")
+            msg.append("\n⚠️  Some files could not be processed:")
             for m in errors[:10]:
                 msg.append(f"  - {Path(m['src']).name}: {m['error']}")
             if len(errors) > 10:
                 msg.append(f"  …and {len(errors) - 10} more.")
+
         if self.safe_mode.get():
-            msg.append("\nNote: Safe Mode was ON, so files were COPIED.")
+            msg.append("\nℹ️  Safe Mode was ON, so files were COPIED.")
         else:
-            msg.append("\nTip: You can use Undo to put things back.")
+            msg.append("\n💡 Tip: You can use Undo to put things back.")
+
         return "\n".join(msg)
 
     def disable_buttons(self):

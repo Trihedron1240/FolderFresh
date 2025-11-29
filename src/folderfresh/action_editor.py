@@ -6,12 +6,14 @@ from folderfresh.rule_engine import (
     RenameAction,
     MoveAction,
     CopyAction,
+    DeleteFileAction,
 )
 
 ACTION_TYPES = {
     "Rename File": RenameAction,
     "Move to Folder": MoveAction,
     "Copy to Folder": CopyAction,
+    "Delete File": DeleteFileAction,
 }
 
 
@@ -150,16 +152,29 @@ class ActionEditor(ctk.CTkToplevel):
                 "Parameter: Target folder path\n\n"
                 "Example: 'C:\\Archive' or '/mnt/backup'"
             ),
+            "Delete File": (
+                "Action: Permanently delete the matched file\n\n"
+                "This action has NO parameters - the file is deleted as-is.\n\n"
+                "Note: Deleted files are backed up to temp folder for undo recovery.\n"
+                "Safe mode prevents deletion from system folders (Windows, Program Files, etc.)"
+            ),
         }
 
         labels = {
             "Rename File": "New filename (with extension):",
             "Move to Folder": "Target folder path:",
             "Copy to Folder": "Target folder path:",
+            "Delete File": "(No parameter needed)",
         }
 
         # Update label
         self.param_label.configure(text=labels.get(choice, "Parameter:"))
+
+        # For Delete File action, disable/hide parameter entry
+        if choice == "Delete File":
+            self.param_entry.configure(state="disabled")
+        else:
+            self.param_entry.configure(state="normal")
 
         # Update description
         self.desc_text.configure(state="normal")
@@ -172,15 +187,24 @@ class ActionEditor(ctk.CTkToplevel):
         choice = self.type_menu.get()
         param = self.param_entry.get().strip()
 
-        if not param:
-            messagebox.showwarning("Missing Parameter", f"Please enter a value for '{choice}'.")
-            return
+        # DeleteFileAction takes no parameters
+        if choice == "Delete File":
+            # No parameter validation needed
+            param = None
+        else:
+            # Other actions require a parameter
+            if not param:
+                messagebox.showwarning("Missing Parameter", f"Please enter a value for '{choice}'.")
+                return
 
         try:
             ActionClass = ACTION_TYPES[choice]
 
             # Create actual action object
-            action_obj = ActionClass(param)
+            if choice == "Delete File":
+                action_obj = ActionClass()
+            else:
+                action_obj = ActionClass(param)
 
             if self.callback:
                 self.callback(action_obj)

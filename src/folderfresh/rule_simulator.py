@@ -191,21 +191,31 @@ class RuleSimulator(ctk.CTkToplevel):
                 "dry_run": True,  # Don't actually perform operations
                 "safe_mode": True,  # Avoid overwriting files
             }
-            log_lines = executor.execute([self.rule], file_info, simulation_config)
+            execution_result = executor.execute([self.rule], file_info, simulation_config)
 
             # Display the log
-            self._display_log(log_lines)
+            self._display_log(execution_result)
 
         except Exception as e:
             messagebox.showerror("Simulation Error", f"Failed to run simulation:\n{str(e)}")
 
-    def _display_log(self, log_lines):
+    def _display_log(self, execution_result):
         """Display log output in the text box."""
         self.log_text.configure(state="normal")
         self.log_text.delete("1.0", "end")
 
+        # Get log lines from the result dictionary
+        log_lines = execution_result.get("log", []) if isinstance(execution_result, dict) else execution_result
+        handled = execution_result.get("handled", False) if isinstance(execution_result, dict) else False
+
+        # Display log lines
         for line in log_lines:
             self.log_text.insert("end", line + "\n")
+
+        # Add a summary at the end
+        self.log_text.insert("end", "\n" + "=" * 60 + "\n")
+        self.log_text.insert("end", f"Rule Handled: {'YES' if handled else 'NO'}\n")
+        self.log_text.insert("end", "=" * 60 + "\n")
 
         self.log_text.configure(state="disabled")
 
