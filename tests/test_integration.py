@@ -346,3 +346,126 @@ class TestUndoWithComplexOperations:
 
         # Dest should be empty
         assert len(os.listdir(test_structure["dest"])) == 0
+
+
+@pytest.mark.integration
+class TestIdempotentOrganization:
+    """Test that organizing is idempotent (second run = no changes)."""
+
+    def test_organizing_twice_is_idempotent(self, test_structure, test_file_factory, basic_config, clear_activity_log, clear_undo_manager):
+        """Test that running Organise twice produces zero changes on second run."""
+        UNDO_MANAGER.clear_history()
+
+        # Create files in source
+        file1 = test_file_factory(test_structure["source"], "doc1.pdf")
+        file2 = test_file_factory(test_structure["source"], "doc2.pdf")
+
+        rule = Rule(
+            name="Move PDFs",
+            conditions=[ExtensionIsCondition(".pdf")],
+            actions=[MoveAction(test_structure["dest"])]
+        )
+
+        executor = RuleExecutor()
+
+        # FIRST RUN: Move files
+        result1 = executor.execute([rule], get_fileinfo(file1), basic_config)
+        result2 = executor.execute([rule], get_fileinfo(file2), basic_config)
+
+        # Files should be in dest now
+        assert not os.path.exists(file1)
+        assert not os.path.exists(file2)
+        assert os.path.exists(os.path.join(test_structure["dest"], "doc1.pdf"))
+        assert os.path.exists(os.path.join(test_structure["dest"], "doc2.pdf"))
+
+        # SECOND RUN: Try to organize again
+        file1_moved = os.path.join(test_structure["dest"], "doc1.pdf")
+        file2_moved = os.path.join(test_structure["dest"], "doc2.pdf")
+
+        ACTIVITY_LOG.clear()
+        result1_again = executor.execute([rule], get_fileinfo(file1_moved), basic_config)
+        result2_again = executor.execute([rule], get_fileinfo(file2_moved), basic_config)
+        logs = ACTIVITY_LOG.get_log_text()
+
+        # Second run should skip (SKIP: MOVE logged)
+        assert "SKIP: MOVE" in logs
+        # Files should still be in same location
+        assert os.path.exists(os.path.join(test_structure["dest"], "doc1.pdf"))
+        assert os.path.exists(os.path.join(test_structure["dest"], "doc2.pdf"))
+
+    def test_rename_then_move_is_idempotent(self, test_structure, test_file_factory, basic_config, clear_activity_log, clear_undo_manager):
+        """Test rename+move sequence is idempotent."""
+        UNDO_MANAGER.clear_history()
+
+        src_file = test_file_factory(test_structure["source"], "file.txt")
+        fileinfo = get_fileinfo(src_file)
+
+        rule = Rule(
+            name="Rename and Move",
+            conditions=[ExtensionIsCondition(".txt")],
+            actions=[
+                RenameAction("processed.txt"),
+                MoveAction(test_structure["dest"])
+            ]
+        )
+
+        executor = RuleExecutor()
+
+        # FIRST RUN
+        result1 = executor.execute([rule], fileinfo, basic_config)
+        moved_file = os.path.join(test_structure["dest"], "processed.txt")
+        assert os.path.exists(moved_file)
+        assert not os.path.exists(src_file)
+
+        # SECOND RUN: Process the already-processed file
+        fileinfo_again = get_fileinfo(moved_file)
+        ACTIVITY_LOG.clear()
+        result2 = executor.execute([rule], fileinfo_again, basic_config)
+        logs = ACTIVITY_LOG.get_log_text()
+
+        # Should skip both operations (already processed and already in destination)
+        assert "SKIP" in logs  # Either rename or move or both
+        assert os.path.exists(moved_file)
+
+    def test_multiple_organise_runs_zero_changes(self, test_structure, test_file_factory, basic_config, clear_activity_log, clear_undo_manager):
+        """Test that multiple Organise runs after first have zero changes."""
+        UNDO_MANAGER.clear_history()
+
+        # Create test files
+        files = [
+            test_file_factory(test_structure["source"], f"file{i}.pdf")
+            for i in range(3)
+        ]
+
+        rule = Rule(
+            name="Archive All",
+            conditions=[ExtensionIsCondition(".pdf")],
+            actions=[MoveAction(test_structure["dest"])]
+        )
+
+        executor = RuleExecutor()
+
+        # FIRST RUN: Organize
+        for f in files:
+            executor.execute([rule], get_fileinfo(f), basic_config)
+
+        # Verify all moved
+        for i in range(3):
+            assert os.path.exists(os.path.join(test_structure["dest"], f"file{i}.pdf"))
+
+        # SECOND AND THIRD RUNS: No changes expected
+        for run_num in range(2, 4):
+            ACTIVITY_LOG.clear()
+            moved_files = [
+                os.path.join(test_structure["dest"], f"file{i}.pdf")
+                for i in range(3)
+            ]
+            for f in moved_files:
+                executor.execute([rule], get_fileinfo(f), basic_config)
+
+            logs = ACTIVITY_LOG.get_log_text()
+            # All should be SKIPped
+            assert "SKIP: MOVE" in logs
+            # Files still in dest
+            for i in range(3):
+                assert os.path.exists(os.path.join(test_structure["dest"], f"file{i}.pdf"))

@@ -220,6 +220,15 @@ def do_preview(app):
 
         dst = folder / folder_name / p.name
 
+        # SKIP CHECK: If file is already in the destination folder, skip
+        p_resolved = p.resolve()
+        dst_resolved = dst.resolve()
+
+        # Check if file is already in the correct destination folder
+        if p_resolved.parent == dst_resolved.parent:
+            # File is already in the correct folder, skip the move
+            continue
+
         # COLLISION FIX: Check for existing file and apply unique naming if needed
         dst_str = str(dst)
         if os.path.exists(dst_str):
@@ -369,16 +378,42 @@ def do_organise(app, moves):
         new_dst = Path(app.selected_folder) / folder_name / p.name
 
         try:
+            # SKIP CHECK: If file is already in the correct destination folder, skip
+            src_path = Path(src).resolve()
+            dst_path_initial = new_dst.resolve()
+
+            # Check if file is already in the destination folder
+            if src_path.parent == dst_path_initial.parent:
+                # File is already in the correct folder, skip the move
+                moves_done.append({
+                    "src": src,
+                    "dst": src,  # No move happened
+                    "mode": "sort",
+                    "skipped": True,
+                    "reason": "Already in target folder"
+                })
+                continue
+
             new_dst.parent.mkdir(parents=True, exist_ok=True)
 
             # 🔥 ALWAYS make destination unique — NEVER overwrite
             new_dst = Path(avoid_overwrite(str(new_dst)))
 
+            # Double-check after collision handling: if now in same folder as source, skip
+            if src_path.parent == new_dst.resolve().parent:
+                moves_done.append({
+                    "src": src,
+                    "dst": src,
+                    "mode": "sort",
+                    "skipped": True,
+                    "reason": "Collision handling placed in same folder as source"
+                })
+                continue
+
             if app.safe_mode.get():
                 shutil.copy2(src, new_dst)
             else:
                 shutil.move(src, new_dst)
-
 
             moves_done.append({
                 "src": src,

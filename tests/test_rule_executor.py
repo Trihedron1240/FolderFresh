@@ -301,6 +301,100 @@ class TestRuleExecutorActivityLogIntegration:
 
 
 @pytest.mark.unit
+class TestRuleExecutorIdempotency:
+    """Test RuleExecutor idempotency (skip redundant operations)."""
+
+    def test_rename_action_skips_identical_rename(self, test_structure, test_file_factory, basic_config, clear_activity_log):
+        """Test RenameAction skips if file is already named correctly."""
+        src_file = test_file_factory(test_structure["source"], "report.txt")
+        fileinfo = get_fileinfo(src_file)
+
+        rule = Rule(
+            name="Rename to report.txt",
+            conditions=[ExtensionIsCondition(".txt")],
+            actions=[RenameAction("report.txt")]  # Already named this!
+        )
+
+        executor = RuleExecutor()
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
+
+        # Verify SKIP logged
+        assert any("SKIP: RENAME" in log for log in logs)
+        # Verify still successful
+        assert result.get("handled", False)
+        # File should still exist in original location
+        assert os.path.exists(src_file)
+
+    def test_move_action_skips_when_already_at_destination(self, test_structure, test_file_factory, basic_config, clear_activity_log):
+        """Test MoveAction skips if file is already at destination."""
+        # Create file directly in destination
+        dest_file = test_file_factory(test_structure["dest"], "document.txt")
+        fileinfo = get_fileinfo(dest_file)
+
+        rule = Rule(
+            name="Move to dest",
+            conditions=[ExtensionIsCondition(".txt")],
+            actions=[MoveAction(test_structure["dest"])]  # Already there!
+        )
+
+        executor = RuleExecutor()
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
+
+        # Verify SKIP logged (exact location or same folder)
+        assert any("SKIP: MOVE" in log for log in logs)
+        # File should still exist
+        assert os.path.exists(dest_file)
+
+    def test_move_action_skips_same_folder_after_rename(self, test_structure, test_file_factory, basic_config, clear_activity_log):
+        """Test MoveAction skips if rename already placed file in target folder."""
+        src_file = test_file_factory(test_structure["source"], "file.txt")
+        fileinfo = get_fileinfo(src_file)
+
+        # Rename keeps it in source folder, then Move wants source folder
+        rule = Rule(
+            name="Rename then Move to same",
+            conditions=[ExtensionIsCondition(".txt")],
+            actions=[
+                RenameAction("newname.txt"),  # Renames in source folder
+                MoveAction(test_structure["source"])  # Move to same folder!
+            ]
+        )
+
+        executor = RuleExecutor()
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
+
+        # Both actions should log
+        assert any("RENAME" in log for log in logs)
+        # Move should skip (already in target folder)
+        assert any("SKIP: MOVE" in log for log in logs)
+        # File should be renamed but not moved
+        assert os.path.exists(os.path.join(test_structure["source"], "newname.txt"))
+
+    def test_copy_action_skips_identical_copy(self, test_structure, test_file_factory, basic_config, clear_activity_log):
+        """Test CopyAction skips if destination is same as source."""
+        src_file = test_file_factory(test_structure["source"], "file.txt")
+        fileinfo = get_fileinfo(src_file)
+
+        rule = Rule(
+            name="Copy to same location",
+            conditions=[ExtensionIsCondition(".txt")],
+            actions=[CopyAction(test_structure["source"])]  # Copy to own location!
+        )
+
+        executor = RuleExecutor()
+        result = executor.execute([rule], fileinfo, basic_config)
+        logs = result.get("log", []) if isinstance(result, dict) else result
+
+        # Verify SKIP logged
+        assert any("SKIP: COPY" in log for log in logs)
+        # Only one copy should exist
+        assert os.path.exists(src_file)
+
+
+@pytest.mark.unit
 class TestRuleExecutorErrorHandling:
     """Test RuleExecutor error handling."""
 

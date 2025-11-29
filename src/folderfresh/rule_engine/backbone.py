@@ -708,6 +708,24 @@ class RenameAction(Action):
             new_path = os.path.join(parent_dir, self.new_name)
             new_path = normalize_path(new_path)
 
+            # SKIP CHECK: If old and new paths are identical, skip (idempotent)
+            if os.path.normcase(os.path.abspath(old_path)) == os.path.normcase(os.path.abspath(new_path)):
+                message = f"SKIP: RENAME - already named '{self.new_name}'"
+                print(f"  [ACTION] {message}")
+                return {
+                    "ok": True,  # Not an error, just skipped
+                    "log": message,
+                    "meta": {
+                        "type": "rename",
+                        "src": old_path,
+                        "old_name": old_name,
+                        "new_name": self.new_name,
+                        "collision_handled": False,
+                        "was_dry_run": dry_run,
+                        "skipped": True
+                    }
+                }
+
             # Track if collision was handled
             collision_handled = False
 
@@ -830,6 +848,46 @@ class MoveAction(Action):
             new_path = os.path.join(target_dir, filename)
             new_path = normalize_path(new_path)
 
+            # SKIP CHECK 1: If old and new paths are identical, skip (idempotent)
+            old_path_normalized = os.path.normcase(os.path.abspath(old_path))
+            new_path_normalized = os.path.normcase(os.path.abspath(new_path))
+
+            if old_path_normalized == new_path_normalized:
+                message = f"SKIP: MOVE - already in target location"
+                print(f"  [ACTION] {message}")
+                return {
+                    "ok": True,  # Not an error, just skipped
+                    "log": message,
+                    "meta": {
+                        "type": "move",
+                        "src": old_path,
+                        "dst": old_path,  # No actual move
+                        "collision_handled": False,
+                        "was_dry_run": dry_run,
+                        "skipped": True
+                    }
+                }
+
+            # SKIP CHECK 2: If files are in same parent directory, skip move but allow rename to happen
+            old_parent = os.path.dirname(old_path_normalized)
+            new_parent = os.path.dirname(new_path_normalized)
+
+            if old_parent == new_parent:
+                message = f"SKIP: MOVE - already in target folder (only rename, not move)"
+                print(f"  [ACTION] {message}")
+                return {
+                    "ok": True,  # Not an error, just skipped
+                    "log": message,
+                    "meta": {
+                        "type": "move",
+                        "src": old_path,
+                        "dst": old_path,  # No actual move
+                        "collision_handled": False,
+                        "was_dry_run": dry_run,
+                        "skipped": True
+                    }
+                }
+
             # Track if collision was handled
             collision_handled = False
 
@@ -948,6 +1006,26 @@ class CopyAction(Action):
 
             new_path = os.path.join(target_dir, filename)
             new_path = normalize_path(new_path)
+
+            # SKIP CHECK 1: If old and new paths are identical, skip (idempotent)
+            old_path_normalized = os.path.normcase(os.path.abspath(old_path))
+            new_path_normalized = os.path.normcase(os.path.abspath(new_path))
+
+            if old_path_normalized == new_path_normalized:
+                message = f"SKIP: COPY - already in target location"
+                print(f"  [ACTION] {message}")
+                return {
+                    "ok": True,  # Not an error, just skipped
+                    "log": message,
+                    "meta": {
+                        "type": "copy",
+                        "src": old_path,
+                        "dst": old_path,  # No actual copy
+                        "collision_handled": False,
+                        "was_dry_run": dry_run,
+                        "skipped": True
+                    }
+                }
 
             # Track if collision was handled
             collision_handled = False
