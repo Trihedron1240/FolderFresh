@@ -35,6 +35,9 @@ class ActivityLogWindow(QDialog):
     # Signals
     undo_last_requested = Signal()
     undo_history_requested = Signal()
+    clear_log_clicked = Signal()
+    export_log_clicked = Signal()
+    search_requested = Signal(str)  # search query
     closed = Signal()
 
     def __init__(self, parent=None, log_entries=None):
@@ -118,11 +121,11 @@ class ActivityLogWindow(QDialog):
         action_frame.add_widget(undo_history_btn)
 
         clear_btn = DangerButton("Clear Log")
-        clear_btn.clicked.connect(self._on_clear_log)
+        clear_btn.clicked.connect(lambda: self.clear_log_clicked.emit())
         action_frame.add_widget(clear_btn)
 
         export_btn = StyledButton("Export Log", bg_color=Colors.ACCENT)
-        export_btn.clicked.connect(self._on_export_log)
+        export_btn.clicked.connect(lambda: self.export_log_clicked.emit())
         action_frame.add_widget(export_btn)
 
         action_frame.add_stretch()
@@ -179,6 +182,9 @@ class ActivityLogWindow(QDialog):
     def _on_search_changed(self, text: str) -> None:
         """Handle search text change."""
         search_text = text.lower().strip()
+
+        # Emit signal for backend to handle search
+        self.search_requested.emit(text)
 
         if not search_text:
             self.filtered_entries = self.log_entries.copy()
