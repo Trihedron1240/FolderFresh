@@ -8,8 +8,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
+    QTextBrowser,
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QUrl
 from PySide6.QtGui import QFont
 
 from .styles import Colors, Fonts
@@ -56,72 +57,81 @@ class HelpWindow(QDialog):
         title = HeadingLabel("FolderFresh Help")
         main_layout.addWidget(title)
 
-        # Help text content
-        help_text = """
-FolderFresh is a powerful file organization tool that helps you automatically tidy your folders using customizable rules.
+        # Help text content with HTML formatting for links
+        help_html = f"""
+<html>
+<body style="background-color: {Colors.PANEL_BG}; color: {Colors.TEXT}; font-family: Arial, sans-serif; line-height: 1.5;">
+<p>FolderFresh is a powerful file organization tool that helps you automatically tidy your folders using customizable rules.</p>
 
-KEY FEATURES:
+<h3 style="color: {Colors.TEXT};">KEY FEATURES:</h3>
 
-• Preview Mode
-  See exactly what will happen before executing any changes. No surprises!
+<p>
+• <b>Preview Mode</b><br/>
+&nbsp;&nbsp;See exactly what will happen before executing any changes. No surprises!
+</p>
 
-• Safe Mode
-  Copy files instead of moving them as an extra layer of protection.
+<p>
+• <b>Safe Mode</b><br/>
+&nbsp;&nbsp;Copy files instead of moving them as an extra layer of protection.
+</p>
 
-• Smart Sorting
-  Uses advanced rules to detect screenshots, assignments, photos, invoices, messaging media and more.
+<p>
+• <b>Smart Sorting</b><br/>
+&nbsp;&nbsp;Uses advanced rules to detect screenshots, assignments, photos, invoices, messaging media and more.
+</p>
 
-• Auto-Tidy
-  Automatically organize your folders in the background whenever new files arrive.
+<p>
+• <b>Auto-Tidy</b><br/>
+&nbsp;&nbsp;Automatically organize your folders in the background whenever new files arrive.
+</p>
 
-• Undo Support
-  Made a mistake? Undo the last operation with a single click.
+<p>
+• <b>Undo Support</b><br/>
+&nbsp;&nbsp;Made a mistake? Undo the last operation with a single click.
+</p>
 
-• Custom Rules
-  Create complex rules with conditions and multiple actions to handle any file organization scenario.
+<p>
+• <b>Custom Rules</b><br/>
+&nbsp;&nbsp;Create complex rules with conditions and multiple actions to handle any file organization scenario.
+</p>
 
-• Profile System
-  Save different rule sets for different folders, making it easy to organize multiple locations.
+<p>
+• <b>Profile System</b><br/>
+&nbsp;&nbsp;Save different rule sets for different folders, making it easy to organize multiple locations.
+</p>
 
-GETTING STARTED:
+<h3 style="color: {Colors.TEXT};">GETTING STARTED:</h3>
 
-1. Choose a folder or open a folder from Explorer
-2. Review the default options (Safe Mode is recommended for beginners)
-3. Click Preview to see what will happen
+<p>
+1. Choose a folder or open a folder from Explorer<br/>
+2. Review the default options (Safe Mode is recommended for beginners)<br/>
+3. Click Preview to see what will happen<br/>
 4. Click Organise Files to apply the changes
+</p>
 
-For more information, visit the GitHub repository or check the activity log.
-        """.strip()
-
-        help_label = StyledLabel(help_text, font_size=Fonts.SIZE_SMALL)
-        help_label.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        help_label.setWordWrap(True)
-        help_label.setStyleSheet(
-            f"""
-            QLabel {{
-                color: {Colors.TEXT};
-                line-height: 1.5;
-            }}
+<p>
+For more information, <a href="https://github.com/Trihedron1240/FolderFresh" style="color: #2196F3; text-decoration: underline;">visit FolderFresh on GitHub</a> or check the activity log.
+</p>
+</body>
+</html>
         """
+
+        # Create text browser for HTML content with clickable links
+        text_browser = QTextBrowser()
+        text_browser.setHtml(help_html)
+        text_browser.setReadOnly(True)
+        text_browser.setOpenExternalLinks(True)
+        text_browser.setStyleSheet(
+            f"""
+            QTextBrowser {{
+                background-color: {Colors.PANEL_BG};
+                color: {Colors.TEXT};
+                border: none;
+            }}
+            """
         )
 
-        # Scrollable help text area
-        from PySide6.QtWidgets import QScrollArea, QFrame
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameStyle(QFrame.NoFrame)
-        scroll.setStyleSheet(f"QScrollArea {{ background-color: {Colors.PANEL_BG}; border: none; }}")
-
-        # Create text container
-        text_container = QFrame()
-        text_container.setStyleSheet(f"QFrame {{ background-color: {Colors.PANEL_BG}; }}")
-        text_layout = QVBoxLayout(text_container)
-        text_layout.setContentsMargins(0, 0, 0, 0)
-        text_layout.addWidget(help_label)
-        text_layout.addStretch()
-
-        scroll.setWidget(text_container)
-        main_layout.addWidget(scroll, 1)
+        main_layout.addWidget(text_browser, 1)
 
         # Button row at bottom
         button_frame = HorizontalFrame(spacing=8)
