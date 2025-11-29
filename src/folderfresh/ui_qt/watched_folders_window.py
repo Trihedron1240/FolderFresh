@@ -34,7 +34,7 @@ class WatchedFoldersWindow(QDialog):
 
     # Signals
     add_folder_clicked = Signal()
-    remove_folder_clicked = Signal()
+    remove_folder_clicked = Signal(str)  # folder_path
     profile_changed = Signal(str, str)  # folder_path, profile_id
     closed = Signal()
 
@@ -56,6 +56,7 @@ class WatchedFoldersWindow(QDialog):
         self.folder_rows: Dict[str, dict] = {}  # folder_path -> {"frame": QFrame, "dropdown": QComboBox}
         self.available_profiles: List[str] = []  # List of profile IDs
         self.profile_names: Dict[str, str] = {}  # profile_id -> profile_name
+        self.selected_folder: Optional[str] = None  # Currently selected folder path
 
         self._init_ui()
 
@@ -89,9 +90,10 @@ class WatchedFoldersWindow(QDialog):
         add_btn.clicked.connect(lambda: self.add_folder_clicked.emit())
         button_frame.add_widget(add_btn)
 
-        remove_btn = StyledButton("Remove Folder", bg_color=Colors.DANGER)
-        remove_btn.clicked.connect(lambda: self.remove_folder_clicked.emit())
-        button_frame.add_widget(remove_btn)
+        self.remove_btn = StyledButton("Remove Folder", bg_color=Colors.DANGER)
+        self.remove_btn.clicked.connect(self._on_remove_folder_clicked)
+        self.remove_btn.setEnabled(False)  # Disabled until folder is selected
+        button_frame.add_widget(self.remove_btn)
 
         button_frame.add_stretch()
 
@@ -133,8 +135,9 @@ class WatchedFoldersWindow(QDialog):
         if folder_str in self.folder_rows:
             return
 
-        # Create folder row frame
+        # Create folder row frame (clickable)
         row_frame = CardFrame()
+        row_frame.setCursor(Qt.PointingHandCursor)
         row_layout = QHBoxLayout(row_frame)
         row_layout.setContentsMargins(10, 8, 10, 8)
         row_layout.setSpacing(12)
@@ -176,7 +179,11 @@ class WatchedFoldersWindow(QDialog):
             "status": status_label,
             "dropdown": profile_dropdown,
             "is_active": is_active,
+            "is_selected": False,
         }
+
+        # Make row clickable
+        row_frame.mousePressEvent = lambda event: self._on_folder_row_clicked(folder_str)
 
         self.folder_scroll.add_widget(row_frame)
 
@@ -194,10 +201,17 @@ class WatchedFoldersWindow(QDialog):
             row_data["frame"].deleteLater()
             del self.folder_rows[folder_str]
 
+            # Clear selection if the removed folder was selected
+            if self.selected_folder == folder_str:
+                self.selected_folder = None
+                self.remove_btn.setEnabled(False)
+
     def clear_folders(self) -> None:
         """Clear all watched folders."""
         self.folder_scroll.clear()
         self.folder_rows.clear()
+        self.selected_folder = None
+        self.remove_btn.setEnabled(False)
 
     def get_watched_folders(self) -> Dict[str, str]:
         """
@@ -289,6 +303,42 @@ class WatchedFoldersWindow(QDialog):
             index = dropdown.findData(profile_id)
             if index >= 0:
                 dropdown.setCurrentIndex(index)
+
+    def _on_folder_row_clicked(self, folder_path: str) -> None:
+        """
+        Handle folder row click for selection.
+
+        Args:
+            folder_path: Path to the folder that was clicked
+        """
+        # Deselect previous folder
+        if self.selected_folder and self.selected_folder in self.folder_rows:
+            old_row_data = self.folder_rows[self.selected_folder]
+            old_row_data["is_selected"] = False
+            old_row_data["frame"].setStyleSheet(
+                f"background-color: {Colors.CARD_BG}; border-radius: 4px;"
+            )
+
+        # Select new folder
+        self.selected_folder = folder_path
+        if folder_path in self.folder_rows:
+            row_data = self.folder_rows[folder_path]
+            row_data["is_selected"] = True
+            # Highlight selected folder with accent color
+            row_data["frame"].setStyleSheet(
+                f"background-color: {Colors.ACCENT}; border-radius: 4px; opacity: 0.2;"
+            )
+
+        # Enable remove button when folder is selected
+        self.remove_btn.setEnabled(True)
+
+    def _on_remove_folder_clicked(self) -> None:
+        """Handle remove folder button click."""
+        if self.selected_folder:
+            self.remove_folder_clicked.emit(self.selected_folder)
+            # Reset selection
+            self.selected_folder = None
+            self.remove_btn.setEnabled(False)
 
     def closeEvent(self, event):
         """Handle window close event."""
