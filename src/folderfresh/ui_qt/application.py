@@ -134,7 +134,6 @@ class FolderFreshApplication:
         try:
             self.main_window_backend = MainWindowBackend()
             self.profile_manager_backend = ProfileManagerBackend()
-            self.category_manager_backend = CategoryManagerBackend()
             self.rule_manager_backend = RuleManagerBackend()
             self.watched_folders_backend = WatchedFoldersBackend()
             self.activity_log_backend = ActivityLogBackend(auto_refresh=True)
@@ -692,14 +691,26 @@ class FolderFreshApplication:
     def _on_categories_requested(self) -> None:
         """Open categories manager window for the active profile."""
         if "categories" not in self.active_windows or not self.active_windows["categories"].isVisible():
-            # Create window with backend for proper data loading
+            # Get active profile info
             profile_name = "Active Profile"
             if self.active_profile_id and self.active_profile_id in self.profiles:
                 profile_name = self.profiles[self.active_profile_id].get("name", "Active Profile")
 
+            # Create backend for the active profile
+            try:
+                category_manager_backend = CategoryManagerBackend(self.active_profile_id)
+            except Exception as e:
+                show_error_dialog(
+                    self.main_window,
+                    "Category Manager Error",
+                    f"Failed to initialize category manager:\n{str(e)}"
+                )
+                return
+
+            # Create window with backend for proper data loading
             categories_window = CategoryManagerWindow(
                 parent=self.main_window,
-                backend=self.category_manager_backend,
+                backend=category_manager_backend,
                 profile_id=self.active_profile_id,
                 profile_name=profile_name
             )
