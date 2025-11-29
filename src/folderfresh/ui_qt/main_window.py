@@ -208,7 +208,7 @@ class MainWindow(QMainWindow):
         self.skip_hidden_check.stateChanged.connect(lambda: self.options_changed.emit())
         options_frame.add_widget(self.skip_hidden_check)
 
-        self.safe_mode_check = StyledCheckBox("Safe Mode (copy)", checked=False)
+        self.safe_mode_check = StyledCheckBox("Safe Mode (copy)", checked=True)
         self.safe_mode_check.stateChanged.connect(lambda: self.options_changed.emit())
         options_frame.add_widget(self.safe_mode_check)
 

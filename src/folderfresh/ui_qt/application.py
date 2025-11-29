@@ -108,7 +108,7 @@ class FolderFreshApplication:
                 options = {
                     "include_subfolders": self._config_data.get("include_sub", True),
                     "skip_hidden": self._config_data.get("skip_hidden", True),
-                    "safe_mode": self._config_data.get("safe_mode", False),
+                    "safe_mode": self._config_data.get("safe_mode", True),
                     "smart_sorting": self._config_data.get("smart_mode", False),
                     "auto_tidy": self._config_data.get("watch_mode", False),
                     "startup": self._config_data.get("startup", False),
