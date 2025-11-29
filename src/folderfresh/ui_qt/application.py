@@ -871,6 +871,12 @@ class FolderFreshApplication:
                     lambda query: self.activity_log_backend.search_log(query)
                 )
 
+            # Connect undo signals to main window backend
+            if self.main_window_backend:
+                log_window.undo_last_requested.connect(
+                    lambda: self.main_window_backend.perform_undo()
+                )
+
             log_window.closed.connect(lambda: self._on_window_closed("activity_log"))
 
             self.active_windows["activity_log"] = log_window

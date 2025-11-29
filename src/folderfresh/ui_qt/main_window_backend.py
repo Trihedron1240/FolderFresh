@@ -98,7 +98,7 @@ class MainWindowBackend(QObject):
         try:
             history = self.get_undo_history()
             if not history:
-                show_info_dialog("No actions to undo")
+                show_info_dialog(None, "No Actions", "No actions to undo")
                 return False
 
             result = self.undo_manager.undo_last()
@@ -112,7 +112,7 @@ class MainWindowBackend(QObject):
                 if dst:
                     message += f"\n→ {dst}"
 
-                show_info_dialog(message)
+                show_info_dialog(None, "Undo Successful", message)
                 log_activity(f"Undo: {action_type} - {src}")
                 log_info(f"Undo successful: {result.get('status')}")
 
@@ -123,13 +123,13 @@ class MainWindowBackend(QObject):
                 return True
             else:
                 error_msg = result.get("error", "Unknown error")
-                show_error_dialog(f"Undo failed:\n{error_msg}")
+                show_error_dialog(None, "Undo Failed", f"Undo failed:\n{error_msg}")
                 log_warning(f"Undo failed: {error_msg}")
                 return False
 
         except Exception as e:
             log_error(f"Exception during undo: {e}")
-            show_error_dialog(f"Error during undo:\n{e}")
+            show_error_dialog(None, "Undo Error", f"Error during undo:\n{e}")
             return False
 
     def get_undo_description(self, history_index: int = 0) -> str:
@@ -181,7 +181,7 @@ class MainWindowBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to clear undo history: {e}")
-            show_error_dialog(f"Failed to clear history:\n{e}")
+            show_error_dialog(None, "Clear History Failed", f"Failed to clear history:\n{e}")
             return False
 
     def record_operation(
