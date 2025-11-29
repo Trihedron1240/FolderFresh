@@ -56,7 +56,7 @@ class WatchedFoldersBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to load watched folders: {e}")
-            show_error_dialog(f"Failed to load watched folders:\n{e}")
+            show_error_dialog(None, "Load Watched Folders Failed", f"Failed to load watched folders:\n{e}")
 
     def get_watched_folders(self) -> List[str]:
         """Get list of watched folders"""
@@ -149,12 +149,12 @@ class WatchedFoldersBackend(QObject):
 
             # Check if already watching
             if folder_path in self.get_watched_folders():
-                show_info_dialog(f"Already watching: {folder_path}")
+                show_info_dialog(None, "Already Watching", f"Already watching: {folder_path}")
                 return False
 
             # Check if folder exists
             if not Path(folder_path).is_dir():
-                show_error_dialog(f"Folder not found: {folder_path}")
+                show_error_dialog(None, "Folder Not Found", f"Folder not found: {folder_path}")
                 return False
 
             # Add to config
@@ -176,13 +176,13 @@ class WatchedFoldersBackend(QObject):
 
             log_info(f"Folder added to watch list: {folder_path}")
             self.folder_added.emit(folder_path)
-            show_info_dialog(f"Now watching: {folder_path}")
+            show_info_dialog(None, "Watching Folder", f"Now watching: {folder_path}")
 
             return True
 
         except Exception as e:
             log_error(f"Failed to add watched folder: {e}")
-            show_error_dialog(f"Failed to add watched folder:\n{e}")
+            show_error_dialog(None, "Add Watched Folder Failed", f"Failed to add watched folder:\n{e}")
             return False
 
     def remove_watched_folder(self, folder_path: str) -> bool:
@@ -197,7 +197,7 @@ class WatchedFoldersBackend(QObject):
         """
         try:
             if folder_path not in self.get_watched_folders():
-                show_error_dialog(f"Not watching: {folder_path}")
+                show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
                 return False
 
             if not show_confirmation_dialog(
@@ -232,13 +232,13 @@ class WatchedFoldersBackend(QObject):
 
             log_info(f"Folder removed from watch list: {folder_path}")
             self.folder_removed.emit(folder_path)
-            show_info_dialog(f"No longer watching: {folder_path}")
+            show_info_dialog(None, "Stopped Watching", f"No longer watching: {folder_path}")
 
             return True
 
         except Exception as e:
             log_error(f"Failed to remove watched folder: {e}")
-            show_error_dialog(f"Failed to remove watched folder:\n{e}")
+            show_error_dialog(None, "Remove Watched Folder Failed", f"Failed to remove watched folder:\n{e}")
             return False
 
     def set_folder_profile(self, folder_path: str, profile_name: str) -> bool:
@@ -254,13 +254,13 @@ class WatchedFoldersBackend(QObject):
         """
         try:
             if folder_path not in self.get_watched_folders():
-                show_error_dialog(f"Not watching: {folder_path}")
+                show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
                 return False
 
             # Verify profile exists
             available = self.get_available_profiles()
             if profile_name not in available:
-                show_error_dialog(f"Profile not found: {profile_name}")
+                show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_name}")
                 return False
 
             # Update mapping
@@ -278,7 +278,7 @@ class WatchedFoldersBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to set folder profile: {e}")
-            show_error_dialog(f"Failed to set folder profile:\n{e}")
+            show_error_dialog(None, "Set Folder Profile Failed", f"Failed to set folder profile:\n{e}")
             return False
 
     def open_folder(self, folder_path: str) -> bool:
@@ -298,7 +298,7 @@ class WatchedFoldersBackend(QObject):
             folder_path = Path(folder_path).resolve()
 
             if not folder_path.is_dir():
-                show_error_dialog(f"Folder not found: {folder_path}")
+                show_error_dialog(None, "Folder Not Found", f"Folder not found: {folder_path}")
                 return False
 
             if platform.system() == "Windows":
@@ -313,7 +313,7 @@ class WatchedFoldersBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to open folder: {e}")
-            show_error_dialog(f"Failed to open folder:\n{e}")
+            show_error_dialog(None, "Open Folder Failed", f"Failed to open folder:\n{e}")
             return False
 
     def reload_folders(self) -> None:
@@ -328,5 +328,5 @@ class WatchedFoldersBackend(QObject):
             return True
         except Exception as e:
             log_error(f"Failed to save configuration: {e}")
-            show_error_dialog(f"Failed to save configuration:\n{e}")
+            show_error_dialog(None, "Save Configuration Failed", f"Failed to save configuration:\n{e}")
             return False
