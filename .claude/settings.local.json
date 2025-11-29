@@ -8,7 +8,8 @@
       "Bash(timeout 10 python:*)",
       "Bash(timeout 15 python:*)",
       "Bash(pkill:*)",
-      "Bash(timeout 5 python:*)"
+      "Bash(timeout 5 python:*)",
+      "Bash(timeout 60 python -m pytest:*)"
     ],
     "deny": [],
     "ask": []

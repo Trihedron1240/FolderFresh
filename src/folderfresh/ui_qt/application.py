@@ -101,6 +101,23 @@ class FolderFreshApplication:
             except Exception:
                 pass
 
+        # Restore checkbox options from config
+        if self._config_data:
+            try:
+                # Map config keys to UI option keys
+                options = {
+                    "include_subfolders": self._config_data.get("include_sub", True),
+                    "skip_hidden": self._config_data.get("skip_hidden", True),
+                    "safe_mode": self._config_data.get("safe_mode", False),
+                    "smart_sorting": self._config_data.get("smart_mode", False),
+                    "auto_tidy": self._config_data.get("watch_mode", False),
+                    "startup": self._config_data.get("startup", False),
+                    "tray_mode": self._config_data.get("tray_mode", False),
+                }
+                self.main_window.set_options(options)
+            except Exception as e:
+                log_error(f"Failed to restore checkbox options: {e}")
+
     def _connect_main_window_signals(self) -> None:
         """Connect main window signals to application slots."""
         # Folder selection
