@@ -1,0 +1,15 @@
+# FolderFresh Dependencies
+# Python 3.11+
+
+# GUI Framework
+customtkinter>=5.2.0
+Pillow>=10.0.0
+
+# File Monitoring & System Tray
+watchdog>=3.0.0
+pystray>=0.19.0
+
+# Testing & Code Quality
+pytest>=7.4.0
+pytest-cov>=4.1.0
+coverage>=7.2.0

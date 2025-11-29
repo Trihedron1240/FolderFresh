@@ -3,6 +3,7 @@ name: FolderFresh CI
 on:
   push:
     branches: ["**"]
+    tags: ["v*"]
   pull_request:
     branches: ["**"]
 
@@ -20,29 +21,37 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
+          cache-dependency-path: requirements.txt
 
-      - name: Install dependencies
+      - name: Display Python version
+        run: python --version
+
+      - name: Upgrade pip, setuptools, and wheel
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install pytest coverage
-          # Install test dependencies from requirements (if exists)
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
-      - name: Verify Python and imports
+      - name: Install dependencies from requirements.txt
         run: |
-          python --version
-          python -c "import sys; print(f'Python {sys.version}'); print(f'Path: {sys.path}')"
+          pip install -r requirements.txt
+
+      - name: Verify imports
+        run: |
+          python -c "import customtkinter; print('✓ customtkinter')"
+          python -c "import PIL; print('✓ Pillow')"
+          python -c "import watchdog; print('✓ watchdog')"
+          python -c "import pystray; print('✓ pystray')"
+          python -c "import pytest; print('✓ pytest')"
+          python -c "from folderfresh.rule_engine import Rule; print('✓ folderfresh')"
 
       - name: Run tests with coverage
         run: |
           python -m pytest tests/ -v --cov=src/folderfresh --cov-report=xml --cov-report=term-missing
 
-      - name: Upload coverage reports
+      - name: Upload coverage reports to Codecov
         if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@v3
         with:
@@ -62,10 +71,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
+          cache-dependency-path: requirements.txt
 
       - name: Install lint tools
         run: |
@@ -81,12 +91,10 @@ jobs:
       - name: Run Flake8 linter
         run: flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
 
-  build-badge:
-    name: Update Status Badge
+  build-status:
+    name: Build Status Check
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     needs: test
     continue-on-error: true
 
@@ -94,13 +102,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create badge artifact
+      - name: Create build status badge
         run: |
-          echo "CI Status: All tests passed ✓" > ci-status.txt
-          echo "Last updated: $(date)" >> ci-status.txt
+          echo "✓ Build Status: All tests passed" > build-status.txt
+          echo "Last updated: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> build-status.txt
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload build status artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: ci-status
-          path: ci-status.txt
+          name: build-status
+          path: build-status.txt
+          retention-days: 30
