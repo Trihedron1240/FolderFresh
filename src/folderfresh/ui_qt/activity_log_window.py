@@ -147,17 +147,24 @@ class ActivityLogWindow(QDialog):
         else:
             lines = []
             for entry in self.filtered_entries:
-                timestamp = entry.get("timestamp", "")
-                action = entry.get("action", "")
-                details = entry.get("details", "")
+                # Handle both string and dict entries
+                if isinstance(entry, dict):
+                    timestamp = entry.get("timestamp", "")
+                    action = entry.get("action", "")
+                    details = entry.get("details", "")
 
-                line = f"[{timestamp}] {action}"
-                if details:
-                    line += f"\n  {details}"
+                    line = f"[{timestamp}] {action}"
+                    if details:
+                        line += f"\n  {details}"
+                    lines.append(line)
+                elif isinstance(entry, str):
+                    # Entry is already a formatted string
+                    lines.append(entry)
+                else:
+                    # Fallback for unknown types
+                    lines.append(str(entry))
 
-                lines.append(line)
-
-            log_text = "\n\n".join(lines)
+            log_text = "\n".join(lines)
 
         self.log_text.setPlainText(log_text)
 
@@ -176,12 +183,19 @@ class ActivityLogWindow(QDialog):
         if not search_text:
             self.filtered_entries = self.log_entries.copy()
         else:
-            # Filter entries by action or details
-            self.filtered_entries = [
-                entry for entry in self.log_entries
-                if (search_text in entry.get("action", "").lower() or
-                    search_text in entry.get("details", "").lower())
-            ]
+            # Filter entries by searching in both dict and string entries
+            filtered = []
+            for entry in self.log_entries:
+                if isinstance(entry, dict):
+                    # Dict entry: search in action and details
+                    if (search_text in entry.get("action", "").lower() or
+                        search_text in entry.get("details", "").lower()):
+                        filtered.append(entry)
+                elif isinstance(entry, str):
+                    # String entry: search in the full string
+                    if search_text in entry.lower():
+                        filtered.append(entry)
+            self.filtered_entries = filtered
 
         self._refresh_log_display()
 
