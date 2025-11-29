@@ -137,6 +137,18 @@ class FolderFreshApplication:
             self.rule_manager_backend = RuleManagerBackend()
             self.watched_folders_backend = WatchedFoldersBackend()
             self.activity_log_backend = ActivityLogBackend(auto_refresh=True)
+
+            # Load active profile from storage at startup
+            if self.profile_manager_backend:
+                profiles = self.profile_manager_backend.get_all_profiles()
+                self.set_profiles(profiles)
+
+                # Load the stored active profile ID
+                if self.profile_store:
+                    profiles_doc = self.profile_store.load()
+                    stored_active_id = profiles_doc.get("active_profile_id")
+                    if stored_active_id and stored_active_id in self.profiles:
+                        self.active_profile_id = stored_active_id
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -691,9 +703,18 @@ class FolderFreshApplication:
     def _on_categories_requested(self) -> None:
         """Open categories manager window for the active profile."""
         if "categories" not in self.active_windows or not self.active_windows["categories"].isVisible():
+            # Check if we have an active profile
+            if not self.active_profile_id:
+                show_warning_dialog(
+                    self.main_window,
+                    "No Active Profile",
+                    "Please create or select a profile first to manage categories."
+                )
+                return
+
             # Get active profile info
             profile_name = "Active Profile"
-            if self.active_profile_id and self.active_profile_id in self.profiles:
+            if self.active_profile_id in self.profiles:
                 profile_name = self.profiles[self.active_profile_id].get("name", "Active Profile")
 
             # Create backend for the active profile
