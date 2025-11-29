@@ -179,7 +179,20 @@ class ProfileStore:
                 cfg[k] = settings[k]
 
         cfg["custom_categories"] = profile.get("custom_categories", {})
-        cfg["custom_category_names"] = profile.get("category_overrides", {})
+
+        # Transform category_overrides to custom_category_names format
+        # Profile format: {"cat_name": {"name": "Display Name", "extensions": [...]}}
+        # Config format: {"cat_name": "Display Name"}
+        category_overrides = profile.get("category_overrides", {})
+        custom_category_names = {}
+        for cat_name, override_data in category_overrides.items():
+            if isinstance(override_data, dict) and "name" in override_data:
+                custom_category_names[cat_name] = override_data["name"]
+            elif isinstance(override_data, str):
+                # Handle old-style string overrides for backward compatibility
+                custom_category_names[cat_name] = override_data
+
+        cfg["custom_category_names"] = custom_category_names
         cfg["category_enabled"] = profile.get("category_enabled", {})
         cfg["ignore_patterns"] = profile.get("ignore_patterns", [])
         cfg["dont_move_list"] = profile.get("dont_move_list", [])

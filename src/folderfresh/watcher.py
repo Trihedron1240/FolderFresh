@@ -99,16 +99,7 @@ class AutoTidyHandler(FileSystemEventHandler):
         # Allowed categories
         allowed = {c for c in DEFAULT_CATEGORIES if enabled_map.get(c, True)}
         allowed |= {c for c in custom if enabled_map.get(c, True)}
-
-        # Handle both old format (string values) and new format (dict values)
-        for val in overrides.values():
-            if isinstance(val, dict):
-                # New format: {"cat_name": {"name": "Display Name", ...}}
-                if "name" in val:
-                    allowed.add(val["name"])
-            elif isinstance(val, str):
-                # Old format: {"cat_name": "Display Name"}
-                allowed.add(val)
+        allowed |= set(overrides.values())
 
         # Skip category folders
         try:
