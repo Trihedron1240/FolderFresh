@@ -118,7 +118,7 @@ def get_global_stylesheet() -> str:
     }}
 
     QPushButton:pressed {{
-        transform: scale(0.98);
+        background-color: {Colors.get("primary.pressed")};
     }}
 
     QPushButton:focus {{

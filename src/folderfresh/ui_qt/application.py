@@ -719,8 +719,13 @@ class FolderFreshApplication:
         if "watched" not in self.active_windows or not self.active_windows["watched"].isVisible():
             watched_window = WatchedFoldersWindow(parent=self.main_window)
 
-            # Connect UI signals to backend
+            # Load initial data from backend
             if self.watched_folders_backend:
+                folders = self.watched_folders_backend.get_watched_folders_with_status()
+                profiles = self.watched_folders_backend.get_profiles_dict()
+                watched_window.refresh_folders(folders, profiles)
+
+                # Connect UI signals to backend
                 watched_window.add_folder_clicked.connect(
                     lambda: self.watched_folders_backend.add_watched_folder()
                 )
@@ -729,6 +734,14 @@ class FolderFreshApplication:
                 )
                 watched_window.profile_changed.connect(
                     lambda path, profile: self.watched_folders_backend.set_folder_profile(path, profile)
+                )
+
+                # Connect backend signals to update UI
+                self.watched_folders_backend.folder_added.connect(
+                    lambda path: watched_window.add_folder_to_list(path)
+                )
+                self.watched_folders_backend.folder_removed.connect(
+                    lambda path: watched_window.remove_folder_from_list(path)
                 )
 
             watched_window.closed.connect(lambda: self._on_window_closed("watched"))

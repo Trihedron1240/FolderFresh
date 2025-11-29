@@ -4,6 +4,9 @@ Two-pane interface for managing multiple profiles.
 """
 
 from typing import Dict, List, Optional, Any
+import json
+from datetime import datetime
+from pathlib import Path
 
 from PySide6.QtWidgets import (
     QDialog,
@@ -12,6 +15,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QSplitter,
     QFrame,
+    QFileDialog,
 )
 from PySide6.QtCore import Qt, Signal
 
@@ -29,7 +33,10 @@ from .base_widgets import (
     CardFrame,
     ScrollableFrame,
 )
-from .dialogs import ask_text_dialog, show_confirmation_dialog, show_info_dialog, show_warning_dialog
+from .dialogs import ask_text_dialog, show_confirmation_dialog, show_info_dialog, show_warning_dialog, show_error_dialog
+from .category_manager import CategoryManagerWindow
+from .category_manager_backend import CategoryManagerBackend
+from folderfresh.profile_store import ProfileStore
 
 
 class ProfileManagerWindow(QDialog):
@@ -43,6 +50,7 @@ class ProfileManagerWindow(QDialog):
     profile_duplicated = Signal(str)  # Emits new profile ID
     active_profile_changed = Signal(str)  # Emits active profile ID
     profile_changed = Signal()  # Emits when any profile changes
+    customize_categories_requested = Signal(str)  # Emits profile ID
     closed = Signal()
 
     def __init__(self, parent=None, profiles: List[Dict[str, Any]] = None, active_profile_id: str = None):
@@ -65,6 +73,8 @@ class ProfileManagerWindow(QDialog):
         self.active_profile_id = active_profile_id
         self.selected_profile_id: Optional[str] = None
         self.profile_list_items: Dict[str, CardFrame] = {}
+        self.profile_store = ProfileStore()
+        self.open_category_windows: Dict[str, CategoryManagerWindow] = {}
 
         self._init_ui()
 
@@ -305,6 +315,10 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             activate_btn.clicked.connect(lambda: self._on_set_active(profile_id))
             action_section.add_widget(activate_btn)
 
+        customize_btn = StyledButton("Customise Categories", bg_color=Colors.ACCENT)
+        customize_btn.clicked.connect(lambda: self._on_customize_categories(profile_id))
+        action_section.add_widget(customize_btn)
+
         action_section.add_stretch()
 
         self.editor_scroll.add_widget(action_section)
@@ -424,6 +438,38 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         self.active_profile_changed.emit(profile_id)
         show_info_dialog(self, "Active Profile", "Profile set as active.")
 
+    def _on_customize_categories(self, profile_id: str) -> None:
+        """Open category customization dialog for profile."""
+        # Check if window already open for this profile
+        if profile_id in self.open_category_windows:
+            # Bring existing window to front
+            window = self.open_category_windows[profile_id]
+            window.raise_()
+            window.activateWindow()
+            return
+
+        # Create backend for this profile
+        backend = CategoryManagerBackend(profile_id)
+
+        # Create and show category manager window
+        category_window = CategoryManagerWindow(
+            parent=self,
+            backend=backend,
+            profile_id=profile_id
+        )
+
+        # Store reference to keep window alive
+        self.open_category_windows[profile_id] = category_window
+
+        # Connect close signal to clean up reference
+        category_window.closed.connect(lambda: self.open_category_windows.pop(profile_id, None))
+
+        # Show the window (non-modal so user can keep profile manager open)
+        category_window.show()
+
+        # Emit signal for any external handlers
+        self.customize_categories_requested.emit(profile_id)
+
     def _on_save_profile(
         self,
         profile_id: str,
@@ -447,22 +493,110 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             show_info_dialog(self, "Saved", "Profile changes saved.")
 
     def _on_import_profiles(self) -> None:
-        """Import profiles from file."""
-        # Placeholder for import functionality
-        show_info_dialog(
+        """Import profiles from a JSON file."""
+        # Open file dialog
+        file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Import",
-            "Import functionality would be implemented in backend integration.",
+            "Import Profiles",
+            "",
+            "JSON Files (*.json)"
         )
 
+        if not file_path:
+            return
+
+        try:
+            # Load and validate file
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            if "profiles" not in data:
+                show_error_dialog(
+                    self,
+                    "Import Error",
+                    "Invalid file. Must contain a 'profiles' key."
+                )
+                return
+
+            # Load current document from store
+            doc = self.profile_store.load()
+
+            # Import profiles with new IDs
+            for profile in data["profiles"]:
+                # Generate new ID to avoid conflicts
+                profile["id"] = f"profile_{int(datetime.now().timestamp())}"
+                doc["profiles"].append(profile)
+
+            # Save updated document
+            self.profile_store.save(doc)
+
+            # Reload data
+            self.profiles = {p["id"]: p for p in doc.get("profiles", [])}
+            self._refresh_profile_list()
+
+            show_info_dialog(
+                self,
+                "Import Successful",
+                f"Imported {len(data['profiles'])} profile(s)."
+            )
+
+        except json.JSONDecodeError:
+            show_error_dialog(
+                self,
+                "Import Error",
+                "Invalid JSON file format."
+            )
+        except Exception as e:
+            show_error_dialog(
+                self,
+                "Import Error",
+                f"Failed to import profiles: {str(e)}"
+            )
+
     def _on_export_profile(self) -> None:
-        """Export profile to file."""
-        # Placeholder for export functionality
-        show_info_dialog(
+        """Export the currently selected profile to a JSON file."""
+        if not self.selected_profile_id:
+            show_warning_dialog(
+                self,
+                "No Profile Selected",
+                "Please select a profile to export."
+            )
+            return
+
+        profile = self.profiles.get(self.selected_profile_id)
+        if not profile:
+            return
+
+        # Open save dialog
+        file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Export",
-            "Export functionality would be implemented in backend integration.",
+            "Export Profile",
+            f"{profile.get('name', 'profile')}.json",
+            "JSON Files (*.json)"
         )
+
+        if not file_path:
+            return
+
+        try:
+            # Export profile as JSON
+            export_data = {"profiles": [profile]}
+
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(export_data, f, indent=2)
+
+            show_info_dialog(
+                self,
+                "Export Successful",
+                f"Profile exported to:\n{file_path}"
+            )
+
+        except Exception as e:
+            show_error_dialog(
+                self,
+                "Export Error",
+                f"Failed to export profile: {str(e)}"
+            )
 
     def _on_close(self) -> None:
         """Handle close button."""

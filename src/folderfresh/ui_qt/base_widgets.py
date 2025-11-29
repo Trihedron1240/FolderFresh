@@ -359,12 +359,13 @@ class SeparatorFrame(QFrame):
 class ScrollableFrame(QScrollArea):
     """Scrollable container matching FolderFresh design."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, spacing: int = 0):
         """
         Initialize scrollable frame.
 
         Args:
             parent: Parent widget
+            spacing: Spacing between items in layout
         """
         super().__init__(parent)
 
@@ -391,7 +392,7 @@ class ScrollableFrame(QScrollArea):
         )
         self.content_layout = QVBoxLayout(self.content_widget)
         self.content_layout.setContentsMargins(0, 0, 0, 0)
-        self.content_layout.setSpacing(0)
+        self.content_layout.setSpacing(spacing)
 
         self.setWidget(self.content_widget)
 

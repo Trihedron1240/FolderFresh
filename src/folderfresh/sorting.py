@@ -44,6 +44,9 @@ def pick_category(ext: str, src_path=None, cfg=None) -> str:
     for cat, exts in custom_map.items():
         if not enabled_map.get(cat, True):
             continue
+        # Ensure exts is a list (skip if it's a dict or other type)
+        if not isinstance(exts, list):
+            continue
         if ext in exts:
             return cat
 

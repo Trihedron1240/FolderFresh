@@ -243,6 +243,53 @@ class WatchedFoldersWindow(QDialog):
             profile_id = dropdown.currentData()
             self.profile_changed.emit(folder_path, profile_id)
 
+    def refresh_folders(self, folders: List[tuple], profiles: Dict[str, str]) -> None:
+        """
+        Refresh the watched folders list.
+
+        Args:
+            folders: List of (folder_path, profile_id, is_active) tuples
+            profiles: Dict of profile_id -> profile_name
+        """
+        self.clear_folders()
+        self.set_profiles(profiles)
+
+        for folder_path, profile_id, is_active in folders:
+            self.add_watched_folder(Path(folder_path), profile_id, is_active)
+
+    def add_folder_to_list(self, folder_path: str) -> None:
+        """
+        Add a folder to the watched folders list.
+
+        Args:
+            folder_path: Path to the folder
+        """
+        self.add_watched_folder(Path(folder_path), "Default", is_active=True)
+
+    def remove_folder_from_list(self, folder_path: str) -> None:
+        """
+        Remove a folder from the watched folders list.
+
+        Args:
+            folder_path: Path to the folder
+        """
+        self.remove_watched_folder(Path(folder_path))
+
+    def update_folder_profile(self, folder_path: str, profile_id: str) -> None:
+        """
+        Update the profile for a watched folder.
+
+        Args:
+            folder_path: Path to the folder
+            profile_id: Profile ID to assign
+        """
+        folder_str = str(folder_path)
+        if folder_str in self.folder_rows:
+            dropdown = self.folder_rows[folder_str]["dropdown"]
+            index = dropdown.findData(profile_id)
+            if index >= 0:
+                dropdown.setCurrentIndex(index)
+
     def closeEvent(self, event):
         """Handle window close event."""
         self.closed.emit()
