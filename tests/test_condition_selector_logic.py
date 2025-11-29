@@ -167,7 +167,7 @@ class TestConditionSelectorPopupLogic:
 
     def test_category_count(self):
         """Test that we have the expected number of categories."""
-        expected_count = 4
+        expected_count = 5
         assert len(CONDITION_CATEGORIES) == expected_count
 
     def test_total_conditions_count(self):
@@ -176,13 +176,13 @@ class TestConditionSelectorPopupLogic:
         for category_name, conditions in CONDITION_CATEGORIES.items():
             all_conditions.extend(conditions)
 
-        # Should have 14 conditions total
-        assert len(all_conditions) == 14
+        # Should have 16 conditions total (14 original + 2 Tier-1)
+        assert len(all_conditions) == 16
 
     def test_category_order(self):
         """Test that categories are in expected order."""
         categories = list(CONDITION_CATEGORIES.keys())
-        expected_order = ["Name", "File Properties", "File Attributes", "Path"]
+        expected_order = ["Name", "File Properties", "File Attributes", "Path", "Content & Patterns"]
 
         assert categories == expected_order
 

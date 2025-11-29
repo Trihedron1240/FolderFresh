@@ -17,6 +17,9 @@ from folderfresh.rule_engine import (
     IsHiddenCondition,
     IsReadOnlyCondition,
     IsDirectoryCondition,
+    # Tier-1 Conditions
+    ContentContainsCondition,
+    DatePatternCondition,
 )
 
 CONDITION_TYPES = {
@@ -34,6 +37,9 @@ CONDITION_TYPES = {
     "Is Hidden": IsHiddenCondition,
     "Is Read-Only": IsReadOnlyCondition,
     "Is Directory": IsDirectoryCondition,
+    # Tier-1 Conditions
+    "Content Contains": ContentContainsCondition,
+    "Date Pattern": DatePatternCondition,
 }
 
 
@@ -286,6 +292,22 @@ class ConditionEditor(ctk.CTkToplevel):
                 "Use this to target directories in your rules.\n"
                 "No parameters needed. Click 'Add' to apply."
             ),
+            "Content Contains": (
+                "Matches files by their text/binary content.\n\n"
+                "Parameter: Keyword to search for (case-insensitive)\n\n"
+                "Supports: Text files, PDF, DOCX, XLSX\n"
+                "Searches first 256 KB by default\n\n"
+                "Example: type 'ERROR' to find log files with errors"
+            ),
+            "Date Pattern": (
+                "Matches files by creation or modification date using wildcards.\n\n"
+                "First parameter: Date type (created or modified)\n"
+                "Second parameter: Pattern like '2025-*' or '*-12-25'\n\n"
+                "Examples:\n"
+                "  • '2025-*': files created in 2025\n"
+                "  • '2025-11-*': files created in November 2025\n"
+                "  • '*-12-25': Christmas files from any year"
+            ),
         }
 
         labels = {
@@ -303,6 +325,8 @@ class ConditionEditor(ctk.CTkToplevel):
             "Is Hidden": "(No parameters)",
             "Is Read-Only": "(No parameters)",
             "Is Directory": "(No parameters)",
+            "Content Contains": "Keyword to search for:",
+            "Date Pattern": "Date pattern (e.g., 2025-* or *-12-25):",
         }
 
         # Update label
@@ -319,6 +343,18 @@ class ConditionEditor(ctk.CTkToplevel):
             self.param_entry.pack_forget()
             self.size_input_frame.pack_forget()
             self.case_sensitive_frame.pack_forget()
+        elif choice == "Content Contains":
+            # Content Contains condition with single text parameter
+            self.size_input_frame.pack_forget()
+            self.param_entry.pack(fill="x", padx=12, pady=10)
+            self.case_sensitive_frame.pack_forget()
+            self.param_entry.focus()
+        elif choice == "Date Pattern":
+            # Date Pattern condition with pattern text parameter
+            self.size_input_frame.pack_forget()
+            self.param_entry.pack(fill="x", padx=12, pady=10)
+            self.case_sensitive_frame.pack_forget()
+            self.param_entry.focus()
         elif choice == "Name Equals":
             # Name Equals condition with case sensitivity option
             self.size_input_frame.pack_forget()
@@ -444,6 +480,28 @@ class ConditionEditor(ctk.CTkToplevel):
 
                 ConditionClass = CONDITION_TYPES[choice]
                 condition_obj = ConditionClass(param)
+
+            elif choice == "Content Contains":
+                # Content Contains condition
+                param = self.param_entry.get().strip()
+                if not param:
+                    messagebox.showwarning("Missing Parameter", "Please enter a keyword to search for.")
+                    return
+
+                ConditionClass = CONDITION_TYPES[choice]
+                condition_obj = ConditionClass(param)
+
+            elif choice == "Date Pattern":
+                # Date Pattern condition
+                param = self.param_entry.get().strip()
+                if not param:
+                    messagebox.showwarning("Missing Parameter", "Please enter a date pattern (e.g., 2025-* or *-12-25).")
+                    return
+
+                ConditionClass = CONDITION_TYPES[choice]
+                # DatePatternCondition takes date_type and pattern as arguments
+                # For UI simplicity, we'll use "modified" as the default date type
+                condition_obj = ConditionClass("modified", param)
 
             else:
                 # Text-based conditions (Name Contains, Name Starts With, Name Ends With, Extension Is, Last Modified Before)

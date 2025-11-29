@@ -7,6 +7,12 @@ from folderfresh.rule_engine import (
     MoveAction,
     CopyAction,
     DeleteFileAction,
+    # Tier-1 Actions
+    TokenRenameAction,
+    RunCommandAction,
+    ArchiveAction,
+    ExtractAction,
+    CreateFolderAction,
 )
 
 ACTION_TYPES = {
@@ -14,6 +20,12 @@ ACTION_TYPES = {
     "Move to Folder": MoveAction,
     "Copy to Folder": CopyAction,
     "Delete File": DeleteFileAction,
+    # Tier-1 Hazel-style Actions
+    "Rename with Tokens": TokenRenameAction,
+    "Run Command": RunCommandAction,
+    "Archive to ZIP": ArchiveAction,
+    "Extract Archive": ExtractAction,
+    "Create Folder": CreateFolderAction,
 }
 
 
@@ -158,6 +170,38 @@ class ActionEditor(ctk.CTkToplevel):
                 "Note: Deleted files are backed up to temp folder for undo recovery.\n"
                 "Safe mode prevents deletion from system folders (Windows, Program Files, etc.)"
             ),
+            # Tier-1 Hazel-style Actions
+            "Rename with Tokens": (
+                "Action: Rename with dynamic token expansion\n\n"
+                "Tokens: <name>, <extension>, <date_modified>, <year>, <month>, <day>, etc.\n\n"
+                "Example: '<date_modified>_<name><extension>' produces '2025-11-29_document.pdf'\n\n"
+                "Idempotent: Skips if pattern already matches filename"
+            ),
+            "Run Command": (
+                "Action: Execute a script or command\n\n"
+                "Supports: PowerShell, CMD, batch, Python, executables\n\n"
+                "Use {path} and {name} placeholders in command\n\n"
+                "Example: 'gpg --encrypt {path}'\n\n"
+                "Safe mode: Command preview only (no execution)"
+            ),
+            "Archive to ZIP": (
+                "Action: Create a ZIP archive of the file\n\n"
+                "Parameter: Destination folder (can use tokens)\n\n"
+                "Example: 'C:\\Backups' or 'Archive/<year>/<month>'\n\n"
+                "Prevents overwriting with numbered copies: file (1).zip, file (2).zip, etc."
+            ),
+            "Extract Archive": (
+                "Action: Extract archive file (.zip, .rar, .7z)\n\n"
+                "Parameter: Destination folder (can use tokens)\n\n"
+                "Example: 'C:\\Extracted' or 'Restore/<date_modified>'\n\n"
+                "Creates nested folders as needed"
+            ),
+            "Create Folder": (
+                "Action: Create a folder with dynamic paths\n\n"
+                "Parameter: Folder path (can use tokens)\n\n"
+                "Example: 'Documents/<year>/<month>' or 'Photos/<name>'\n\n"
+                "Idempotent: Skips if folder already exists"
+            ),
         }
 
         labels = {
@@ -165,6 +209,11 @@ class ActionEditor(ctk.CTkToplevel):
             "Move to Folder": "Target folder path:",
             "Copy to Folder": "Target folder path:",
             "Delete File": "(No parameter needed)",
+            "Rename with Tokens": "Rename pattern (with tokens):",
+            "Run Command": "Command to execute:",
+            "Archive to ZIP": "Destination folder:",
+            "Extract Archive": "Destination folder:",
+            "Create Folder": "Folder path:",
         }
 
         # Update label

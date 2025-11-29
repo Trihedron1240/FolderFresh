@@ -25,6 +25,10 @@ CONDITION_CATEGORIES = {
         "Parent Folder Contains",
         "File is in folder containing",
     ],
+    "Content & Patterns": [
+        "Content Contains",
+        "Date Pattern",
+    ],
 }
 
 
