@@ -415,15 +415,17 @@ class NameEndsWithCondition(Condition):
 
     def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
         """
-        Evaluate if filename ends with the suffix (case-insensitive).
+        Evaluate if filename (without extension) ends with the suffix (case-insensitive).
 
-        Uses filename without extension from fileinfo["name"].
+        Strips extension from fileinfo["name"] before comparison.
         """
         try:
             filename = fileinfo.get("name", "")
+            # Remove extension from filename for comparison
+            name_without_ext = os.path.splitext(filename)[0]
             # Case-insensitive comparison
-            result = filename.lower().endswith(self.suffix.lower())
-            print(f"  [CONDITION] NameEndsWith '{self.suffix}' in '{filename}' -> {result}")
+            result = name_without_ext.lower().endswith(self.suffix.lower())
+            print(f"  [CONDITION] NameEndsWith '{self.suffix}' in '{name_without_ext}' -> {result}")
             return result
         except Exception as e:
             print(f"  [CONDITION] NameEndsWith '{self.suffix}' -> ERROR: {e}")
@@ -631,7 +633,7 @@ class Action:
 
         Args:
             fileinfo: dict with file information (name, path, size, ext, etc.)
-            config: dict with merged profile configuration (safe_mode, dry_run, etc.)
+            config: dict with merged profile configuration (safe_mode, etc.)
 
         Returns:
             A dict with:
@@ -644,8 +646,7 @@ class Action:
                     "dst": str,          # New file path (for move)
                     "old_name": str,     # Original name (for rename)
                     "new_name": str,     # New name (for rename)
-                    "collision_handled": bool,  # If safe_mode created different path
-                    "was_dry_run": bool  # True if action was only a preview
+                    "collision_handled": bool  # If safe_mode created different path
                 }
             }
         """
@@ -664,7 +665,7 @@ class RenameAction(Action):
 
         Args:
             fileinfo: File information dict with 'path' and 'name' keys
-            config: Profile config with 'dry_run' and 'safe_mode' flags
+            config: Profile config with 'safe_mode' and 'dry_run' flags
 
         Returns:
             Dict with ok, log, and meta keys for undo support
@@ -681,7 +682,7 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": None, "old_name": None, "new_name": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "rename", "src": None, "old_name": None, "new_name": None, "collision_handled": False}
             }
 
         if not is_file_accessible(old_path):
@@ -690,7 +691,7 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False}
             }
 
         if not self.new_name or not str(self.new_name).strip():
@@ -699,18 +700,26 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False}
             }
 
         try:
             old_path = normalize_path(old_path)
             parent_dir = os.path.dirname(old_path)
-            new_path = os.path.join(parent_dir, self.new_name)
+
+            # Preserve extension from original file if new name doesn't have one
+            new_name = str(self.new_name).strip()
+            if new_name and not os.path.splitext(new_name)[1]:
+                # New name has no extension, so append the original extension
+                _, ext = os.path.splitext(old_name or os.path.basename(old_path))
+                new_name = new_name + ext
+
+            new_path = os.path.join(parent_dir, new_name)
             new_path = normalize_path(new_path)
 
             # SKIP CHECK: If old and new paths are identical, skip (idempotent)
             if os.path.normcase(os.path.abspath(old_path)) == os.path.normcase(os.path.abspath(new_path)):
-                message = f"SKIP: RENAME - already named '{self.new_name}'"
+                message = f"SKIP: RENAME - already named '{new_name}'"
                 print(f"  [ACTION] {message}")
                 return {
                     "ok": True,  # Not an error, just skipped
@@ -719,9 +728,8 @@ class RenameAction(Action):
                         "type": "rename",
                         "src": old_path,
                         "old_name": old_name,
-                        "new_name": self.new_name,
+                        "new_name": new_name,
                         "collision_handled": False,
-                        "was_dry_run": dry_run,
                         "skipped": True
                     }
                 }
@@ -738,26 +746,23 @@ class RenameAction(Action):
 
             if dry_run:
                 message = f"DRY RUN: Would RENAME: {old_path} -> {new_path}"
-                ok = True
             else:
                 # Perform the rename operation
                 # IMPORTANT: At this point, new_path is guaranteed to not exist
                 # because avoid_overwrite() checked and adjusted it if needed
                 os.rename(old_path, new_path)
                 message = f"RENAME: {old_path} -> {new_path}"
-                ok = True
 
             print(f"  [ACTION] {message}")
             return {
-                "ok": ok,
+                "ok": True,
                 "log": message,
                 "meta": {
                     "type": "rename",
-                    "src": new_path,  # Store where the file ended up (for undo)
+                    "src": new_path if not dry_run else old_path,  # Store where file is (or would be)
                     "old_name": old_name,
-                    "new_name": self.new_name,
-                    "collision_handled": collision_handled,
-                    "was_dry_run": dry_run
+                    "new_name": new_name,  # Use the name with extension preserved
+                    "collision_handled": collision_handled
                 }
             }
 
@@ -767,7 +772,7 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": self.new_name, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": self.new_name, "collision_handled": False}
             }
 
 
@@ -783,7 +788,7 @@ class MoveAction(Action):
 
         Args:
             fileinfo: File information dict with 'path' and 'name' keys
-            config: Profile config with 'dry_run' and 'safe_mode' flags
+            config: Profile config with 'safe_mode' and 'dry_run' flags
 
         Returns:
             Dict with ok, log, and meta keys for undo support
@@ -800,7 +805,7 @@ class MoveAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "move", "src": None, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "move", "src": None, "dst": None, "collision_handled": False}
             }
 
         if not filename:
@@ -809,7 +814,7 @@ class MoveAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False}
             }
 
         if not is_file_accessible(old_path):
@@ -818,7 +823,7 @@ class MoveAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False}
             }
 
         if not self.target_dir or not str(self.target_dir).strip():
@@ -827,7 +832,7 @@ class MoveAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False}
             }
 
         try:
@@ -835,15 +840,14 @@ class MoveAction(Action):
             target_dir = normalize_path(self.target_dir)
 
             # Ensure target directory exists (create if needed)
-            if not dry_run:
-                if not ensure_directory_exists(target_dir):
-                    message = f"ERROR: MOVE - failed to create target directory: {target_dir}"
-                    print(f"  [ACTION] {message}")
-                    return {
-                        "ok": False,
-                        "log": message,
-                        "meta": {"type": "move", "src": old_path, "dst": target_dir, "collision_handled": False, "was_dry_run": dry_run}
-                    }
+            if not ensure_directory_exists(target_dir):
+                message = f"ERROR: MOVE - failed to create target directory: {target_dir}"
+                print(f"  [ACTION] {message}")
+                return {
+                    "ok": False,
+                    "log": message,
+                    "meta": {"type": "move", "src": old_path, "dst": target_dir, "collision_handled": False}
+                }
 
             new_path = os.path.join(target_dir, filename)
             new_path = normalize_path(new_path)
@@ -863,7 +867,6 @@ class MoveAction(Action):
                         "src": old_path,
                         "dst": old_path,  # No actual move
                         "collision_handled": False,
-                        "was_dry_run": dry_run,
                         "skipped": True
                     }
                 }
@@ -883,7 +886,6 @@ class MoveAction(Action):
                         "src": old_path,
                         "dst": old_path,  # No actual move
                         "collision_handled": False,
-                        "was_dry_run": dry_run,
                         "skipped": True
                     }
                 }
@@ -899,24 +901,21 @@ class MoveAction(Action):
 
             if dry_run:
                 message = f"DRY RUN: Would MOVE: {old_path} -> {new_path}"
-                ok = True
             else:
                 # Perform the move operation using shutil.move()
                 # At this point, new_path is guaranteed to not exist
                 shutil.move(old_path, new_path)
                 message = f"MOVE: {old_path} -> {new_path}"
-                ok = True
 
             print(f"  [ACTION] {message}")
             return {
-                "ok": ok,
+                "ok": True,
                 "log": message,
                 "meta": {
                     "type": "move",
                     "src": old_path,  # Original location for undo
-                    "dst": new_path,  # New location (may differ from intended if collision handled)
-                    "collision_handled": collision_handled,
-                    "was_dry_run": dry_run
+                    "dst": new_path if not dry_run else old_path,  # New location (or original if preview)
+                    "collision_handled": collision_handled
                 }
             }
 
@@ -926,7 +925,7 @@ class MoveAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False}
             }
 
 
@@ -942,7 +941,7 @@ class CopyAction(Action):
 
         Args:
             fileinfo: File information dict with 'path' and 'name' keys
-            config: Profile config with 'dry_run' and 'safe_mode' flags
+            config: Profile config with 'safe_mode' and 'dry_run' flags
 
         Returns:
             Dict with ok, log, and meta keys for undo support
@@ -959,7 +958,7 @@ class CopyAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "copy", "src": None, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "copy", "src": None, "dst": None, "collision_handled": False}
             }
 
         if not filename:
@@ -968,7 +967,7 @@ class CopyAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False}
             }
 
         if not is_file_accessible(old_path):
@@ -977,7 +976,7 @@ class CopyAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False}
             }
 
         if not self.target_dir or not str(self.target_dir).strip():
@@ -986,7 +985,7 @@ class CopyAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False}
             }
 
         try:
@@ -994,15 +993,14 @@ class CopyAction(Action):
             target_dir = normalize_path(self.target_dir)
 
             # Ensure target directory exists (create if needed)
-            if not dry_run:
-                if not ensure_directory_exists(target_dir):
-                    message = f"ERROR: COPY - failed to create target directory: {target_dir}"
-                    print(f"  [ACTION] {message}")
-                    return {
-                        "ok": False,
-                        "log": message,
-                        "meta": {"type": "copy", "src": old_path, "dst": target_dir, "collision_handled": False, "was_dry_run": dry_run}
-                    }
+            if not ensure_directory_exists(target_dir):
+                message = f"ERROR: COPY - failed to create target directory: {target_dir}"
+                print(f"  [ACTION] {message}")
+                return {
+                    "ok": False,
+                    "log": message,
+                    "meta": {"type": "copy", "src": old_path, "dst": target_dir, "collision_handled": False}
+                }
 
             new_path = os.path.join(target_dir, filename)
             new_path = normalize_path(new_path)
@@ -1022,7 +1020,6 @@ class CopyAction(Action):
                         "src": old_path,
                         "dst": old_path,  # No actual copy
                         "collision_handled": False,
-                        "was_dry_run": dry_run,
                         "skipped": True
                     }
                 }
@@ -1038,24 +1035,21 @@ class CopyAction(Action):
 
             if dry_run:
                 message = f"DRY RUN: Would COPY: {old_path} -> {new_path}"
-                ok = True
             else:
                 # Perform the copy operation using shutil.copy2() (preserves metadata)
                 # At this point, new_path is guaranteed to not exist
                 shutil.copy2(old_path, new_path)
                 message = f"COPY: {old_path} -> {new_path}"
-                ok = True
 
             print(f"  [ACTION] {message}")
             return {
-                "ok": ok,
+                "ok": True,
                 "log": message,
                 "meta": {
                     "type": "copy",
                     "src": old_path,  # Original file (not modified)
-                    "dst": new_path,  # Copy location (may differ from intended if collision handled)
-                    "collision_handled": collision_handled,
-                    "was_dry_run": dry_run
+                    "dst": new_path if not dry_run else old_path,  # Copy location (or original if preview)
+                    "collision_handled": collision_handled
                 }
             }
 
@@ -1065,7 +1059,7 @@ class CopyAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
+                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False}
             }
 
 
@@ -1081,15 +1075,15 @@ class DeleteFileAction(Action):
 
         Args:
             fileinfo: File information dict with 'path' key
-            config: Profile config with 'dry_run' and 'safe_mode' flags
+            config: Profile config with 'safe_mode' and 'dry_run' flags
 
         Returns:
             Dict with ok, log, and meta keys for undo support
         """
         config = config or {}
         file_path = fileinfo.get("path")
-        dry_run = config.get("dry_run", False)
         safe_mode = config.get("safe_mode", True)
+        dry_run = config.get("dry_run", False)
 
         # System folders that should never be deleted from
         PROTECTED_PATHS = [
@@ -1107,7 +1101,7 @@ class DeleteFileAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "delete", "src": None, "temp_backup": None, "was_dry_run": dry_run}
+                "meta": {"type": "delete", "src": None, "temp_backup": None}
             }
 
         if not is_file_accessible(file_path):
@@ -1116,7 +1110,7 @@ class DeleteFileAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "delete", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
+                "meta": {"type": "delete", "src": file_path, "temp_backup": None}
             }
 
         try:
@@ -1132,12 +1126,11 @@ class DeleteFileAction(Action):
                         return {
                             "ok": False,
                             "log": message,
-                            "meta": {"type": "delete", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
+                            "meta": {"type": "delete", "src": file_path, "temp_backup": None}
                         }
 
             if dry_run:
                 message = f"DRY RUN: Would DELETE: {file_path}"
-                ok = True
                 temp_backup = None
             else:
                 # Create a temporary backup before deleting
@@ -1152,17 +1145,15 @@ class DeleteFileAction(Action):
                 # Delete the original file
                 os.remove(file_path)
                 message = f"DELETE: {file_path}"
-                ok = True
 
             print(f"  [ACTION] {message}")
             return {
-                "ok": ok,
+                "ok": True,
                 "log": message,
                 "meta": {
                     "type": "delete",
                     "src": file_path,
-                    "temp_backup": temp_backup if not dry_run else None,
-                    "was_dry_run": dry_run
+                    "temp_backup": temp_backup
                 }
             }
 
@@ -1172,7 +1163,7 @@ class DeleteFileAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "delete", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
+                "meta": {"type": "delete", "src": file_path, "temp_backup": None}
             }
 
 
@@ -1244,7 +1235,7 @@ class RuleExecutor:
         Args:
             rules: List of Rule objects to evaluate.
             fileinfo: dict with file information (name, ext, path, size, etc.).
-            config: dict with merged profile configuration (safe_mode, dry_run, etc.).
+            config: dict with merged profile configuration (safe_mode, etc.).
 
         Returns:
             Dict with keys:
@@ -1309,8 +1300,8 @@ class RuleExecutor:
                         else:
                             success = False
 
-                        # Record undo entry if action succeeded and wasn't a dry run
-                        if result.get("ok", False) and not result.get("meta", {}).get("was_dry_run", False):
+                        # Record undo entry if action succeeded
+                        if result.get("ok", False):
                             try:
                                 from folderfresh.undo_manager import UNDO_MANAGER
                                 undo_entry = {
@@ -1319,8 +1310,7 @@ class RuleExecutor:
                                     "dst": result.get("meta", {}).get("dst"),
                                     "old_name": result.get("meta", {}).get("old_name"),
                                     "new_name": result.get("meta", {}).get("new_name"),
-                                    "collision_handled": result.get("meta", {}).get("collision_handled", False),
-                                    "was_dry_run": False
+                                    "collision_handled": result.get("meta", {}).get("collision_handled", False)
                                 }
                                 UNDO_MANAGER.record_action(undo_entry)
                             except ImportError:
@@ -1388,7 +1378,6 @@ if __name__ == "__main__":
     # Execute the rule with a sample config
     executor = RuleExecutor()
     sample_config = {
-        "dry_run": True,  # Don't actually move files
         "safe_mode": True,  # Avoid overwriting files
     }
     result = executor.execute([rule], fake_file, sample_config)

@@ -82,33 +82,6 @@ class SettingsWindow(QDialog):
         rule_section.setLayout(rule_layout.layout)
         main_layout.addWidget(rule_section)
 
-        # Dry Run section
-        dry_run_section = CardFrame()
-        dry_run_layout = VerticalFrame(spacing=12)
-
-        dry_run_title = HeadingLabel("Preview Mode")
-        dry_run_layout.add_widget(dry_run_title)
-
-        # Dry run checkbox
-        self.dry_run_check = StyledCheckBox(
-            "Enable dry run (preview-only mode)",
-            checked=self.settings.get("dry_run", True)
-        )
-        self.dry_run_check.stateChanged.connect(self._on_settings_changed)
-        dry_run_layout.add_widget(self.dry_run_check)
-
-        # Help text for dry run
-        dry_run_help = MutedLabel(
-            "When enabled: Organize operations preview changes without\n"
-            "actually moving/copying files. Preview shows what would happen.\n\n"
-            "When disabled: Files are actually moved/copied during organize."
-        )
-        dry_run_help.setWordWrap(True)
-        dry_run_layout.add_widget(dry_run_help)
-
-        dry_run_section.setLayout(dry_run_layout.layout)
-        main_layout.addWidget(dry_run_section)
-
         # Spacer
         main_layout.addStretch()
 
@@ -127,7 +100,6 @@ class SettingsWindow(QDialog):
     def _update_settings(self) -> None:
         """Update settings dict and emit signal."""
         self.settings["rule_fallback_to_sort"] = self.rule_fallback_check.isChecked()
-        self.settings["dry_run"] = self.dry_run_check.isChecked()
         self.settings_changed.emit(self.settings)
 
     def _on_close(self) -> None:
@@ -150,7 +122,4 @@ class SettingsWindow(QDialog):
         self.settings = settings
         self.rule_fallback_check.setChecked(
             self.settings.get("rule_fallback_to_sort", True)
-        )
-        self.dry_run_check.setChecked(
-            self.settings.get("dry_run", True)
         )

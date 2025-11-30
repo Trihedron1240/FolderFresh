@@ -78,7 +78,7 @@ DESCRIPTIONS = {
     "Name Equals": "Matches files whose name exactly matches the specified text.",
     "Regex Match": "Matches files using regular expression patterns.",
     "Extension Is": "Matches files with the specified file extension.",
-    "File Size > X bytes": "Matches files larger than the specified size.",
+    "File Size > X bytes": "Matches files larger than the specified size in MB.",
     "File Age > X days": "Matches files older than the specified number of days.",
     "Last Modified Before": "Matches files last modified before the specified date.",
     "Is Hidden": "Matches files that are marked as hidden.",
@@ -287,7 +287,7 @@ class ConditionEditor(QDialog):
         self.param_layout.layout.insertWidget(len(self.param_widgets) - 1, field_layout)
 
     def _create_size_field(self, label: str, spec: Dict[str, Any]) -> None:
-        """Create size input with unit dropdown."""
+        """Create size input with unit dropdown (defaults to MB)."""
         field_name = spec.get("parameter_name", label)
         field_layout = VerticalFrame(spacing=4)
 
@@ -300,8 +300,9 @@ class ConditionEditor(QDialog):
         size_input.textChanged.connect(self._update_preview)
         input_row.add_widget(size_input, 1)
 
-        unit_combo = StyledComboBox(["Bytes", "KB", "MB", "GB"])
+        unit_combo = StyledComboBox(["MB", "KB", "GB", "Bytes"])
         unit_combo.setMaximumWidth(100)
+        unit_combo.setCurrentIndex(0)  # Default to MB
         unit_combo.currentIndexChanged.connect(self._update_preview)
         input_row.add_widget(unit_combo)
 
@@ -415,6 +416,32 @@ class ConditionEditor(QDialog):
             return
 
         parameters = self._collect_parameters()
+
+        # Convert size to bytes for "File Size > X bytes" condition
+        if self.selected_condition_type == "File Size > X bytes" and "min_bytes" in parameters:
+            size_str = parameters["min_bytes"]  # e.g., "5 MB"
+            try:
+                # Parse value and unit
+                parts = size_str.strip().split()
+                if len(parts) >= 2:
+                    value = float(parts[0])
+                    unit = parts[1].upper()
+
+                    # Convert to bytes
+                    unit_multipliers = {
+                        "B": 1,
+                        "BYTES": 1,
+                        "KB": 1024,
+                        "MB": 1024 * 1024,
+                        "GB": 1024 * 1024 * 1024,
+                    }
+
+                    multiplier = unit_multipliers.get(unit, 1)
+                    size_bytes = int(value * multiplier)
+                    parameters["min_bytes"] = size_bytes
+            except (ValueError, IndexError):
+                # If parsing fails, keep the original value
+                pass
 
         condition_data = {
             "type": self.selected_condition_type,

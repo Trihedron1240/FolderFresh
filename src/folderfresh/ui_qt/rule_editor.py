@@ -337,8 +337,91 @@ class RuleEditor(QDialog):
                     }}
                 """)
 
+    def _validate_rule(self) -> tuple[bool, str]:
+        """
+        Validate rule for completeness.
+
+        Returns:
+            (is_valid, error_message)
+        """
+        # Conditions that don't require parameters (both display names and internal camelCase names)
+        PARAM_FREE_CONDITIONS = {
+            # Display names (with spaces)
+            "is hidden", "is read-only", "is directory",
+            # Internal camelCase names (from backend)
+            "ishidden", "isreadonly", "isdirectory"
+        }
+
+        # Actions that don't require parameters
+        PARAM_FREE_ACTIONS = {
+            "delete", "delete to trash"
+        }
+
+        # Check rule name
+        if not self.rule_name or not self.rule_name.strip():
+            return False, "Rule name is required. Please enter a name for this rule."
+
+        # Check at least one condition
+        if not self.conditions:
+            return False, "At least one condition is required.\n\nAdd a condition that describes which files to match."
+
+        # Check at least one action
+        if not self.actions:
+            return False, "At least one action is required.\n\nAdd an action that describes what to do with matched files."
+
+        # Validate all conditions have parameters (if they require them)
+        for i, condition in enumerate(self.conditions):
+            cond_type = condition.get("type", "")
+            cond_params = condition.get("parameters", condition.get("args", {}))
+
+            if not cond_type:
+                return False, f"Condition {i + 1} has no type selected."
+
+            # Normalize type for comparison: handle both display names and internal names
+            cond_type_normalized = cond_type.lower().replace(" ", "").replace("-", "")
+
+            # Check if this condition is in the param-free list
+            # Match both "is read-only" -> "isreadonly" and "IsReadOnly" -> "isreadonly"
+            is_param_free = False
+            for param_free_name in PARAM_FREE_CONDITIONS:
+                if param_free_name.replace(" ", "").replace("-", "") == cond_type_normalized:
+                    is_param_free = True
+                    break
+
+            if not is_param_free:
+                # Check that condition has parameters
+                if not cond_params or (isinstance(cond_params, dict) and not any(cond_params.values())):
+                    return False, f"Condition {i + 1} ({cond_type}) is missing required parameters."
+
+        # Validate all actions have parameters (if they require them)
+        for i, action in enumerate(self.actions):
+            action_type = action.get("type", "")
+            action_params = action.get("parameters", action.get("args", {}))
+
+            if not action_type:
+                return False, f"Action {i + 1} has no type selected."
+
+            # Skip parameter check for actions that don't require parameters
+            action_type_lower = action_type.lower()
+            if action_type_lower not in PARAM_FREE_ACTIONS:
+                if not action_params or (isinstance(action_params, dict) and not any(action_params.values())):
+                    if isinstance(action_params, str):
+                        if not action_params.strip():
+                            return False, f"Action {i + 1} ({action_type}) is missing required parameters."
+                    else:
+                        return False, f"Action {i + 1} ({action_type}) is missing required parameters."
+
+        return True, ""
+
     def _on_save(self) -> None:
         """Save rule and emit signal."""
+        # Validate rule before saving
+        is_valid, error_message = self._validate_rule()
+        if not is_valid:
+            from .dialogs import show_error_dialog
+            show_error_dialog(self, "Cannot Save Rule", error_message)
+            return
+
         # Normalize conditions: convert "parameters" to "args" for backend compatibility
         normalized_conditions = []
         for cond in self.conditions:
@@ -401,12 +484,20 @@ class RuleEditor(QDialog):
     # ========== DISPLAY FORMATTING ==========
 
     def _format_condition_display(self, condition: Dict[str, Any]) -> str:
-        """Format condition for display with parameters."""
+        """Format condition for display with parameters in user-friendly format."""
         cond_type = condition.get("type", "Unknown")
 
-        # Handle new structure with "parameters" dict
-        if "parameters" in condition and isinstance(condition["parameters"], dict):
-            parameters = condition["parameters"]
+        # Get parameters from either "parameters" or "args" key
+        parameters = None
+        if "parameters" in condition:
+            if isinstance(condition["parameters"], dict):
+                parameters = condition["parameters"]
+        elif "args" in condition:
+            if isinstance(condition["args"], dict):
+                parameters = condition["args"]
+
+        # Handle dict-based parameters (both "parameters" and "args" formats)
+        if parameters:
             parts = []
             for label, value in parameters.items():
                 if value and value != "":  # Skip empty values
@@ -414,20 +505,33 @@ class RuleEditor(QDialog):
                         if value:
                             parts.append(label.rstrip(":"))
                     else:
-                        parts.append(f"{value}")
+                        # Convert bytes to MB for display if this is a file size condition
+                        display_value = value
+                        if cond_type == "File Size > X bytes" and label == "min_bytes" and isinstance(value, int):
+                            # Convert bytes to MB for display
+                            mb_value = value / (1024 * 1024)
+                            # Round to 2 decimal places and remove trailing zeros
+                            display_value = f"{mb_value:.2f}".rstrip('0').rstrip('.') + " MB"
+                        parts.append(f"{display_value}")
             if parts:
                 return f"{cond_type}: {', '.join(parts)}"
             else:
                 return cond_type
 
-        # Fallback for old structure with flat parameters
+        # Fallback for old structure with flat parameters in condition dict
         param = ""
         if "value" in condition:
             param = str(condition["value"])
         elif "pattern" in condition:
             param = str(condition["pattern"])
         elif "size_bytes" in condition:
-            param = str(condition["size_bytes"])
+            # Convert bytes to MB for display
+            size_bytes = condition["size_bytes"]
+            if isinstance(size_bytes, int):
+                mb_value = size_bytes / (1024 * 1024)
+                param = f"{mb_value:.2f}".rstrip('0').rstrip('.') + " MB"
+            else:
+                param = str(size_bytes)
         elif "days" in condition:
             param = str(condition["days"])
         elif "date" in condition:
@@ -446,22 +550,45 @@ class RuleEditor(QDialog):
             return cond_type
 
     def _format_action_display(self, action: Dict[str, Any]) -> str:
-        """Format action for display with parameters."""
+        """Format action for display with parameters in user-friendly format."""
         action_type = action.get("type", "Unknown")
 
-        # Handle new structure with "parameters" as a string
-        if "parameters" in action and isinstance(action["parameters"], str):
-            param = action["parameters"]
-            if param:
-                # Truncate long commands for display
-                display_param = param
-                if len(display_param) > 50:
-                    display_param = display_param[:50] + "..."
-                return f"{action_type}: {display_param}"
+        # Get parameters from either "parameters" or "args" key
+        parameters = None
+        if "parameters" in action:
+            param_value = action["parameters"]
+            if isinstance(param_value, dict):
+                parameters = param_value
+            elif isinstance(param_value, str):
+                # String format (for simple actions like command or single parameter)
+                if param_value:
+                    # Truncate long commands for display
+                    display_param = param_value
+                    if len(display_param) > 50:
+                        display_param = display_param[:50] + "..."
+                    return f"{action_type}: {display_param}"
+                else:
+                    return action_type
+        elif "args" in action:
+            if isinstance(action["args"], dict):
+                parameters = action["args"]
+
+        # Handle dict-based parameters
+        if parameters:
+            parts = []
+            for param_name, value in parameters.items():
+                if value and value != "":  # Skip empty values
+                    # Truncate long values for display
+                    display_value = str(value)
+                    if len(display_value) > 40:
+                        display_value = display_value[:40] + "..."
+                    parts.append(display_value)
+            if parts:
+                return f"{action_type}: {', '.join(parts)}"
             else:
                 return action_type
 
-        # Fallback for old structure with flat parameters
+        # Fallback for old structure with flat parameters in action dict
         param = ""
         if "destination" in action:
             param = str(action["destination"])

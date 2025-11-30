@@ -63,7 +63,6 @@ def default_profiles_doc() -> Dict[str, Any]:
                 "settings": {
                     "smart_mode": False,
                     "safe_mode": True,
-                    "dry_run": True,
                     "include_sub": True,
                     "skip_hidden": True,
                     "ignore_exts": "",
@@ -170,7 +169,6 @@ class ProfileStore:
         for k in (
             "smart_mode",
             "safe_mode",
-            "dry_run",
             "include_sub",
             "skip_hidden",
             "ignore_exts",

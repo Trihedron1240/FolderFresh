@@ -65,10 +65,9 @@ def process_file_with_rules(src, rules, config, preview=False):
         result["error"] = f"Failed to extract file info: {e}"
         return result
 
-    # Apply dry-run mode if preview
+    # Apply dry-run mode based on preview flag
     exec_cfg = config.copy()
-    if preview:
-        exec_cfg["dry_run"] = True
+    exec_cfg["dry_run"] = preview  # dry_run=True if preview, False if executing
 
     # Run executor
     try:
