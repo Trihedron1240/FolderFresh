@@ -43,36 +43,36 @@ class CategoryManagerBackend(QObject):
 
         log_info(f"CategoryManagerBackend initialized for profile: {profile_id}")
 
+    def _load_profile_from_disk(self) -> Optional[Dict]:
+        """Load the current profile from disk."""
+        full_doc = self.profile_store.load()
+        for p in full_doc.get("profiles", []):
+            if p["id"] == self.profile_id:
+                return p
+        return None
+
     def load_categories(self) -> Tuple[Dict, Dict, Dict]:
         """
-        Load categories for the profile
+        Load categories for the profile (always from disk)
 
         Returns:
             Tuple of (category_overrides, custom_categories, category_enabled)
         """
         try:
-            # Load full document
-            full_doc = self.profile_store.load()
-
-            # Find the specific profile
-            original = None
-            for p in full_doc.get("profiles", []):
-                if p["id"] == self.profile_id:
-                    original = p
-                    break
-
-            if not original:
+            # Load profile from disk (single source of truth)
+            profile = self._load_profile_from_disk()
+            if not profile:
                 log_warning(f"Profile {self.profile_id} not found")
                 return {}, {}, {}
 
-            # Store original and working copy
-            self.original_profile = original
-            self.working_profile = copy.deepcopy(original)
+            # Store working copy for edits
+            self.working_profile = copy.deepcopy(profile)
+            self.original_profile = copy.deepcopy(profile)
 
-            # Extract category data
-            overrides = self.working_profile.get("category_overrides", {})
-            custom_categories = self.working_profile.get("custom_categories", {})
-            enabled = self.working_profile.get("category_enabled", {})
+            # Extract category data directly from disk
+            overrides = profile.get("category_overrides", {})
+            custom_categories = profile.get("custom_categories", {})
+            enabled = profile.get("category_enabled", {})
 
             # Ensure all default categories have enabled state
             for cat in DEFAULT_CATEGORIES:
