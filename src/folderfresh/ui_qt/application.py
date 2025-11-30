@@ -146,7 +146,6 @@ class FolderFreshApplication:
         # Sidebar signals
         if self.main_window.sidebar:
             self.main_window.sidebar.rules_clicked.connect(self._on_rules_requested)
-            self.main_window.sidebar.preview_clicked.connect(self._on_preview_requested)
             self.main_window.sidebar.activity_log_clicked.connect(self._on_view_activity_log)
             self.main_window.sidebar.categories_clicked.connect(self._on_categories_requested)
 
@@ -1054,10 +1053,15 @@ class FolderFreshApplication:
                 rules = self.rule_manager_backend.get_all_rules()
                 self.rules = rules
 
+            # Get profile name
+            profile_name = "Default"
+            if self.active_profile_id and self.active_profile_id in self.profiles:
+                profile_name = self.profiles[self.active_profile_id].get("name", "Default")
+
             rules_window = RuleManager(
                 parent=self.main_window,
-                rules=self.rules,
-                active_profile_id=self.active_profile_id,
+                profile_name=profile_name,
+                initial_rules=self.rules,
             )
 
             # Connect UI signals to backend

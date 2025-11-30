@@ -14,7 +14,8 @@
       "Bash(python -m pytest tests/ --tb=short -q)",
       "Bash(python -m pytest tests/ -k \"profile\" -v --tb=short)",
       "Bash(python -c:*)",
-      "Bash(python -m pytest:*)"
+      "Bash(python -m pytest:*)",
+      "Bash(python -m py_compile:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,6 +1,6 @@
 """
 PySide6 sidebar widget for FolderFresh.
-Navigation buttons for Rules, Preview, and Activity Log.
+Navigation buttons for Rules, Activity Log, and Categories.
 """
 
 from PySide6.QtWidgets import (
@@ -20,7 +20,6 @@ class SidebarWidget(QWidget):
 
     # Signals for button clicks (no logic yet, just UI events)
     rules_clicked = Signal()
-    preview_clicked = Signal()
     activity_log_clicked = Signal()
     categories_clicked = Signal()
 
@@ -49,11 +48,6 @@ class SidebarWidget(QWidget):
         self.rules_btn = self._create_nav_button("📋 Rules")
         self.rules_btn.clicked.connect(self.rules_clicked.emit)
         layout.addWidget(self.rules_btn)
-
-        # Preview button
-        self.preview_btn = self._create_nav_button("👁️ Preview")
-        self.preview_btn.clicked.connect(self.preview_clicked.emit)
-        layout.addWidget(self.preview_btn)
 
         # Activity Log button
         self.activity_log_btn = self._create_nav_button("📝 Activity Log")
@@ -104,7 +98,6 @@ class SidebarWidget(QWidget):
         """Highlight the active navigation button."""
         buttons = {
             "rules": self.rules_btn,
-            "preview": self.preview_btn,
             "activity_log": self.activity_log_btn,
             "categories": self.categories_btn,
         }
