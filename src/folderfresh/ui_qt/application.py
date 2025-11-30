@@ -390,15 +390,17 @@ class FolderFreshApplication:
         """
         Handle options/settings changes (save mode, auto-watch, tray mode, etc).
         """
+        log_info("[OPTIONS_CHANGED] Signal fired!")
         from folderfresh.config import save_config
         from .tray import create_tray, hide_tray, update_tray_menu
 
         if not hasattr(self, '_config_data') or self._config_data is None:
+            log_info("[OPTIONS_CHANGED] No _config_data, returning")
             return
 
         # Collect current settings from UI
         options = self.main_window.get_options()
-        log_info(f"[OPTIONS_CHANGED] Tray active={self._tray_mode_active}, options={options}")
+        log_info(f"[OPTIONS_CHANGED] Tray active={self._tray_mode_active}, auto_tidy={options.get('auto_tidy')}")
 
         # Map UI option keys to config keys and update config
         config_updates = {
@@ -481,10 +483,20 @@ class FolderFreshApplication:
         # (tray callbacks run in a background thread)
         if hasattr(self.main_window, 'watch_mode_check'):
             def toggle():
-                current = self.main_window.watch_mode_check.isChecked()
-                log_info(f"[TRAY] Toggling auto-tidy from {current} to {not current}")
-                self.main_window.watch_mode_check.setChecked(not current)
-                # This will trigger options_changed signal, which updates tray menu
+                try:
+                    current = self.main_window.watch_mode_check.isChecked()
+                    new_state = not current
+                    log_info(f"[TRAY] Toggling auto-tidy from {current} to {new_state}")
+                    self.main_window.watch_mode_check.setChecked(new_state)
+                    actual_state = self.main_window.watch_mode_check.isChecked()
+                    log_info(f"[TRAY] After setChecked: checkbox state is now {actual_state}")
+
+                    # Verify state changed, if not force the signal
+                    if actual_state == current:
+                        log_info(f"[TRAY] State didn't change! Was {current}, still {actual_state}. Forcing signal.")
+                        self.main_window.options_changed.emit()
+                except Exception as e:
+                    log_error(f"[TRAY] Error toggling checkbox: {e}")
             QTimer.singleShot(0, toggle)
         else:
             log_info("[TRAY] watch_mode_check not found on main_window!")
