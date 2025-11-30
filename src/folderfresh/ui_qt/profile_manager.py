@@ -73,7 +73,6 @@ class ProfileManagerWindow(QDialog):
         self.setModal(True)
 
         self.profiles = {p["id"]: p for p in (profiles or [])}
-        self.active_profile_id = active_profile_id
         self.selected_profile_id: Optional[str] = None
         self.profile_list_items: Dict[str, CardFrame] = {}
         self.profile_store = ProfileStore()
@@ -81,6 +80,17 @@ class ProfileManagerWindow(QDialog):
         self.open_rules_windows: Dict[str, Any] = {}  # Stores RuleManager windows
 
         self._init_ui()
+
+    def _get_active_profile_id(self) -> str:
+        """Get active profile ID directly from disk."""
+        doc = self.profile_store.load()
+        return doc.get("active_profile_id", "profile_default")
+
+    def _set_active_profile_id(self, profile_id: str) -> None:
+        """Set active profile ID directly to disk."""
+        doc = self.profile_store.load()
+        doc["active_profile_id"] = profile_id
+        self.profile_store.save(doc)
 
     def _load_profile_from_disk(self, profile_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -215,7 +225,7 @@ class ProfileManagerWindow(QDialog):
         item_layout.addWidget(name_label, 1)
 
         # Active indicator
-        if profile_id == self.active_profile_id:
+        if profile_id == self._get_active_profile_id():
             active_label = MutedLabel("(active)")
             active_label.setMaximumWidth(80)
             item_layout.addWidget(active_label)
@@ -367,7 +377,7 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             del_btn.clicked.connect(lambda: self._on_delete_profile(profile_id))
             action_section.add_widget(del_btn)
 
-        if profile_id != self.active_profile_id:
+        if profile_id != self._get_active_profile_id():
             activate_btn = StyledButton("Set Active", bg_color=Colors.SUCCESS)
             activate_btn.clicked.connect(lambda: self._on_set_active(profile_id))
             action_section.add_widget(activate_btn)
@@ -497,9 +507,9 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         del self.profiles[profile_id]
 
         # Update active profile if needed
-        if profile_id == self.active_profile_id and self.profiles:
+        if profile_id == self._get_active_profile_id() and self.profiles:
             new_active = next(iter(self.profiles.keys()))
-            self.active_profile_id = new_active
+            self._set_active_profile_id(new_active)
 
         self.selected_profile_id = None
         self._refresh_profile_list()
@@ -508,7 +518,7 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
     def _on_set_active(self, profile_id: str) -> None:
         """Set profile as active."""
-        self.active_profile_id = profile_id
+        self._set_active_profile_id(profile_id)
         self._refresh_profile_list()
         self._render_editor_pane(profile_id)
         # Emit signal - connected to profile_manager_backend.set_active_profile() which handles saving
@@ -738,5 +748,5 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
     def set_active_profile(self, profile_id: str) -> None:
         """Set active profile."""
-        self.active_profile_id = profile_id
+        self._set_active_profile_id(profile_id)
         self._refresh_profile_list()
