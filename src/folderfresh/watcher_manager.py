@@ -15,7 +15,7 @@ class WatcherManager:
 
     def watch_folder(self, folder_path: str):
         """Start watching the folder if not already active."""
-        folder_path = str(Path(folder_path))
+        folder_path = str(Path(folder_path).resolve())
 
         # Already watching?
         if folder_path in self.observers:
@@ -31,7 +31,7 @@ class WatcherManager:
 
     def unwatch_folder(self, folder_path: str):
         """Stop watching and remove from table."""
-        folder_path = str(Path(folder_path))
+        folder_path = str(Path(folder_path).resolve())
 
         obs = self.observers.get(folder_path)
         if not obs:
