@@ -72,7 +72,6 @@ class ProfileManagerWindow(QDialog):
         self.setStyleSheet(f"QDialog {{ background-color: {Colors.PANEL_BG}; }}")
         self.setModal(True)
 
-        self.profiles = {p["id"]: p for p in (profiles or [])}
         self.selected_profile_id: Optional[str] = None
         self.profile_list_items: Dict[str, CardFrame] = {}
         self.profile_store = ProfileStore()
@@ -80,6 +79,11 @@ class ProfileManagerWindow(QDialog):
         self.open_rules_windows: Dict[str, Any] = {}  # Stores RuleManager windows
 
         self._init_ui()
+
+    def _get_all_profiles(self) -> Dict[str, Dict[str, Any]]:
+        """Get all profiles directly from disk."""
+        doc = self.profile_store.load()
+        return {p["id"]: p for p in doc.get("profiles", [])}
 
     def _get_active_profile_id(self) -> str:
         """Get active profile ID directly from disk."""
@@ -106,8 +110,7 @@ class ProfileManagerWindow(QDialog):
             doc = self.profile_store.load()
             for p in doc.get("profiles", []):
                 if p["id"] == profile_id:
-                    # Update in-memory cache with fresh data
-                    self.profiles[profile_id] = p
+                    # Return directly from disk, no caching
                     return p
         except Exception as e:
             log_error(f"Failed to load profile {profile_id} from disk: {e}")
@@ -180,22 +183,22 @@ class ProfileManagerWindow(QDialog):
         # Render initial state
         self._refresh_profile_list()
 
-    def refresh_profiles(self, profiles: List[Dict[str, Any]]) -> None:
+    def refresh_profiles(self, profiles: List[Dict[str, Any]] = None) -> None:
         """
-        Update profiles from backend and refresh UI.
+        Refresh profile list from disk.
 
         Args:
-            profiles: List of profile dictionaries from backend
+            profiles: Ignored, always loads from disk
         """
-        self.profiles = {p["id"]: p for p in profiles}
         self._refresh_profile_list()
 
     def _refresh_profile_list(self) -> None:
-        """Rebuild profile list."""
+        """Rebuild profile list from disk."""
         self.profiles_scroll.clear()
         self.profile_list_items.clear()
 
-        for profile_id in sorted(self.profiles.keys(), key=lambda pid: self.profiles[pid].get("name", "")):
+        profiles = self._get_all_profiles()
+        for profile_id in sorted(profiles.keys(), key=lambda pid: profiles[pid].get("name", "")):
             self._create_profile_list_item(profile_id)
 
         self.profiles_scroll.add_stretch()
@@ -207,7 +210,8 @@ class ProfileManagerWindow(QDialog):
         Args:
             profile_id: Profile ID
         """
-        profile = self.profiles.get(profile_id, {})
+        profiles = self._get_all_profiles()
+        profile = profiles.get(profile_id, {})
         profile_name = profile.get("name", "Unknown")
 
         # Main item frame
@@ -271,7 +275,8 @@ class ProfileManagerWindow(QDialog):
     def _show_profile_menu(self, profile_id: str) -> None:
         """Show context menu for profile."""
         # Simplified menu - in real app would use QMenu
-        profile = self.profiles.get(profile_id, {})
+        profiles = self._get_all_profiles()
+        profile = profiles.get(profile_id, {})
         is_builtin = profile.get("is_builtin", False)
 
         # For now, just show quick action buttons
@@ -429,7 +434,11 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             "is_builtin": False,
         }
 
-        self.profiles[new_id] = new_profile
+        # Save directly to disk (don't cache in memory)
+        doc = self.profile_store.load()
+        doc["profiles"].append(new_profile)
+        self.profile_store.save(doc)
+
         self._refresh_profile_list()
         self.profile_created.emit(name)
 
@@ -441,16 +450,25 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             show_warning_dialog(self, "Rename", "Profile name cannot be empty.")
             return
 
-        if profile_id in self.profiles:
-            old_name = self.profiles[profile_id]["name"]
-            self.profiles[profile_id]["name"] = new_name
+        # Load fresh from disk
+        doc = self.profile_store.load()
+        old_name = None
+        for p in doc.get("profiles", []):
+            if p["id"] == profile_id:
+                old_name = p["name"]
+                p["name"] = new_name
+                p["updated_at"] = datetime.now().isoformat()
+                break
+
+        if old_name:
+            self.profile_store.save(doc)
             self._refresh_profile_list()
             self.profile_renamed.emit(profile_id, new_name)
             show_info_dialog(self, "Renamed", f"Profile '{old_name}' renamed to '{new_name}'.")
 
     def _on_fallback_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
-        """Handle fallback checkbox change - save to disk."""
-        # Save directly to disk (the single source of truth)
+        """Handle fallback checkbox change - save directly to disk."""
+        # Save directly to disk (the single source of truth, no memory cache)
         try:
             doc = self.profile_store.load()
             found = False
@@ -459,19 +477,12 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
                     if "settings" not in profile:
                         profile["settings"] = {}
                     profile["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
+                    profile["updated_at"] = datetime.now().isoformat()
                     found = True
                     break
 
             if found:
                 self.profile_store.save(doc)
-                # Update in-memory copy to match disk
-                if profile_id in self.profiles:
-                    if "settings" not in self.profiles[profile_id]:
-                        self.profiles[profile_id]["settings"] = {}
-                    self.profiles[profile_id]["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
-                else:
-                    # If not in memory cache, add it
-                    self._load_profile_from_disk(profile_id)
             else:
                 log_error(f"Profile {profile_id} not found in profiles document")
         except Exception as e:
@@ -479,7 +490,9 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
     def _on_duplicate_profile(self, profile_id: str) -> None:
         """Duplicate profile."""
-        source = self.profiles.get(profile_id)
+        # Load from disk
+        profiles = self._get_all_profiles()
+        source = profiles.get(profile_id)
         if not source:
             return
 
@@ -489,7 +502,9 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
     def _on_delete_profile(self, profile_id: str) -> None:
         """Delete profile."""
-        profile = self.profiles.get(profile_id)
+        # Load from disk
+        profiles = self._get_all_profiles()
+        profile = profiles.get(profile_id)
         if not profile:
             return
 
@@ -504,11 +519,15 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         ):
             return
 
-        del self.profiles[profile_id]
+        # Delete from disk
+        doc = self.profile_store.load()
+        doc["profiles"] = [p for p in doc.get("profiles", []) if p["id"] != profile_id]
+        self.profile_store.save(doc)
 
         # Update active profile if needed
-        if profile_id == self._get_active_profile_id() and self.profiles:
-            new_active = next(iter(self.profiles.keys()))
+        remaining_profiles = self._get_all_profiles()
+        if profile_id == self._get_active_profile_id() and remaining_profiles:
+            new_active = next(iter(remaining_profiles.keys()))
             self._set_active_profile_id(new_active)
 
         self.selected_profile_id = None
@@ -571,10 +590,11 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         from .rule_manager import RuleManager
 
         # Create and show rule manager window
+        profiles = self._get_all_profiles()
         rules_window = RuleManager(
             parent=self,
             profile_id=profile_id,
-            profile_name=self.profiles.get(profile_id, {}).get("name", "Unknown")
+            profile_name=profiles.get(profile_id, {}).get("name", "Unknown")
         )
 
         # Store reference to keep window alive
@@ -683,7 +703,8 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             )
             return
 
-        profile = self.profiles.get(self.selected_profile_id)
+        profiles = self._get_all_profiles()
+        profile = profiles.get(self.selected_profile_id)
         if not profile:
             return
 
@@ -731,20 +752,19 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
     # ========== PUBLIC METHODS FOR BACKEND INTEGRATION ==========
 
-    def set_profiles(self, profiles: List[Dict[str, Any]]) -> None:
+    def set_profiles(self, profiles: List[Dict[str, Any]] = None) -> None:
         """
-        Set profiles list.
+        Refresh profiles list from disk.
 
         Args:
-            profiles: List of profile dictionaries
+            profiles: Ignored, always loads from disk
         """
-        self.profiles = {p["id"]: p for p in profiles}
         self.selected_profile_id = None
         self._refresh_profile_list()
 
     def get_profiles(self) -> List[Dict[str, Any]]:
-        """Get all profiles."""
-        return list(self.profiles.values())
+        """Get all profiles directly from disk."""
+        return list(self._get_all_profiles().values())
 
     def set_active_profile(self, profile_id: str) -> None:
         """Set active profile."""
