@@ -226,9 +226,11 @@ class RuleEditor(QDialog):
         row_layout.setContentsMargins(10, 8, 10, 8)
         row_layout.setSpacing(12)
 
-        # Condition text
+        # Condition text with parameters
         condition_type = condition.get("type", "")
-        condition_text = StyledLabel(condition_type, font_size=Fonts.SIZE_NORMAL)
+        condition_display = self._format_condition_display(condition)
+        condition_text = StyledLabel(condition_display, font_size=Fonts.SIZE_NORMAL)
+        condition_text.setWordWrap(True)
         row_layout.addWidget(condition_text, 1)
 
         # Make row clickable for selection
@@ -296,9 +298,11 @@ class RuleEditor(QDialog):
         row_layout.setContentsMargins(10, 8, 10, 8)
         row_layout.setSpacing(12)
 
-        # Action text
+        # Action text with parameters
         action_type = action.get("type", "")
-        action_text = StyledLabel(action_type, font_size=Fonts.SIZE_NORMAL)
+        action_display = self._format_action_display(action)
+        action_text = StyledLabel(action_display, font_size=Fonts.SIZE_NORMAL)
+        action_text.setWordWrap(True)
         row_layout.addWidget(action_text, 1)
 
         # Make row clickable for selection
@@ -360,6 +364,68 @@ class RuleEditor(QDialog):
         self.cancelled.emit()
         self.reject()
         event.accept()
+
+    # ========== DISPLAY FORMATTING ==========
+
+    def _format_condition_display(self, condition: Dict[str, Any]) -> str:
+        """Format condition for display with parameters."""
+        cond_type = condition.get("type", "Unknown")
+
+        # Get the parameter value
+        param = ""
+        if "value" in condition:
+            param = str(condition["value"])
+        elif "pattern" in condition:
+            param = str(condition["pattern"])
+        elif "size_bytes" in condition:
+            param = str(condition["size_bytes"])
+        elif "days" in condition:
+            param = str(condition["days"])
+        elif "date" in condition:
+            param = str(condition["date"])
+        elif "color" in condition:
+            param = str(condition["color"])
+        elif "tag" in condition:
+            param = str(condition["tag"])
+        elif "content" in condition:
+            param = str(condition["content"])
+
+        # Format the display text
+        if param:
+            return f"{cond_type}: {param}"
+        else:
+            return cond_type
+
+    def _format_action_display(self, action: Dict[str, Any]) -> str:
+        """Format action for display with parameters."""
+        action_type = action.get("type", "Unknown")
+
+        # Get the parameter value
+        param = ""
+        if "destination" in action:
+            param = str(action["destination"])
+        elif "name_template" in action:
+            param = str(action["name_template"])
+        elif "command" in action:
+            # Truncate long commands
+            cmd = str(action["command"])
+            param = cmd[:50] + "..." if len(cmd) > 50 else cmd
+        elif "archive_path" in action:
+            param = str(action["archive_path"])
+        elif "extract_path" in action:
+            param = str(action["extract_path"])
+        elif "folder_name" in action:
+            param = str(action["folder_name"])
+        elif "tag" in action:
+            param = str(action["tag"])
+        elif "color" in action:
+            param = str(action["color"])
+
+        # Format the display text
+        if param:
+            return f"{action_type}: {param}"
+        else:
+            return action_type
 
     # ========== PUBLIC API ==========
 
