@@ -100,19 +100,24 @@ class CategoryManagerBackend(QObject):
             True if successful
         """
         try:
-            if not self.working_profile:
-                log_warning("No working profile loaded")
-                return False
+            # Load fresh from disk
+            doc = self.profile_store.load()
 
-            if "category_enabled" not in self.working_profile:
-                self.working_profile["category_enabled"] = {}
+            # Find and update the profile directly
+            for p in doc.get("profiles", []):
+                if p["id"] == self.profile_id:
+                    if "category_enabled" not in p:
+                        p["category_enabled"] = {}
+                    p["category_enabled"][category] = enabled
+                    p["updated_at"] = datetime.now().isoformat()
+                    self.profile_store.save(doc)
 
-            self.working_profile["category_enabled"][category] = enabled
+                    # Update working copy to match disk
+                    self.working_profile = copy.deepcopy(p)
 
-            if self._commit_changes():
-                self.category_updated.emit(category)
-                log_info(f"Category {category} enabled: {enabled}")
-                return True
+                    self.category_updated.emit(category)
+                    log_info(f"Category {category} enabled: {enabled}")
+                    return True
 
             return False
 
@@ -138,28 +143,35 @@ class CategoryManagerBackend(QObject):
             True if successful
         """
         try:
-            if not self.working_profile:
-                log_warning("No working profile loaded")
-                return False
+            # Load fresh from disk
+            doc = self.profile_store.load()
 
-            # Initialize overrides if needed
-            if "category_overrides" not in self.working_profile:
-                self.working_profile["category_overrides"] = {}
+            # Find and update the profile directly
+            for p in doc.get("profiles", []):
+                if p["id"] == self.profile_id:
+                    # Initialize overrides if needed
+                    if "category_overrides" not in p:
+                        p["category_overrides"] = {}
 
-            # Store the override
-            if new_name != category or extensions != DEFAULT_CATEGORIES.get(category, []):
-                self.working_profile["category_overrides"][category] = {
-                    "name": new_name,
-                    "extensions": extensions
-                }
-            elif category in self.working_profile.get("category_overrides", {}):
-                # Remove override if it matches default
-                del self.working_profile["category_overrides"][category]
+                    # Store the override
+                    if new_name != category or extensions != DEFAULT_CATEGORIES.get(category, []):
+                        p["category_overrides"][category] = {
+                            "name": new_name,
+                            "extensions": extensions
+                        }
+                    elif category in p.get("category_overrides", {}):
+                        # Remove override if it matches default
+                        del p["category_overrides"][category]
 
-            if self._commit_changes():
-                self.category_updated.emit(category)
-                log_info(f"Updated default category: {category}")
-                return True
+                    p["updated_at"] = datetime.now().isoformat()
+                    self.profile_store.save(doc)
+
+                    # Update working copy to match disk
+                    self.working_profile = copy.deepcopy(p)
+
+                    self.category_updated.emit(category)
+                    log_info(f"Updated default category: {category}")
+                    return True
 
             return False
 
@@ -185,27 +197,34 @@ class CategoryManagerBackend(QObject):
             True if successful
         """
         try:
-            if not self.working_profile:
-                log_warning("No working profile loaded")
-                return False
+            # Load fresh from disk
+            doc = self.profile_store.load()
 
-            # Initialize custom categories if needed
-            if "custom_categories" not in self.working_profile:
-                self.working_profile["custom_categories"] = {}
+            # Find and update the profile directly
+            for p in doc.get("profiles", []):
+                if p["id"] == self.profile_id:
+                    # Initialize custom categories if needed
+                    if "custom_categories" not in p:
+                        p["custom_categories"] = {}
 
-            custom = self.working_profile["custom_categories"]
+                    custom = p["custom_categories"]
 
-            # Handle rename
-            if old_name != new_name and old_name in custom:
-                del custom[old_name]
+                    # Handle rename
+                    if old_name != new_name and old_name in custom:
+                        del custom[old_name]
 
-            # Update with new extensions
-            custom[new_name] = extensions
+                    # Update with new extensions
+                    custom[new_name] = extensions
 
-            if self._commit_changes():
-                self.category_updated.emit(new_name)
-                log_info(f"Updated custom category: {old_name} -> {new_name}")
-                return True
+                    p["updated_at"] = datetime.now().isoformat()
+                    self.profile_store.save(doc)
+
+                    # Update working copy to match disk
+                    self.working_profile = copy.deepcopy(p)
+
+                    self.category_updated.emit(new_name)
+                    log_info(f"Updated custom category: {old_name} -> {new_name}")
+                    return True
 
             return False
 
@@ -224,23 +243,30 @@ class CategoryManagerBackend(QObject):
             True if successful
         """
         try:
-            if not self.working_profile:
-                log_warning("No working profile loaded")
-                return False
+            # Load fresh from disk
+            doc = self.profile_store.load()
 
-            custom = self.working_profile.get("custom_categories", {})
-            if category in custom:
-                del custom[category]
+            # Find and update the profile directly
+            for p in doc.get("profiles", []):
+                if p["id"] == self.profile_id:
+                    custom = p.get("custom_categories", {})
+                    if category in custom:
+                        del custom[category]
 
-            # Also remove from enabled if present
-            enabled = self.working_profile.get("category_enabled", {})
-            if category in enabled:
-                del enabled[category]
+                    # Also remove from enabled if present
+                    enabled = p.get("category_enabled", {})
+                    if category in enabled:
+                        del enabled[category]
 
-            if self._commit_changes():
-                self.category_deleted.emit(category)
-                log_info(f"Deleted custom category: {category}")
-                return True
+                    p["updated_at"] = datetime.now().isoformat()
+                    self.profile_store.save(doc)
+
+                    # Update working copy to match disk
+                    self.working_profile = copy.deepcopy(p)
+
+                    self.category_deleted.emit(category)
+                    log_info(f"Deleted custom category: {category}")
+                    return True
 
             return False
 
@@ -260,31 +286,38 @@ class CategoryManagerBackend(QObject):
             True if successful
         """
         try:
-            if not self.working_profile:
-                log_warning("No working profile loaded")
-                return False
+            # Load fresh from disk
+            doc = self.profile_store.load()
 
-            # Check if category already exists
-            if name in self.working_profile.get("custom_categories", {}):
-                log_warning(f"Custom category already exists: {name}")
-                return False
+            # Find and update the profile directly
+            for p in doc.get("profiles", []):
+                if p["id"] == self.profile_id:
+                    # Check if category already exists
+                    if name in p.get("custom_categories", {}):
+                        log_warning(f"Custom category already exists: {name}")
+                        return False
 
-            # Initialize custom categories if needed
-            if "custom_categories" not in self.working_profile:
-                self.working_profile["custom_categories"] = {}
+                    # Initialize custom categories if needed
+                    if "custom_categories" not in p:
+                        p["custom_categories"] = {}
 
-            # Add new category
-            self.working_profile["custom_categories"][name] = extensions
+                    # Add new category
+                    p["custom_categories"][name] = extensions
 
-            # Enable by default
-            if "category_enabled" not in self.working_profile:
-                self.working_profile["category_enabled"] = {}
-            self.working_profile["category_enabled"][name] = True
+                    # Enable by default
+                    if "category_enabled" not in p:
+                        p["category_enabled"] = {}
+                    p["category_enabled"][name] = True
 
-            if self._commit_changes():
-                self.category_added.emit(name)
-                log_info(f"Added custom category: {name}")
-                return True
+                    p["updated_at"] = datetime.now().isoformat()
+                    self.profile_store.save(doc)
+
+                    # Update working copy to match disk
+                    self.working_profile = copy.deepcopy(p)
+
+                    self.category_added.emit(name)
+                    log_info(f"Added custom category: {name}")
+                    return True
 
             return False
 
@@ -300,26 +333,33 @@ class CategoryManagerBackend(QObject):
             True if successful
         """
         try:
-            if not self.working_profile:
-                log_warning("No working profile loaded")
-                return False
+            # Load fresh from disk
+            doc = self.profile_store.load()
 
-            # Clear overrides and custom categories
-            log_info(f"[restore_defaults] Before: category_overrides={self.working_profile.get('category_overrides', {})}")
-            self.working_profile["category_overrides"] = {}
-            self.working_profile["custom_categories"] = {}
+            # Find and update the profile directly
+            for p in doc.get("profiles", []):
+                if p["id"] == self.profile_id:
+                    # Clear overrides and custom categories
+                    log_info(f"[restore_defaults] Before: category_overrides={p.get('category_overrides', {})}")
+                    p["category_overrides"] = {}
+                    p["custom_categories"] = {}
 
-            # Keep only default categories in enabled state
-            enabled = {}
-            for cat in DEFAULT_CATEGORIES:
-                enabled[cat] = True
-            self.working_profile["category_enabled"] = enabled
+                    # Keep only default categories in enabled state
+                    enabled = {}
+                    for cat in DEFAULT_CATEGORIES:
+                        enabled[cat] = True
+                    p["category_enabled"] = enabled
 
-            if self._commit_changes():
-                log_info(f"[restore_defaults] After commit: category_overrides={self.working_profile.get('category_overrides', {})}")
-                self.defaults_restored.emit()
-                log_info("Restored default categories")
-                return True
+                    p["updated_at"] = datetime.now().isoformat()
+                    self.profile_store.save(doc)
+
+                    # Update working copy to match disk
+                    self.working_profile = copy.deepcopy(p)
+
+                    log_info(f"[restore_defaults] After commit: category_overrides={p.get('category_overrides', {})}")
+                    self.defaults_restored.emit()
+                    log_info("Restored default categories")
+                    return True
 
             return False
 
