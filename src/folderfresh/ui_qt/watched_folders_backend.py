@@ -30,6 +30,8 @@ class WatchedFoldersBackend(QObject):
     folder_added = Signal(str)  # folder_path
     folder_removed = Signal(str)  # folder_path
     folder_profile_changed = Signal(str, str)  # folder_path, profile_name
+    folder_toggled = Signal(str, bool)  # folder_path, is_active
+    folder_resumed = Signal(str)  # folder_path - emitted when transitioning from paused to watching
     folders_reloaded = Signal()
 
     def __init__(self, watcher_manager=None):
@@ -73,8 +75,11 @@ class WatchedFoldersBackend(QObject):
         Returns:
             Profile name
         """
+        # Normalize path for consistent lookup
+        normalized_path = str(Path(folder_path).resolve())
         folder_profile_map = self.config_data.get("folder_profile_map", {})
-        return folder_profile_map.get(folder_path, "Default")
+        # Check both normalized and original path for compatibility
+        return folder_profile_map.get(normalized_path, folder_profile_map.get(folder_path, "Default"))
 
     def get_available_profiles(self) -> List[str]:
         """Get list of available profile names"""
@@ -99,6 +104,7 @@ class WatchedFoldersBackend(QObject):
             List of (folder_path, profile_id, is_active) tuples
         """
         folder_profile_map = self.config_data.get("folder_profile_map", {})
+        folder_watch_status = self.config_data.get("folder_watch_status", {})
         watched_list = []
 
         for folder_path in self.get_watched_folders():
@@ -106,8 +112,10 @@ class WatchedFoldersBackend(QObject):
             profile_name = folder_profile_map.get(folder_path, "Default")
             profile_id = self._get_profile_id_by_name(profile_name)
 
-            # Assume all folders in watched_folders list are active
-            is_active = True
+            # Get per-folder watch status (default to True if not set)
+            # Check both normalized and original path keys for compatibility
+            normalized_path = str(Path(folder_path).resolve())
+            is_active = folder_watch_status.get(normalized_path, folder_watch_status.get(folder_path, True))
 
             watched_list.append((folder_path, profile_id, is_active))
 
@@ -166,8 +174,10 @@ class WatchedFoldersBackend(QObject):
 
             # Check if already watching
             if folder_path in self.get_watched_folders():
-                show_info_dialog(None, "Already Watching", f"Already watching: {folder_path}")
-                return False
+                # Already watching - just ensure it's marked as active (watching)
+                # Don't show a popup, silently resume watching if it was paused
+                self.toggle_folder_watch(folder_path, True)
+                return True
 
             # Check if folder exists
             if not Path(folder_path).is_dir():
@@ -242,6 +252,9 @@ class WatchedFoldersBackend(QObject):
             True if successful
         """
         try:
+            # Normalize path for consistent comparison and deletion
+            normalized_path = str(Path(folder_path).resolve())
+
             if folder_path not in self.get_watched_folders():
                 show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
                 return False
@@ -256,8 +269,8 @@ class WatchedFoldersBackend(QObject):
             # Stop watching in WatcherManager if available
             if self.watcher_manager:
                 try:
-                    self.watcher_manager.unwatch_folder(folder_path)
-                    log_info(f"Stopped watching folder: {folder_path}")
+                    self.watcher_manager.unwatch_folder(normalized_path)
+                    log_info(f"Stopped watching folder: {normalized_path}")
                 except Exception as e:
                     log_warning(f"Failed to stop watching folder: {e}")
 
@@ -267,11 +280,23 @@ class WatchedFoldersBackend(QObject):
                 watched_folders.remove(folder_path)
                 self.config_data["watched_folders"] = watched_folders
 
-            # Remove folder profile mapping
+            # Remove folder profile mapping (check both normalized and original paths)
             folder_profile_map = self.config_data.get("folder_profile_map", {})
-            if folder_path in folder_profile_map:
+            if normalized_path in folder_profile_map:
+                del folder_profile_map[normalized_path]
+                self.config_data["folder_profile_map"] = folder_profile_map
+            elif folder_path in folder_profile_map:
                 del folder_profile_map[folder_path]
                 self.config_data["folder_profile_map"] = folder_profile_map
+
+            # Remove folder watch status (check both normalized and original paths)
+            folder_watch_status = self.config_data.get("folder_watch_status", {})
+            if normalized_path in folder_watch_status:
+                del folder_watch_status[normalized_path]
+                self.config_data["folder_watch_status"] = folder_watch_status
+            elif folder_path in folder_watch_status:
+                del folder_watch_status[folder_path]
+                self.config_data["folder_watch_status"] = folder_watch_status
 
             # Save config
             save_config(self.config_data)
@@ -444,6 +469,114 @@ class WatchedFoldersBackend(QObject):
     def reload_folders(self) -> None:
         """Reload folders from disk"""
         self._load_data()
+
+    def toggle_folder_watch(self, folder_path: str, is_active: bool) -> bool:
+        """
+        Toggle watching status for a specific folder.
+
+        Args:
+            folder_path: Folder path to toggle
+            is_active: New active state (True = watching, False = paused)
+
+        Returns:
+            True if successful
+        """
+        try:
+            # Normalize path for consistent comparison
+            normalized_path = str(Path(folder_path).resolve())
+
+            # Check if folder is in watched list using normalized comparison
+            watched_folders = self.get_watched_folders()
+            is_in_watched_list = False
+            for wf in watched_folders:
+                if str(Path(wf).resolve()) == normalized_path:
+                    is_in_watched_list = True
+                    break
+
+            if not is_in_watched_list:
+                show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
+                return False
+
+            # Get previous state to detect resume (paused -> watching transition)
+            was_paused = not self.get_folder_watch_status(normalized_path)
+            is_resuming = was_paused and is_active
+
+            # Store watched state in config using normalized path
+            if "folder_watch_status" not in self.config_data:
+                self.config_data["folder_watch_status"] = {}
+
+            self.config_data["folder_watch_status"][normalized_path] = is_active
+
+            # Update watcher if available
+            if self.watcher_manager:
+                try:
+                    if is_active:
+                        self.watcher_manager.watch_folder(normalized_path)
+                        log_info(f"Resumed watching folder: {normalized_path}")
+                    else:
+                        self.watcher_manager.unwatch_folder(normalized_path)
+                        log_info(f"Paused watching folder: {normalized_path}")
+                except Exception as e:
+                    log_warning(f"Failed to update watcher status: {e}")
+
+            # Save config
+            save_config(self.config_data)
+
+            log_info(f"Folder watch status updated: {folder_path} = {is_active}")
+            self.folder_toggled.emit(folder_path, is_active)
+
+            # Emit resume signal if transitioning from paused to watching
+            if is_resuming:
+                self.folder_resumed.emit(folder_path)
+
+            return True
+
+        except Exception as e:
+            log_error(f"Failed to toggle folder watch status: {e}")
+            show_error_dialog(None, "Toggle Folder Failed", f"Failed to toggle folder watch status:\n{e}")
+            return False
+
+    def get_folder_watch_status(self, folder_path: str) -> bool:
+        """
+        Get watching status for a specific folder.
+
+        Args:
+            folder_path: Folder path to check
+
+        Returns:
+            True if watching, False if paused or not found
+        """
+        # Normalize path for consistent lookup
+        normalized_path = str(Path(folder_path).resolve())
+        watch_status = self.config_data.get("folder_watch_status", {})
+        # Default to True if not explicitly set to False
+        return watch_status.get(normalized_path, True)
+
+    def is_folder_watching(self, folder_path: str) -> bool:
+        """
+        Check if a specific folder is currently being watched.
+
+        Args:
+            folder_path: Folder path to check
+
+        Returns:
+            True if folder is in watched list AND is active, False otherwise
+        """
+        # Normalize path for consistent comparison
+        normalized_path = str(Path(folder_path).resolve())
+
+        # Check if normalized path is in watched folders (normalize comparison)
+        watched_folders = self.get_watched_folders()
+        is_in_watched_list = False
+        for wf in watched_folders:
+            if str(Path(wf).resolve()) == normalized_path:
+                is_in_watched_list = True
+                break
+
+        if not is_in_watched_list:
+            return False
+
+        return self.get_folder_watch_status(folder_path)
 
     def save_config(self) -> bool:
         """Save configuration to disk"""
