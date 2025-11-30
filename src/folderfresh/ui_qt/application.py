@@ -578,9 +578,14 @@ class FolderFreshApplication:
                         try:
                             src_path = move.get("src", "Unknown")
                             src = Path(src_path).name if isinstance(src_path, str) else str(src_path)
-                            dst = move.get("category", move.get("rule_name", "Unknown"))
                             mode = move.get("mode", "unknown")
-                            preview_lines.append(f"{i}. {src} → {dst} ({mode})")
+
+                            # Check if this move has an error
+                            if move.get("error"):
+                                preview_lines.append(f"{i}. {src} - ERROR: {move.get('error')}")
+                            else:
+                                dst = move.get("category", move.get("rule_name", "Unknown"))
+                                preview_lines.append(f"{i}. {src} → {dst} ({mode})")
                         except Exception:
                             # Skip malformed moves
                             continue
