@@ -38,6 +38,7 @@ from .dialogs import ask_text_dialog, show_confirmation_dialog, show_info_dialog
 from .category_manager import CategoryManagerWindow
 from .category_manager_backend import CategoryManagerBackend
 from folderfresh.profile_store import ProfileStore
+from folderfresh.logger_qt import log_error
 
 
 class ProfileManagerWindow(QDialog):
@@ -80,6 +81,27 @@ class ProfileManagerWindow(QDialog):
         self.open_rules_windows: Dict[str, Any] = {}  # Stores RuleManager windows
 
         self._init_ui()
+
+    def _load_profile_from_disk(self, profile_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Load a single profile from disk (source of truth).
+
+        Args:
+            profile_id: Profile ID to load
+
+        Returns:
+            Profile dict or None if not found
+        """
+        try:
+            doc = self.profile_store.load()
+            for p in doc.get("profiles", []):
+                if p["id"] == profile_id:
+                    # Update in-memory cache with fresh data
+                    self.profiles[profile_id] = p
+                    return p
+        except Exception as e:
+            log_error(f"Failed to load profile {profile_id} from disk: {e}")
+        return None
 
     def _init_ui(self) -> None:
         """Initialize UI with splitter."""
@@ -255,7 +277,9 @@ class ProfileManagerWindow(QDialog):
         """
         self.editor_scroll.clear()
 
-        profile = self.profiles.get(profile_id)
+        # Load profile from disk (source of truth)
+        profile = self._load_profile_from_disk(profile_id)
+
         if not profile:
             self.editor_scroll.add_widget(
                 StyledLabel("No profile selected", font_size=Fonts.SIZE_SMALL)
@@ -317,9 +341,11 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             "Fall back to category sort on rule failure",
             checked=profile.get("settings", {}).get("rule_fallback_to_sort", True)
         )
-        fallback_check.stateChanged.connect(
-            lambda: self._on_fallback_changed(profile_id, fallback_check)
-        )
+        print(f"DEBUG: Creating checkbox for profile_id={profile_id}, initial checked={fallback_check.isChecked()}")
+        def on_fallback(state):
+            print(f"DEBUG: Lambda triggered with state={state}, profile_id={profile_id}")
+            self._on_fallback_changed(profile_id, fallback_check)
+        fallback_check.stateChanged.connect(on_fallback)
         fallback_section.add_widget(fallback_check)
 
         fallback_help = MutedLabel(
@@ -415,13 +441,38 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             show_info_dialog(self, "Renamed", f"Profile '{old_name}' renamed to '{new_name}'.")
 
     def _on_fallback_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
-        """Handle fallback checkbox change."""
-        if profile_id in self.profiles:
-            if "settings" not in self.profiles[profile_id]:
-                self.profiles[profile_id]["settings"] = {}
-            self.profiles[profile_id]["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
-            # Emit signal to save the change
-            self.profile_changed.emit()
+        """Handle fallback checkbox change - save to disk."""
+        # Save directly to disk (the single source of truth)
+        try:
+            print(f"DEBUG: _on_fallback_changed called for profile_id={profile_id}, checked={checkbox.isChecked()}")
+            doc = self.profile_store.load()
+            found = False
+            for profile in doc.get("profiles", []):
+                if profile["id"] == profile_id:
+                    if "settings" not in profile:
+                        profile["settings"] = {}
+                    profile["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
+                    print(f"DEBUG: Updated profile {profile_id}, new value={checkbox.isChecked()}")
+                    found = True
+                    break
+
+            if found:
+                print(f"DEBUG: Saving document to disk")
+                self.profile_store.save(doc)
+                print(f"DEBUG: Document saved successfully")
+                # Update in-memory copy to match disk
+                if profile_id in self.profiles:
+                    if "settings" not in self.profiles[profile_id]:
+                        self.profiles[profile_id]["settings"] = {}
+                    self.profiles[profile_id]["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
+                else:
+                    # If not in memory cache, add it
+                    self._load_profile_from_disk(profile_id)
+            else:
+                log_error(f"Profile {profile_id} not found in profiles document")
+        except Exception as e:
+            log_error(f"Failed to save fallback setting: {e}")
+            print(f"DEBUG: Exception in _on_fallback_changed: {e}")
 
     def _on_duplicate_profile(self, profile_id: str) -> None:
         """Duplicate profile."""
