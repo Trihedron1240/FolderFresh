@@ -148,6 +148,7 @@ class FolderFreshApplication:
             self.main_window.sidebar.rules_clicked.connect(self._on_rules_requested)
             self.main_window.sidebar.activity_log_clicked.connect(self._on_view_activity_log)
             self.main_window.sidebar.categories_clicked.connect(self._on_categories_requested)
+            self.main_window.sidebar.settings_clicked.connect(self._on_settings_requested)
 
     def _initialize_backends(self) -> None:
         """Initialize all backend modules."""
@@ -1152,6 +1153,45 @@ class FolderFreshApplication:
 
             self.active_windows["activity_log"] = log_window
             log_window.show()
+
+    def _on_settings_requested(self) -> None:
+        """Open settings window."""
+        from folderfresh.ui_qt.settings_window import SettingsWindow
+
+        if "settings" not in self.active_windows or not self.active_windows["settings"].isVisible():
+            # Get current settings from profile
+            current_settings = {}
+            if self.profile_store:
+                doc = self.profile_store.load()
+                active_profile = self.profile_store.get_active_profile(doc)
+                if active_profile:
+                    current_settings = active_profile.get("settings", {})
+
+            settings_window = SettingsWindow(
+                parent=self.main_window,
+                initial_settings=current_settings,
+            )
+
+            # Connect settings changes to save
+            settings_window.settings_changed.connect(self._on_settings_changed_in_window)
+            settings_window.closed.connect(lambda: self._on_window_closed("settings"))
+
+            self.active_windows["settings"] = settings_window
+            settings_window.show()
+
+    def _on_settings_changed_in_window(self, settings: dict) -> None:
+        """Handle settings change from settings window."""
+        if self.profile_store:
+            doc = self.profile_store.load()
+            active_profile = self.profile_store.get_active_profile(doc)
+            if active_profile:
+                # Update profile settings
+                if "settings" not in active_profile:
+                    active_profile["settings"] = {}
+                for key, value in settings.items():
+                    active_profile["settings"][key] = value
+                # Save the updated profile
+                self.profile_store.save(doc)
 
     def _on_show_undo_history(self) -> None:
         """Show undo history as a dialog."""

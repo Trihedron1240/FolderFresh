@@ -19,6 +19,7 @@ from .rule_manager import RuleManager
 from .activity_log_window import ActivityLogWindow
 from .category_manager import CategoryManagerWindow
 from .profile_manager import ProfileManagerWindow
+from .settings_window import SettingsWindow
 from .duplicate_finder_window import DuplicateFinderWindow
 from .duplicate_finder_backend import DuplicateFinderBackend
 from .desktop_clean_backend import DesktopCleanBackend
@@ -88,6 +89,7 @@ __all__ = [
     "ActivityLogWindow",
     "CategoryManagerWindow",
     "ProfileManagerWindow",
+    "SettingsWindow",
     "DuplicateFinderWindow",
     "DuplicateFinderBackend",
     "DesktopCleanBackend",

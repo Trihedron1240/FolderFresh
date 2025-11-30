@@ -22,6 +22,7 @@ class SidebarWidget(QWidget):
     rules_clicked = Signal()
     activity_log_clicked = Signal()
     categories_clicked = Signal()
+    settings_clicked = Signal()
 
     def __init__(self):
         super().__init__()
@@ -59,8 +60,13 @@ class SidebarWidget(QWidget):
         self.categories_btn.clicked.connect(self.categories_clicked.emit)
         layout.addWidget(self.categories_btn)
 
-        # Spacer to push buttons to top
+        # Spacer to push settings button to bottom
         layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        # Settings button (at bottom)
+        self.settings_btn = self._create_nav_button("⚙️ Settings")
+        self.settings_btn.clicked.connect(self.settings_clicked.emit)
+        layout.addWidget(self.settings_btn)
 
         # Apply sidebar styling
         self.setStyleSheet("""
@@ -100,6 +106,7 @@ class SidebarWidget(QWidget):
             "rules": self.rules_btn,
             "activity_log": self.activity_log_btn,
             "categories": self.categories_btn,
+            "settings": self.settings_btn,
         }
 
         for btn in buttons.values():
