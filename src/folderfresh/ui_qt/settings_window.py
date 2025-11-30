@@ -16,6 +16,7 @@ from .base_widgets import (
     HorizontalFrame,
     CardFrame,
 )
+from folderfresh.profile_store import ProfileStore
 
 
 class SettingsWindow(QDialog):
@@ -31,7 +32,7 @@ class SettingsWindow(QDialog):
 
         Args:
             parent: Parent widget
-            initial_settings: Initial settings dict
+            initial_settings: Initial settings dict (deprecated, reads from profiles.json instead)
         """
         super().__init__(parent)
         self.setWindowTitle("Settings")
@@ -40,7 +41,11 @@ class SettingsWindow(QDialog):
         self.setStyleSheet(f"QDialog {{ background-color: {Colors.PANEL_BG}; }}")
         self.setModal(True)
 
-        self.settings = initial_settings or {}
+        # Load settings from active profile in profiles.json
+        self.profile_store = ProfileStore()
+        doc = self.profile_store.load()
+        active_profile = self.profile_store.get_active_profile(doc)
+        self.settings = active_profile.get("settings", {}) if active_profile else {}
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -120,6 +125,9 @@ class SettingsWindow(QDialog):
     def set_settings(self, settings: dict) -> None:
         """Set settings."""
         self.settings = settings
+        # Block signals to prevent triggering _on_settings_changed
+        self.rule_fallback_check.blockSignals(True)
         self.rule_fallback_check.setChecked(
             self.settings.get("rule_fallback_to_sort", True)
         )
+        self.rule_fallback_check.blockSignals(False)
