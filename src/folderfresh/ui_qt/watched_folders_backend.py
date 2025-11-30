@@ -296,6 +296,13 @@ class WatchedFoldersBackend(QObject):
             save_config(self.config_data)
 
             log_info(f"Folder profile set: {folder_path} → {profile_name}")
+
+            # Reorganize existing files with new profile
+            try:
+                self._organize_existing_files(folder_path)
+            except Exception as e:
+                log_error(f"Failed to reorganize files after profile change: {e}")
+
             self.folder_profile_changed.emit(folder_path, profile_name)
 
             return True
