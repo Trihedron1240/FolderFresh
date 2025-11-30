@@ -23,7 +23,7 @@ from .backbone import (
 )
 
 
-# Mapping to reconstruct classes from saved JSON
+# Mapping to reconstruct classes from saved JSON (camelCase keys)
 CONDITION_MAP = {
     "NameContains": NameContainsCondition,
     "NameStartsWith": NameStartsWithCondition,
@@ -40,6 +40,28 @@ CONDITION_MAP = {
     "IsReadOnly": IsReadOnlyCondition,
     "IsDirectory": IsDirectoryCondition,
 }
+
+# Mapping from display names (with spaces) to camelCase names (for PyQt UI compatibility)
+# The PyQt condition editor uses display names like "Name Contains" but the backend uses "NameContains"
+DISPLAY_NAME_TO_INTERNAL = {
+    "Name Contains": "NameContains",
+    "Name Starts With": "NameStartsWith",
+    "Name Ends With": "NameEndsWith",
+    "Name Equals": "NameEquals",
+    "Regex Match": "RegexMatch",
+    "Parent Folder Contains": "ParentFolderContains",
+    "File is in folder containing": "FileInFolder",
+    "Extension Is": "ExtensionIs",
+    "File Size > X bytes": "FileSizeGreaterThan",
+    "File Age > X days": "FileAgeGreaterThan",
+    "Last Modified Before": "LastModifiedBefore",
+    "Is Hidden": "IsHidden",
+    "Is Read-Only": "IsReadOnly",
+    "Is Directory": "IsDirectory",
+}
+
+# Reverse mapping for converting back to display names
+INTERNAL_NAME_TO_DISPLAY = {v: k for k, v in DISPLAY_NAME_TO_INTERNAL.items()}
 
 ACTION_MAP = {
     "Rename": RenameAction,
@@ -81,10 +103,17 @@ def rule_to_dict(rule: Rule):
 
 def dict_to_rule(data: dict) -> Rule:
     """Convert a saved dict into a Rule object."""
-    conditions = [
-        CONDITION_MAP[c["type"]](**c["args"])
-        for c in data["conditions"]
-    ]
+    conditions = []
+    for c in data["conditions"]:
+        condition_type = c["type"]
+        # Handle both camelCase (from backend) and display names (from PyQt UI)
+        if condition_type in DISPLAY_NAME_TO_INTERNAL:
+            condition_type = DISPLAY_NAME_TO_INTERNAL[condition_type]
+
+        if condition_type not in CONDITION_MAP:
+            raise ValueError(f"Unknown condition type: {c['type']}")
+
+        conditions.append(CONDITION_MAP[condition_type](**c["args"]))
 
     actions = [
         ACTION_MAP[a["type"]](**a["args"])

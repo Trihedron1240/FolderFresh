@@ -15,7 +15,8 @@
       "Bash(python -m pytest tests/ -k \"profile\" -v --tb=short)",
       "Bash(python -c:*)",
       "Bash(python -m pytest:*)",
-      "Bash(python -m py_compile:*)"
+      "Bash(python -m py_compile:*)",
+      "Bash(X bytes\"\n- Rule loading expects camelCase names: \"NameContains\", \"FileSizeGreaterThan\"\n- When rules were saved and loaded, dict_to_rule() would fail with KeyError\n\nThe Solution:\n1. Added DISPLAY_NAME_TO_INTERNAL mapping in rule_store.py\n   - Maps all UI display names to their backend camelCase equivalents\n   - Reverse mapping INTERNAL_NAME_TO_DISPLAY for future use\n\n2. Updated dict_to_rule() to handle both formats\n   - First checks if type is a display name and converts it\n   - Then looks up in CONDITION_MAP with the correct camelCase key\n   - Better error messages if type is truly unknown\n\nNow rules created in the PyQt UI will load correctly and apply to files.\n\nFiles modified:\n- src/folderfresh/rule_engine/rule_store.py\n\nAll tests passing: 24 condition tests + 14 integration tests\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
