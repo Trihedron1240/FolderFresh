@@ -21,6 +21,8 @@ from .category_manager import CategoryManagerWindow
 from .profile_manager import ProfileManagerWindow
 from .duplicate_finder_window import DuplicateFinderWindow
 from .duplicate_finder_backend import DuplicateFinderBackend
+from .desktop_clean_backend import DesktopCleanBackend
+from .desktop_clean_dialog import DesktopCleanDialog
 
 # Application and integration (Phase 7)
 from .application import FolderFreshApplication
@@ -88,6 +90,8 @@ __all__ = [
     "ProfileManagerWindow",
     "DuplicateFinderWindow",
     "DuplicateFinderBackend",
+    "DesktopCleanBackend",
+    "DesktopCleanDialog",
     # Application and integration (Phase 7)
     "FolderFreshApplication",
     "TrayIcon",
