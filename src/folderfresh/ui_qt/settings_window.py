@@ -57,7 +57,7 @@ class SettingsWindow(QDialog):
         rule_section = CardFrame()
         rule_layout = VerticalFrame(spacing=12)
 
-        section_title = HeadingLabel("Rule Behavior", font_size=Fonts.SIZE_NORMAL)
+        section_title = HeadingLabel("Rule Behavior")
         rule_layout.add_widget(section_title)
 
         # Rule fallback checkbox
