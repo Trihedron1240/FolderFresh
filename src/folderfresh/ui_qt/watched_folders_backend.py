@@ -252,10 +252,18 @@ class WatchedFoldersBackend(QObject):
             True if successful
         """
         try:
-            # Normalize path for consistent comparison and deletion
-            normalized_path = str(Path(folder_path).resolve())
+            # Find the actual folder in the list (may be stored in various forms)
+            watched_folders = self.get_watched_folders()
+            actual_folder_path = None
+            normalized_input = str(Path(folder_path).resolve())
 
-            if folder_path not in self.get_watched_folders():
+            # Find matching folder (normalize both sides for comparison)
+            for wf in watched_folders:
+                if str(Path(wf).resolve()) == normalized_input:
+                    actual_folder_path = wf
+                    break
+
+            if actual_folder_path is None:
                 show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
                 return False
 
@@ -269,34 +277,30 @@ class WatchedFoldersBackend(QObject):
             # Stop watching in WatcherManager if available
             if self.watcher_manager:
                 try:
-                    self.watcher_manager.unwatch_folder(normalized_path)
-                    log_info(f"Stopped watching folder: {normalized_path}")
+                    self.watcher_manager.unwatch_folder(normalized_input)
+                    log_info(f"Stopped watching folder: {normalized_input}")
                 except Exception as e:
                     log_warning(f"Failed to stop watching folder: {e}")
 
-            # Remove from config
-            watched_folders = self.config_data.get("watched_folders", [])
-            if folder_path in watched_folders:
-                watched_folders.remove(folder_path)
-                self.config_data["watched_folders"] = watched_folders
+            # Remove from watched_folders list using the actual stored path
+            watched_folders.remove(actual_folder_path)
+            self.config_data["watched_folders"] = watched_folders
 
-            # Remove folder profile mapping (check both normalized and original paths)
+            # Remove folder profile mapping (try both normalized and original keys)
             folder_profile_map = self.config_data.get("folder_profile_map", {})
-            if normalized_path in folder_profile_map:
-                del folder_profile_map[normalized_path]
-                self.config_data["folder_profile_map"] = folder_profile_map
-            elif folder_path in folder_profile_map:
-                del folder_profile_map[folder_path]
-                self.config_data["folder_profile_map"] = folder_profile_map
+            if normalized_input in folder_profile_map:
+                del folder_profile_map[normalized_input]
+            elif actual_folder_path in folder_profile_map:
+                del folder_profile_map[actual_folder_path]
+            self.config_data["folder_profile_map"] = folder_profile_map
 
-            # Remove folder watch status (check both normalized and original paths)
+            # Remove folder watch status (try both normalized and original keys)
             folder_watch_status = self.config_data.get("folder_watch_status", {})
-            if normalized_path in folder_watch_status:
-                del folder_watch_status[normalized_path]
-                self.config_data["folder_watch_status"] = folder_watch_status
-            elif folder_path in folder_watch_status:
-                del folder_watch_status[folder_path]
-                self.config_data["folder_watch_status"] = folder_watch_status
+            if normalized_input in folder_watch_status:
+                del folder_watch_status[normalized_input]
+            elif actual_folder_path in folder_watch_status:
+                del folder_watch_status[actual_folder_path]
+            self.config_data["folder_watch_status"] = folder_watch_status
 
             # Save config
             save_config(self.config_data)
