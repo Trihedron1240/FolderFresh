@@ -13,7 +13,8 @@
       "Bash(git add:*)",
       "Bash(python -m pytest tests/ --tb=short -q)",
       "Bash(python -m pytest tests/ -k \"profile\" -v --tb=short)",
-      "Bash(python -c:*)"
+      "Bash(python -c:*)",
+      "Bash(python -m pytest:*)"
     ],
     "deny": [],
     "ask": []

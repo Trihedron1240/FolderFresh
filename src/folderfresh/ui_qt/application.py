@@ -18,6 +18,7 @@ from .category_manager import CategoryManagerWindow
 from .profile_manager import ProfileManagerWindow
 from .help_window import HelpWindow
 from .watched_folders_window import WatchedFoldersWindow
+from .duplicate_finder_window import DuplicateFinderWindow
 from .styles import Colors, Fonts
 from .dialogs import (
     browse_folder_dialog,
@@ -32,6 +33,7 @@ from .rule_manager_backend import RuleManagerBackend
 from .watched_folders_backend import WatchedFoldersBackend
 from .activity_log_backend import ActivityLogBackend
 from .category_manager_backend import CategoryManagerBackend
+from .duplicate_finder_backend import DuplicateFinderBackend
 from folderfresh.logger_qt import log_error
 from folderfresh.config import save_config
 
@@ -666,11 +668,72 @@ class FolderFreshApplication:
     @Slot()
     def _on_duplicates_requested(self) -> None:
         """Find duplicate files."""
-        show_info_dialog(
-            self.main_window,
-            "Find Duplicates",
-            "Duplicate finder opened. (Backend integration pending)",
-        )
+        if not self.selected_folder:
+            show_warning_dialog(
+                self.main_window,
+                "No Folder Selected",
+                "Please select a folder first.",
+            )
+            return
+
+        # Get options from main window
+        include_subfolders = self.main_window.get_option("include_subfolders")
+        skip_hidden = self.main_window.get_option("skip_hidden")
+
+        # Get ignore extensions from config
+        ignore_exts = self._config_data.get("ignore_exts", "")
+        ignore_extensions = [ext.strip().lower() for ext in ignore_exts.split(";") if ext.strip()]
+
+        # Create backend if needed
+        if not hasattr(self, "_duplicate_finder_backend"):
+            self._duplicate_finder_backend = DuplicateFinderBackend()
+
+        # Find duplicates
+        try:
+            show_info_dialog(
+                self.main_window,
+                "Scanning",
+                f"Searching for duplicate files in:\n{self.selected_folder}",
+            )
+
+            duplicate_groups = self._duplicate_finder_backend.find_duplicates(
+                folder=self.selected_folder,
+                include_subfolders=include_subfolders,
+                skip_hidden=skip_hidden,
+                ignore_extensions=ignore_extensions,
+            )
+
+            # Open duplicate finder window
+            self._open_duplicate_finder_window(duplicate_groups)
+
+        except Exception as e:
+            log_error(f"Error finding duplicates: {e}")
+            show_error_dialog(
+                self.main_window,
+                "Error",
+                f"Failed to find duplicates: {e}",
+            )
+
+    def _open_duplicate_finder_window(self, duplicate_groups: List[List[Path]]) -> None:
+        """
+        Open duplicate finder window.
+
+        Args:
+            duplicate_groups: List of duplicate file groups
+        """
+        if "duplicates" not in self.active_windows or not self.active_windows["duplicates"].isVisible():
+            window = DuplicateFinderWindow(self.main_window, duplicate_groups)
+            window.closed.connect(lambda: self._on_duplicate_finder_closed())
+            self.active_windows["duplicates"] = window
+
+        self.active_windows["duplicates"].show()
+        self.active_windows["duplicates"].raise_()
+        self.active_windows["duplicates"].activateWindow()
+
+    def _on_duplicate_finder_closed(self) -> None:
+        """Handle duplicate finder window closed."""
+        if "duplicates" in self.active_windows:
+            del self.active_windows["duplicates"]
 
     @Slot()
     def _on_desktop_clean_requested(self) -> None:

@@ -19,6 +19,8 @@ from .rule_manager import RuleManager
 from .activity_log_window import ActivityLogWindow
 from .category_manager import CategoryManagerWindow
 from .profile_manager import ProfileManagerWindow
+from .duplicate_finder_window import DuplicateFinderWindow
+from .duplicate_finder_backend import DuplicateFinderBackend
 
 # Application and integration (Phase 7)
 from .application import FolderFreshApplication
@@ -84,6 +86,8 @@ __all__ = [
     "ActivityLogWindow",
     "CategoryManagerWindow",
     "ProfileManagerWindow",
+    "DuplicateFinderWindow",
+    "DuplicateFinderBackend",
     # Application and integration (Phase 7)
     "FolderFreshApplication",
     "TrayIcon",
