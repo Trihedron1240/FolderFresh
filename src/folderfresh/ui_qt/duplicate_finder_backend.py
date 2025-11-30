@@ -58,9 +58,9 @@ class DuplicateFinderBackend(QObject):
             # Scan directory
             files = scan_dir(
                 folder,
-                include_subfolders=include_subfolders,
+                include_sub=include_subfolders,
                 skip_hidden=skip_hidden,
-                ignore_exts=ignore_set,
+                ignore_set=ignore_set,
                 skip_categories=False,  # Include all files, even in category folders
             )
 
