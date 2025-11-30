@@ -219,6 +219,24 @@ class RuleManagerBackend(QObject):
             self.profile_store.save(self.profiles_doc)
             log_info(f"[delete_rule] Profile saved successfully")
 
+            # Verify the save by reloading
+            log_info(f"[delete_rule] Verifying save by reloading from disk...")
+            verify_doc = self.profile_store.load()
+            verify_profile = None
+            for p in verify_doc.get("profiles", []):
+                if p["id"] == self.active_profile["id"]:
+                    verify_profile = p
+                    break
+
+            if verify_profile:
+                verify_rules_count = len(verify_profile.get("rules", []))
+                log_info(f"[delete_rule] Verification: {verify_rules_count} rules in saved profile")
+                if verify_rules_count != rules_after:
+                    log_error(f"[delete_rule] MISMATCH: Expected {rules_after} rules, found {verify_rules_count} in saved file!")
+                    show_error_dialog(f"Warning: Save verification failed. Expected {rules_after} rules but file has {verify_rules_count}")
+            else:
+                log_error(f"[delete_rule] Could not find profile in saved file!")
+
             log_info(f"Rule deleted: {rule_dict['name']}")
             self.rule_deleted.emit(rule_id)
             show_info_dialog(f"Rule '{rule_dict['name']}' deleted")
