@@ -616,6 +616,12 @@ class FolderFreshApplication:
             smart_mode=options.get("smart_sorting", False)
         )
 
+        # Sync updated sort mode back to main config
+        if "last_sort_mode" in config_with_profile:
+            self._config_data["last_sort_mode"] = config_with_profile["last_sort_mode"]
+            from folderfresh.config import save_config
+            save_config(self._config_data)
+
         # Show summary
         success_count = sum(1 for r in results if not r.get("error"))
         total_count = len(results)
