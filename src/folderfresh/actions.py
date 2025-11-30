@@ -197,6 +197,7 @@ def do_preview(app):
             if result["matched"] and result["success"]:
                 # A rule matched and handled this file successfully
                 # Show the rule result and do NOT fall through to sorting
+                log_info(f"[do_preview] File {p.name} matched rule '{result['rule_name']}' and succeeded")
                 moves.append({
                     "src": str(p),
                     "dst": result["dst"],
@@ -207,9 +208,11 @@ def do_preview(app):
 
             elif result.get("matched") and not result.get("success"):
                 # Rule matched but failed
+                log_info(f"[do_preview] File {p.name} matched rule but failed: {result.get('error')}")
                 # Check if user wants fallback to sorting on rule failure
                 if not app.config_data.get("rule_fallback_to_sort", True):
                     # Don't fall back - show the error instead
+                    log_info(f"[do_preview] Fallback disabled - showing error for {p.name}")
                     moves.append({
                         "src": str(p),
                         "dst": str(p),
@@ -217,6 +220,16 @@ def do_preview(app):
                         "error": result.get("error", "Rule failed"),
                     })
                     continue
+                else:
+                    log_info(f"[do_preview] Fallback enabled - will attempt category sort for {p.name}")
+            else:
+                log_info(f"[do_preview] File {p.name} did not match any rule")
+                # If fallback is disabled and no rule matched, skip this file
+                if not app.config_data.get("rule_fallback_to_sort", True):
+                    log_info(f"[do_preview] Fallback disabled - skipping {p.name} (no rule match)")
+                    continue
+        else:
+            log_info(f"[do_preview] No rules loaded - will use category sort for {p.name}")
 
         # =====================================================================
         # NO RULES MATCHED (OR RULE FALLBACK ENABLED) - FALL BACK TO CATEGORY SORTING
@@ -382,8 +395,17 @@ def do_organise(app, moves):
             if not app.config_data.get("rule_fallback_to_sort", True):
                 continue  # Do NOT attempt fallback sorting
 
+        # Check if we should skip category sorting when fallback is disabled
+        # This handles the case where rules exist but file didn't match any rule
+        if rules:
+            # We already handled matched + succeeded, matched + failed cases above
+            # If we reach here with rules loaded, it means the file didn't match any rule
+            if not app.config_data.get("rule_fallback_to_sort", True):
+                # Fallback disabled and no rule matched - skip category sorting
+                continue
+
         # =====================================================================
-        # 2. CATEGORY SORTING (ONLY IF NO RULE MATCHED)
+        # 2. CATEGORY SORTING (ONLY IF NO RULE MATCHED OR FALLBACK ENABLED)
         # =====================================================================
 
         # Determine category
