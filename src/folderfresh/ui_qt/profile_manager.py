@@ -341,11 +341,9 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             "Fall back to category sort on rule failure",
             checked=profile.get("settings", {}).get("rule_fallback_to_sort", True)
         )
-        print(f"DEBUG: Creating checkbox for profile_id={profile_id}, initial checked={fallback_check.isChecked()}")
-        def on_fallback(state):
-            print(f"DEBUG: Lambda triggered with state={state}, profile_id={profile_id}")
-            self._on_fallback_changed(profile_id, fallback_check)
-        fallback_check.stateChanged.connect(on_fallback)
+        fallback_check.stateChanged.connect(
+            lambda state: self._on_fallback_changed(profile_id, fallback_check)
+        )
         fallback_section.add_widget(fallback_check)
 
         fallback_help = MutedLabel(
@@ -444,7 +442,6 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         """Handle fallback checkbox change - save to disk."""
         # Save directly to disk (the single source of truth)
         try:
-            print(f"DEBUG: _on_fallback_changed called for profile_id={profile_id}, checked={checkbox.isChecked()}")
             doc = self.profile_store.load()
             found = False
             for profile in doc.get("profiles", []):
@@ -452,14 +449,11 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
                     if "settings" not in profile:
                         profile["settings"] = {}
                     profile["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
-                    print(f"DEBUG: Updated profile {profile_id}, new value={checkbox.isChecked()}")
                     found = True
                     break
 
             if found:
-                print(f"DEBUG: Saving document to disk")
                 self.profile_store.save(doc)
-                print(f"DEBUG: Document saved successfully")
                 # Update in-memory copy to match disk
                 if profile_id in self.profiles:
                     if "settings" not in self.profiles[profile_id]:
@@ -472,7 +466,6 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
                 log_error(f"Profile {profile_id} not found in profiles document")
         except Exception as e:
             log_error(f"Failed to save fallback setting: {e}")
-            print(f"DEBUG: Exception in _on_fallback_changed: {e}")
 
     def _on_duplicate_profile(self, profile_id: str) -> None:
         """Duplicate profile."""
