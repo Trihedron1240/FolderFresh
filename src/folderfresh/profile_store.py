@@ -68,6 +68,7 @@ def default_profiles_doc() -> Dict[str, Any]:
                     "skip_hidden": True,
                     "ignore_exts": "",
                     "age_filter_days": 0,
+                    "rule_fallback_to_sort": True,
                 },
                 "category_overrides": {},
                 "custom_categories": {},
@@ -174,6 +175,7 @@ class ProfileStore:
             "skip_hidden",
             "ignore_exts",
             "age_filter_days",
+            "rule_fallback_to_sort",
         ):
             if k in settings:
                 cfg[k] = settings[k]

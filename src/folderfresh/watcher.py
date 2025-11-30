@@ -350,13 +350,21 @@ class AutoTidyHandler(FileSystemEventHandler):
                         return
                     elif result.get("matched") and not result.get("success"):
                         log_activity(f"✗ WATCHER: {filename} - rule matched but failed: {result.get('error', 'unknown error')}")
-                        return
+                        # Check if user wants fallback to sorting on rule failure
+                        if not cfg.get("rule_fallback_to_sort", True):
+                            return  # Do NOT fall back to category sorting
+                        else:
+                            log_activity(f"ℹ️  WATCHER: {filename} - falling back to category sorting due to rule failure")
                     else:
                         log_activity(f"ℹ️  WATCHER: {filename} - no rules matched, falling back to category sorting")
 
                 except Exception as e:
                     log_activity(f"ERROR: Rule engine error processing '{filename}': {str(e)}")
-                    return
+                    # Check if user wants fallback to sorting on rule failure
+                    if not cfg.get("rule_fallback_to_sort", True):
+                        return  # Do NOT fall back to category sorting
+                    else:
+                        log_activity(f"ℹ️  WATCHER: {filename} - falling back to category sorting due to rule error")
             else:
                 log_activity(f"ℹ️  WATCHER: {filename} - no rules defined, using category sorting")
 

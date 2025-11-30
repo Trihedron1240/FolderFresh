@@ -205,8 +205,21 @@ def do_preview(app):
                 })
                 continue
 
+            elif result.get("matched") and not result.get("success"):
+                # Rule matched but failed
+                # Check if user wants fallback to sorting on rule failure
+                if not app.config_data.get("rule_fallback_to_sort", True):
+                    # Don't fall back - show the error instead
+                    moves.append({
+                        "src": str(p),
+                        "dst": str(p),
+                        "mode": "rule",
+                        "error": result.get("error", "Rule failed"),
+                    })
+                    continue
+
         # =====================================================================
-        # NO RULES MATCHED - FALL BACK TO CATEGORY SORTING
+        # NO RULES MATCHED (OR RULE FALLBACK ENABLED) - FALL BACK TO CATEGORY SORTING
         # =====================================================================
         use_smart = app.smart_mode.get()
 
@@ -354,7 +367,9 @@ def do_organise(app, moves):
                         "error": result.get("error", "Rule action failed"),
                         "mode": "rule"
                     })
-                    continue  # CRUCIAL: Do NOT attempt fallback sorting
+                    # Check if user wants fallback to sorting on rule failure
+                    if not app.config_data.get("rule_fallback_to_sort", True):
+                        continue  # Do NOT attempt fallback sorting
 
         except Exception as e:
             moves_done.append({
@@ -363,7 +378,9 @@ def do_organise(app, moves):
                 "error": str(e),
                 "mode": "rule"
             })
-            continue
+            # Check if user wants fallback to sorting on rule failure
+            if not app.config_data.get("rule_fallback_to_sort", True):
+                continue  # Do NOT attempt fallback sorting
 
         # =====================================================================
         # 2. CATEGORY SORTING (ONLY IF NO RULE MATCHED)

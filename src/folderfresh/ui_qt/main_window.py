@@ -224,6 +224,14 @@ class MainWindow(QMainWindow):
         self.watch_mode_check.stateChanged.connect(lambda: self.options_changed.emit())
         options_frame.add_widget(self.watch_mode_check)
 
+        self.rule_fallback_check = StyledCheckBox("Fall back to category sort on rule failure", checked=True)
+        self.rule_fallback_check.stateChanged.connect(lambda: self.options_changed.emit())
+        options_frame.add_widget(self.rule_fallback_check)
+        ToolTip.attach_to(
+            self.rule_fallback_check,
+            "If enabled, files will fall back to normal/smart sort\nif a rule matches but fails. If disabled, failed rules\nstop processing and files remain unsorted."
+        )
+
         options_frame.add_stretch()
 
         parent_layout.addWidget(options_frame)
@@ -460,6 +468,7 @@ class MainWindow(QMainWindow):
             "auto_tidy": self.watch_mode_check.isChecked(),
             "startup": self.startup_check.isChecked(),
             "tray_mode": self.tray_mode_check.isChecked(),
+            "rule_fallback_to_sort": self.rule_fallback_check.isChecked(),
         }
 
     def set_options(self, options: dict) -> None:
@@ -483,6 +492,8 @@ class MainWindow(QMainWindow):
             self.startup_check.setChecked(options["startup"])
         if "tray_mode" in options:
             self.tray_mode_check.setChecked(options["tray_mode"])
+        if "rule_fallback_to_sort" in options:
+            self.rule_fallback_check.setChecked(options["rule_fallback_to_sort"])
 
     def set_tray_mode_enabled(self, enabled: bool) -> None:
         """
