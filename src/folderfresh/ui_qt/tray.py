@@ -167,6 +167,11 @@ class TrayIcon:
             )
 
             self.icon.menu = menu
+            # Force Windows to rebuild the tray menu immediately
+            try:
+                self.icon.update_menu()
+            except Exception:
+                pass
             return True
         except Exception:
             return False

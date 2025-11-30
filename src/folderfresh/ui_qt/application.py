@@ -476,6 +476,7 @@ class FolderFreshApplication:
 
     def _on_toggle_auto_watch(self) -> None:
         """Toggle auto-watch from tray menu."""
+        log_info("[TRAY] _on_toggle_auto_watch called!")
         # Use QTimer.singleShot to ensure this runs on the main thread
         # (tray callbacks run in a background thread)
         if hasattr(self.main_window, 'watch_mode_check'):
@@ -485,6 +486,8 @@ class FolderFreshApplication:
                 self.main_window.watch_mode_check.setChecked(not current)
                 # This will trigger options_changed signal, which updates tray menu
             QTimer.singleShot(0, toggle)
+        else:
+            log_info("[TRAY] watch_mode_check not found on main_window!")
 
     def _request_exit(self) -> None:
         """Request exit from tray menu - properly quit the application."""
