@@ -161,7 +161,7 @@ class DuplicateFinderWindow(QDialog):
         for file_path in group:
             file_frame = HorizontalFrame(spacing=8)
             file_frame.setStyleSheet(
-                f"background-color: {Colors.BORDER_DARK}; border-radius: 6px; padding: 8px;"
+                f"background-color: {Colors.CARD_BG}; border-radius: 6px; padding: 8px; border: 1px solid {Colors.BORDER};"
             )
 
             # File path label
