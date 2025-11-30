@@ -306,12 +306,33 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
         self.editor_scroll.add_widget(info_section)
 
+        # Rule fallback setting section
+        fallback_section = VerticalFrame(spacing=8)
+
+        fallback_label = StyledLabel("Rule Fallback Behavior:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        fallback_section.add_widget(fallback_label)
+
+        fallback_check = StyledCheckBox(
+            "Fall back to category sort on rule failure",
+            checked=profile.get("settings", {}).get("rule_fallback_to_sort", True)
+        )
+        fallback_check.stateChanged.connect(
+            lambda: self._on_fallback_changed(profile_id, fallback_check)
+        )
+        fallback_section.add_widget(fallback_check)
+
+        from .base_widgets import MutedLabel
+        fallback_help = MutedLabel(
+            "When enabled: Failed rules fall back to category sorting.\n"
+            "When disabled: Failed rules stop processing."
+        )
+        fallback_help.setWordWrap(True)
+        fallback_section.add_widget(fallback_help)
+
+        self.editor_scroll.add_widget(fallback_section)
+
         # Action buttons
         action_section = HorizontalFrame(spacing=8)
-
-        rename_btn = StyledButton("Rename", bg_color=Colors.ACCENT)
-        rename_btn.clicked.connect(lambda: self._on_rename_profile(profile_id, name_entry))
-        action_section.add_widget(rename_btn)
 
         dup_btn = StyledButton("Duplicate", bg_color=Colors.ACCENT)
         dup_btn.clicked.connect(lambda: self._on_duplicate_profile(profile_id))
@@ -392,6 +413,15 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             self._refresh_profile_list()
             self.profile_renamed.emit(profile_id, new_name)
             show_info_dialog(self, "Renamed", f"Profile '{old_name}' renamed to '{new_name}'.")
+
+    def _on_fallback_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
+        """Handle fallback checkbox change."""
+        if profile_id in self.profiles:
+            if "settings" not in self.profiles[profile_id]:
+                self.profiles[profile_id]["settings"] = {}
+            self.profiles[profile_id]["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
+            # Emit signal to save the change
+            self.profile_changed.emit()
 
     def _on_duplicate_profile(self, profile_id: str) -> None:
         """Duplicate profile."""
