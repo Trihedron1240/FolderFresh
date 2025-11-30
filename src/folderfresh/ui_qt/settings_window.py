@@ -41,11 +41,8 @@ class SettingsWindow(QDialog):
         self.setStyleSheet(f"QDialog {{ background-color: {Colors.PANEL_BG}; }}")
         self.setModal(True)
 
-        # Load settings from active profile in profiles.json
+        # Initialize profile store for loading settings on show
         self.profile_store = ProfileStore()
-        doc = self.profile_store.load()
-        active_profile = self.profile_store.get_active_profile(doc)
-        self.settings = active_profile.get("settings", {}) if active_profile else {}
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -65,10 +62,10 @@ class SettingsWindow(QDialog):
         section_title = HeadingLabel("Rule Behavior")
         rule_layout.add_widget(section_title)
 
-        # Rule fallback checkbox
+        # Rule fallback checkbox (will be updated from disk in showEvent)
         self.rule_fallback_check = StyledCheckBox(
             "Fall back to category sort on rule failure",
-            checked=self.settings.get("rule_fallback_to_sort", True)
+            checked=True  # Default state, will be overwritten on show
         )
         self.rule_fallback_check.stateChanged.connect(self._on_settings_changed)
         rule_layout.add_widget(self.rule_fallback_check)
@@ -104,8 +101,11 @@ class SettingsWindow(QDialog):
 
     def _update_settings(self) -> None:
         """Update settings dict and emit signal."""
-        self.settings["rule_fallback_to_sort"] = self.rule_fallback_check.isChecked()
-        self.settings_changed.emit(self.settings)
+        # Always read current state from checkbox, not from cached memory
+        current_settings = {
+            "rule_fallback_to_sort": self.rule_fallback_check.isChecked()
+        }
+        self.settings_changed.emit(current_settings)
 
     def _on_close(self) -> None:
         """Handle close button."""
@@ -128,24 +128,26 @@ class SettingsWindow(QDialog):
         doc = self.profile_store.load()
         active_profile = self.profile_store.get_active_profile(doc)
         if active_profile:
-            self.settings = active_profile.get("settings", {})
+            # Read directly from disk, don't cache in self.settings
+            disk_settings = active_profile.get("settings", {})
             # Update UI to reflect fresh data without triggering signals
             self.rule_fallback_check.blockSignals(True)
             self.rule_fallback_check.setChecked(
-                self.settings.get("rule_fallback_to_sort", True)
+                disk_settings.get("rule_fallback_to_sort", True)
             )
             self.rule_fallback_check.blockSignals(False)
 
     def get_settings(self) -> dict:
-        """Get current settings."""
-        return self.settings
+        """Get current settings - always read from checkbox, not memory."""
+        return {
+            "rule_fallback_to_sort": self.rule_fallback_check.isChecked()
+        }
 
     def set_settings(self, settings: dict) -> None:
-        """Set settings."""
-        self.settings = settings
+        """Set settings from external source (e.g., ProfileManager)."""
         # Block signals to prevent triggering _on_settings_changed
         self.rule_fallback_check.blockSignals(True)
         self.rule_fallback_check.setChecked(
-            self.settings.get("rule_fallback_to_sort", True)
+            settings.get("rule_fallback_to_sort", True)
         )
         self.rule_fallback_check.blockSignals(False)
