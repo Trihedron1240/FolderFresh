@@ -64,6 +64,15 @@ DISPLAY_NAME_TO_INTERNAL = {
 # Reverse mapping for converting back to display names
 INTERNAL_NAME_TO_DISPLAY = {v: k for k, v in DISPLAY_NAME_TO_INTERNAL.items()}
 
+# Mapping from action display names (with spaces) to action class names (for PyQt UI compatibility)
+# The PyQt action editor uses display names like "Rename File" but the backend uses "Rename"
+ACTION_DISPLAY_NAME_TO_INTERNAL = {
+    "Rename File": "Rename",
+    "Move to Folder": "Move",
+    "Copy to Folder": "Copy",
+    "Delete File": "Delete",
+}
+
 ACTION_MAP = {
     "Rename": RenameAction,
     "Move": MoveAction,
@@ -167,9 +176,17 @@ def dict_to_rule(data: dict) -> Rule:
 
     actions = []
     for a in data["actions"]:
+        action_type = a["type"]
+        # Handle both display names (from PyQt UI) and internal names (from backend)
+        if action_type in ACTION_DISPLAY_NAME_TO_INTERNAL:
+            action_type = ACTION_DISPLAY_NAME_TO_INTERNAL[action_type]
+
+        if action_type not in ACTION_MAP:
+            raise ValueError(f"Unknown action type: {a['type']}")
+
         # Handle both "args" (from rule_to_dict) and "parameters" (from UI editors) keys
         action_args = a.get("args") or a.get("parameters", {})
-        actions.append(ACTION_MAP[a["type"]](**action_args))
+        actions.append(ACTION_MAP[action_type](**action_args))
 
     return Rule(
         name=data["name"],
