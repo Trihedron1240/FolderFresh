@@ -281,11 +281,15 @@ class AutoTidyHandler(FileSystemEventHandler):
         5. Fallback to category sorting
         """
         # Check if this folder is paused
+        # Reload config to get latest pause state
+        from .config import load_config
+        latest_config = load_config()
+        folder_watch_status = latest_config.get("folder_watch_status", {})
         normalized_root = str(self.root.resolve())
-        folder_watch_status = self.app.config_data.get("folder_watch_status", {})
-        is_paused = not folder_watch_status.get(normalized_root, True)
+        is_watching = folder_watch_status.get(normalized_root, True)
 
-        if is_paused:
+        if not is_watching:
+            log_activity(f"📝 WATCHER: Folder is paused, skipping: {normalized_root}")
             return
 
         cfg = self.get_folder_config()
