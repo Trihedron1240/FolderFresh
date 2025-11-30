@@ -81,7 +81,10 @@ class WatchedFoldersWindow(QDialog):
 
         # Scrollable folder list
         self.folder_scroll = ScrollableFrame()
-        main_layout.addWidget(self.folder_scroll, 1)
+        main_layout.addWidget(self.folder_scroll, 0)  # Don't stretch - use content size
+
+        # Add stretch after scroll area so buttons stay at bottom
+        main_layout.addStretch()
 
         # Button row
         button_frame = HorizontalFrame(spacing=8)
