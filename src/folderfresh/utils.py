@@ -134,7 +134,7 @@ def scan_dir(
     skip_categories: bool
 ):
     from folderfresh.logger_qt import log_info
-    log_info(f"[scan_dir] skip_categories={skip_categories}, ALL_CATEGORIES={ALL_CATEGORIES}")
+    log_info(f"[scan_dir] skip_categories={skip_categories}, include_sub={include_sub}, ALL_CATEGORIES={ALL_CATEGORIES}")
 
     files = []
     iterator = root.rglob("*") if include_sub else root.glob("*")
@@ -152,6 +152,10 @@ def scan_dir(
                 continue
 
             rel = p.relative_to(root)
+
+            # Debug: log files found
+            if skip_categories == False and len(rel.parts) >= 2:
+                log_info(f"[scan_dir] File in subfolder: {rel}, parts={rel.parts}")
 
             if skip_hidden and (
                 any(part.startswith(".") for part in rel.parts) or is_hidden_win(p)
