@@ -118,6 +118,24 @@ class SettingsWindow(QDialog):
         self.accept()
         event.accept()
 
+    def showEvent(self, event) -> None:
+        """Handle window show event - refresh from disk."""
+        super().showEvent(event)
+        self._refresh_from_disk()
+
+    def _refresh_from_disk(self) -> None:
+        """Reload settings from active profile in profiles.json."""
+        doc = self.profile_store.load()
+        active_profile = self.profile_store.get_active_profile(doc)
+        if active_profile:
+            self.settings = active_profile.get("settings", {})
+            # Update UI to reflect fresh data without triggering signals
+            self.rule_fallback_check.blockSignals(True)
+            self.rule_fallback_check.setChecked(
+                self.settings.get("rule_fallback_to_sort", True)
+            )
+            self.rule_fallback_check.blockSignals(False)
+
     def get_settings(self) -> dict:
         """Get current settings."""
         return self.settings
