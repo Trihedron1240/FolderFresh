@@ -333,8 +333,9 @@ class CategoryManagerBackend(QObject):
 
         Uses reload-patch-save pattern to avoid conflicts:
         1. Reload fresh document
-        2. Find and patch specific profile
-        3. Save document
+        2. Find the profile
+        3. Update ONLY category-related fields
+        4. Save document
 
         Returns:
             True if successful
@@ -347,9 +348,12 @@ class CategoryManagerBackend(QObject):
             profiles = doc.get("profiles", [])
             for i, p in enumerate(profiles):
                 if p["id"] == self.profile_id:
-                    # Update timestamp
-                    self.working_profile["updated_at"] = datetime.now().isoformat()
-                    doc["profiles"][i] = self.working_profile
+                    # Update ONLY the category-related fields from working_profile
+                    # Don't replace the entire profile to preserve other data
+                    p["category_overrides"] = self.working_profile.get("category_overrides", {})
+                    p["custom_categories"] = self.working_profile.get("custom_categories", {})
+                    p["category_enabled"] = self.working_profile.get("category_enabled", {})
+                    p["updated_at"] = datetime.now().isoformat()
                     break
 
             # Save document
