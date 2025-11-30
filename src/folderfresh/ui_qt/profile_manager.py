@@ -25,6 +25,7 @@ from .base_widgets import (
     DangerButton,
     StyledLineEdit,
     StyledTextEdit,
+    StyledCheckBox,
     HeadingLabel,
     MutedLabel,
     StyledLabel,
@@ -321,7 +322,6 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         )
         fallback_section.add_widget(fallback_check)
 
-        from .base_widgets import MutedLabel
         fallback_help = MutedLabel(
             "When enabled: Failed rules fall back to category sorting.\n"
             "When disabled: Failed rules stop processing."
