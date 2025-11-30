@@ -274,11 +274,20 @@ class AutoTidyHandler(FileSystemEventHandler):
         """
         Handle file event with RULE-FIRST execution order.
         Execution order:
-        1. Wait until stable (writing completed & renamed finished)
-        2. Apply ignore filters
-        3. Execute rules first
-        4. Fallback to category sorting
+        1. Check if folder is paused
+        2. Wait until stable (writing completed & renamed finished)
+        3. Apply ignore filters
+        4. Execute rules first
+        5. Fallback to category sorting
         """
+        # Check if this folder is paused
+        normalized_root = str(self.root.resolve())
+        folder_watch_status = self.app.config_data.get("folder_watch_status", {})
+        is_paused = not folder_watch_status.get(normalized_root, True)
+
+        if is_paused:
+            return
+
         cfg = self.get_folder_config()
 
         p = Path(path)
