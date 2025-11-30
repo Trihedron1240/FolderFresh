@@ -93,6 +93,10 @@ class ProfileManagerBackend(QObject):
             Profile ID or None if failed
         """
         try:
+            # Reload from disk to ensure we have the latest profile data
+            # This is necessary because other backends may have modified profiles
+            self._load_profiles()
+
             if name is None:
                 name = ask_text_dialog(None, "New Profile", "Enter profile name:")
                 if not name:
@@ -265,6 +269,10 @@ class ProfileManagerBackend(QObject):
             New profile ID or None if failed
         """
         try:
+            # Reload from disk to ensure we have the latest profile data (including rules)
+            # This is necessary because other backends (RuleManager, etc) may have modified profiles
+            self._load_profiles()
+
             profile = self.get_profile_by_id(profile_id)
             if not profile:
                 show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_id}")
