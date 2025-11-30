@@ -145,6 +145,16 @@ class ProfileManagerWindow(QDialog):
         # Render initial state
         self._refresh_profile_list()
 
+    def refresh_profiles(self, profiles: List[Dict[str, Any]]) -> None:
+        """
+        Update profiles from backend and refresh UI.
+
+        Args:
+            profiles: List of profile dictionaries from backend
+        """
+        self.profiles = {p["id"]: p for p in profiles}
+        self._refresh_profile_list()
+
     def _refresh_profile_list(self) -> None:
         """Rebuild profile list."""
         self.profiles_scroll.clear()

@@ -10,7 +10,10 @@
       "Bash(pkill:*)",
       "Bash(timeout 5 python:*)",
       "Bash(timeout 60 python -m pytest:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(python -m pytest tests/ --tb=short -q)",
+      "Bash(python -m pytest tests/ -k \"profile\" -v --tb=short)",
+      "Bash(python -c:*)"
     ],
     "deny": [],
     "ask": []
