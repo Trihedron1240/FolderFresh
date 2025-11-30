@@ -39,3 +39,14 @@ DEFAULT_CATEGORIES = [
     "Images", "PDF", "Documents", "Videos", "Audio",
     "Archives", "Code", "Other"
 ]
+
+# Smart mode categories that can be created
+SMART_CATEGORIES = [
+    "Screenshots", "Camera Photos", "Messaging Media", "Installers",
+    "Large Archives", "Backups", "Game Assets", "Code Projects",
+    "Android Packages", "Edited Videos", "Creative Assets", "Ebooks",
+    "Finance", "School Work", "Misc Media"
+]
+
+# All possible top-level categories (default + smart)
+ALL_CATEGORIES = list(set(DEFAULT_CATEGORIES + SMART_CATEGORIES))

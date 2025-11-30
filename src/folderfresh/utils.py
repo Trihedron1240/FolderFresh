@@ -8,7 +8,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import ctypes
 from ctypes import wintypes
-from .constants import LOG_FILENAME, DEFAULT_CATEGORIES
+from .constants import LOG_FILENAME, ALL_CATEGORIES
 
 # OneDrive Cloud Reparse Tag
 IO_REPARSE_TAG_CLOUD = 0x9000001A
@@ -156,7 +156,7 @@ def scan_dir(
                 continue
 
             if skip_categories:
-                if len(rel.parts) >= 2 and rel.parts[0] in DEFAULT_CATEGORIES:
+                if len(rel.parts) >= 2 and rel.parts[0] in ALL_CATEGORIES:
                     continue
 
             files.append(p)
