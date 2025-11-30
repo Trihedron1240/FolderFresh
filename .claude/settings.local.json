@@ -9,7 +9,8 @@
       "Bash(timeout 15 python:*)",
       "Bash(pkill:*)",
       "Bash(timeout 5 python:*)",
-      "Bash(timeout 60 python -m pytest:*)"
+      "Bash(timeout 60 python -m pytest:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

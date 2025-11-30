@@ -396,8 +396,17 @@ class FolderFreshApplication:
         # Collect current settings from UI
         options = self.main_window.get_options()
 
-        # Update config
-        self._config_data.update(options)
+        # Map UI option keys to config keys and update config
+        config_updates = {
+            "include_sub": options.get("include_subfolders"),
+            "skip_hidden": options.get("skip_hidden"),
+            "safe_mode": options.get("safe_mode"),
+            "smart_mode": options.get("smart_sorting"),
+            "watch_mode": options.get("auto_tidy"),
+            "startup": options.get("startup"),
+            "tray_mode": options.get("tray_mode"),
+        }
+        self._config_data.update(config_updates)
         save_config(self._config_data)
 
         # Handle tray mode toggle
