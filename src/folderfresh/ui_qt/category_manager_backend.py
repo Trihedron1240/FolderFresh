@@ -79,7 +79,7 @@ class CategoryManagerBackend(QObject):
                 if cat not in enabled:
                     enabled[cat] = True
 
-            log_info(f"Loaded categories for profile {self.profile_id}")
+            log_info(f"Loaded categories for profile {self.profile_id}, overrides={overrides}")
             self.categories_loaded.emit(overrides, custom_categories, enabled)
 
             return overrides, custom_categories, enabled
@@ -305,6 +305,7 @@ class CategoryManagerBackend(QObject):
                 return False
 
             # Clear overrides and custom categories
+            log_info(f"[restore_defaults] Before: category_overrides={self.working_profile.get('category_overrides', {})}")
             self.working_profile["category_overrides"] = {}
             self.working_profile["custom_categories"] = {}
 
@@ -315,6 +316,7 @@ class CategoryManagerBackend(QObject):
             self.working_profile["category_enabled"] = enabled
 
             if self._commit_changes():
+                log_info(f"[restore_defaults] After commit: category_overrides={self.working_profile.get('category_overrides', {})}")
                 self.defaults_restored.emit()
                 log_info("Restored default categories")
                 return True
