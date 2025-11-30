@@ -1185,6 +1185,7 @@ class FolderFreshApplication:
 
             # Connect settings changes to save
             settings_window.settings_changed.connect(self._on_settings_changed_in_window)
+            settings_window.closed.connect(self._on_settings_window_closed)
             settings_window.closed.connect(lambda: self._on_window_closed("settings"))
 
             self.active_windows["settings"] = settings_window
@@ -1192,9 +1193,15 @@ class FolderFreshApplication:
 
     def _on_settings_changed_in_window(self, settings: dict) -> None:
         """Handle settings change from settings window."""
-        if self.profile_store:
+        # Single source of truth: save to active profile on disk
+        if self.profile_store and self.active_profile_id:
             doc = self.profile_store.load()
-            active_profile = self.profile_store.get_active_profile(doc)
+            # Find the profile by the in-memory active_profile_id, not the disk one
+            active_profile = None
+            for p in doc.get("profiles", []):
+                if p["id"] == self.active_profile_id:
+                    active_profile = p
+                    break
             if active_profile:
                 # Update profile settings
                 if "settings" not in active_profile:
@@ -1203,6 +1210,26 @@ class FolderFreshApplication:
                     active_profile["settings"][key] = value
                 # Save the updated profile
                 self.profile_store.save(doc)
+
+                # Also update ProfileManager if open to reflect the change immediately
+                if "profiles" in self.active_windows:
+                    profiles_window = self.active_windows["profiles"]
+                    # Update the cached profile in ProfileManager
+                    if active_profile.get("id") in profiles_window.profiles:
+                        profiles_window.profiles[active_profile.get("id")] = active_profile
+                    # If the active profile is currently selected/displayed, re-render it
+                    if profiles_window.selected_profile_id == active_profile.get("id"):
+                        profiles_window._render_editor_pane(profiles_window.selected_profile_id)
+
+    def _on_settings_window_closed(self) -> None:
+        """Handle settings window closed - refresh ProfileManager if open."""
+        # Reload profile data from disk to reflect any changes from Settings
+        if "profiles" in self.active_windows:
+            profiles_window = self.active_windows["profiles"]
+            # Reload profiles from disk
+            if self.profile_manager_backend:
+                updated_profiles = self.profile_manager_backend.get_all_profiles()
+                profiles_window.refresh_profiles(updated_profiles)
 
     def _on_show_undo_history(self) -> None:
         """Show undo history as a dialog."""
@@ -1404,6 +1431,13 @@ class FolderFreshApplication:
         if profile_id in self.profiles:
             profile_name = self.profiles[profile_id].get("name", "Unknown")
             self.main_window.set_status(f"Active Profile: {profile_name}")
+
+            # Update Settings window if open to show new active profile's settings
+            if "settings" in self.active_windows:
+                settings_window = self.active_windows["settings"]
+                active_profile = self.profiles[profile_id]
+                new_settings = active_profile.get("settings", {})
+                settings_window.set_settings(new_settings)
 
     @Slot()
     def _on_rules_reloaded(self) -> None:
