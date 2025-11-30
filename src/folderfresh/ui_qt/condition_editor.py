@@ -32,26 +32,26 @@ from .condition_selector import ConditionSelectorPopup
 
 # UI Schema for each condition type
 UI_SCHEMA = {
-    "Name Contains": [{"label": "Text to search for:", "type": "text", "placeholder": "e.g., backup"}],
-    "Name Starts With": [{"label": "Text:", "type": "text", "placeholder": "e.g., DSC"}],
-    "Name Ends With": [{"label": "Text:", "type": "text", "placeholder": "e.g., .tmp"}],
+    "Name Contains": [{"label": "Text to search for:", "parameter_name": "substring", "type": "text", "placeholder": "e.g., backup"}],
+    "Name Starts With": [{"label": "Text:", "parameter_name": "prefix", "type": "text", "placeholder": "e.g., DSC"}],
+    "Name Ends With": [{"label": "Text:", "parameter_name": "suffix", "type": "text", "placeholder": "e.g., .tmp"}],
     "Name Equals": [
-        {"label": "Name:", "type": "text", "placeholder": "Exact filename"},
-        {"label": "Case sensitive:", "type": "checkbox"},
+        {"label": "Name:", "parameter_name": "value", "type": "text", "placeholder": "Exact filename"},
+        {"label": "Case sensitive:", "parameter_name": "case_sensitive", "type": "checkbox"},
     ],
     "Regex Match": [
-        {"label": "Pattern:", "type": "text", "placeholder": "e.g., .*\\d+.*"},
-        {"label": "Ignore case:", "type": "checkbox"},
+        {"label": "Pattern:", "parameter_name": "pattern", "type": "text", "placeholder": "e.g., .*\\d+.*"},
+        {"label": "Ignore case:", "parameter_name": "ignore_case", "type": "checkbox"},
     ],
-    "Extension Is": [{"label": "Extension:", "type": "text", "placeholder": "e.g., jpg, pdf"}],
-    "File Size > X bytes": [{"label": "Minimum size:", "type": "size", "unit": "MB"}],
-    "File Age > X days": [{"label": "Minimum age (days):", "type": "numeric", "placeholder": "e.g., 30"}],
-    "Last Modified Before": [{"label": "Date (YYYY-MM-DD):", "type": "date", "placeholder": "2024-01-01"}],
+    "Extension Is": [{"label": "Extension:", "parameter_name": "extension", "type": "text", "placeholder": "e.g., jpg, pdf"}],
+    "File Size > X bytes": [{"label": "Minimum size:", "parameter_name": "min_bytes", "type": "size", "unit": "MB"}],
+    "File Age > X days": [{"label": "Minimum age (days):", "parameter_name": "days", "type": "numeric", "placeholder": "e.g., 30"}],
+    "Last Modified Before": [{"label": "Date (YYYY-MM-DD):", "parameter_name": "timestamp", "type": "date", "placeholder": "2024-01-01"}],
     "Is Hidden": [],
     "Is Read-Only": [],
     "Is Directory": [],
-    "Parent Folder Contains": [{"label": "Text:", "type": "text", "placeholder": "e.g., Documents"}],
-    "File is in folder containing": [{"label": "Text:", "type": "text", "placeholder": "e.g., Archive"}],
+    "Parent Folder Contains": [{"label": "Text:", "parameter_name": "substring", "type": "text", "placeholder": "e.g., Documents"}],
+    "File is in folder containing": [{"label": "Text:", "parameter_name": "folder_pattern", "type": "text", "placeholder": "e.g., Archive"}],
     "Content Contains": [{"label": "Text to search for:", "type": "text", "placeholder": "Search in file content"}],
     "Date Pattern": [
         {"label": "Type:", "type": "dropdown", "options": ["Created", "Modified"]},
@@ -257,7 +257,7 @@ class ConditionEditor(QDialog):
 
     def _create_text_field(self, label: str, spec: Dict[str, Any]) -> None:
         """Create text input field."""
-        field_name = label
+        field_name = spec.get("parameter_name", label)
         field_layout = VerticalFrame(spacing=4)
 
         field_label = StyledLabel(label, font_size=Fonts.SIZE_SMALL)
@@ -272,7 +272,7 @@ class ConditionEditor(QDialog):
 
     def _create_numeric_field(self, label: str, spec: Dict[str, Any]) -> None:
         """Create numeric input field."""
-        field_name = label
+        field_name = spec.get("parameter_name", label)
         field_layout = VerticalFrame(spacing=4)
 
         field_label = StyledLabel(label, font_size=Fonts.SIZE_SMALL)
@@ -288,7 +288,7 @@ class ConditionEditor(QDialog):
 
     def _create_size_field(self, label: str, spec: Dict[str, Any]) -> None:
         """Create size input with unit dropdown."""
-        field_name = label
+        field_name = spec.get("parameter_name", label)
         field_layout = VerticalFrame(spacing=4)
 
         field_label = StyledLabel(label, font_size=Fonts.SIZE_SMALL)
@@ -312,7 +312,7 @@ class ConditionEditor(QDialog):
 
     def _create_date_field(self, label: str, spec: Dict[str, Any]) -> None:
         """Create date input field."""
-        field_name = label
+        field_name = spec.get("parameter_name", label)
         field_layout = VerticalFrame(spacing=4)
 
         field_label = StyledLabel(label, font_size=Fonts.SIZE_SMALL)
@@ -327,7 +327,7 @@ class ConditionEditor(QDialog):
 
     def _create_dropdown_field(self, label: str, spec: Dict[str, Any]) -> None:
         """Create dropdown field."""
-        field_name = label
+        field_name = spec.get("parameter_name", label)
         field_layout = VerticalFrame(spacing=4)
 
         field_label = StyledLabel(label, font_size=Fonts.SIZE_SMALL)
@@ -343,7 +343,7 @@ class ConditionEditor(QDialog):
 
     def _create_checkbox_field(self, label: str, spec: Dict[str, Any]) -> None:
         """Create checkbox field."""
-        field_name = label
+        field_name = spec.get("parameter_name", label)
         checkbox = StyledCheckBox(label, checked=False)
         checkbox.stateChanged.connect(self._update_preview)
         self.param_widgets[field_name] = checkbox
