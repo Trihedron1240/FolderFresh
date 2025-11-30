@@ -339,12 +339,30 @@ class RuleEditor(QDialog):
 
     def _on_save(self) -> None:
         """Save rule and emit signal."""
+        # Normalize conditions: convert "parameters" to "args" for backend compatibility
+        normalized_conditions = []
+        for cond in self.conditions:
+            normalized_cond = {
+                "type": cond.get("type", ""),
+                "args": cond.get("parameters", cond.get("args", {}))
+            }
+            normalized_conditions.append(normalized_cond)
+
+        # Normalize actions: convert "parameters" to "args" for backend compatibility
+        normalized_actions = []
+        for action in self.actions:
+            normalized_action = {
+                "type": action.get("type", ""),
+                "args": action.get("parameters", action.get("args", {}))
+            }
+            normalized_actions.append(normalized_action)
+
         rule_data = {
             "name": self.rule_name,
             "match_mode": self.match_mode,
             "stop_on_match": self.stop_on_match,
-            "conditions": self.conditions,
-            "actions": self.actions,
+            "conditions": normalized_conditions,
+            "actions": normalized_actions,
         }
 
         self.rule_saved.emit(rule_data)

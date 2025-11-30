@@ -113,12 +113,15 @@ def dict_to_rule(data: dict) -> Rule:
         if condition_type not in CONDITION_MAP:
             raise ValueError(f"Unknown condition type: {c['type']}")
 
-        conditions.append(CONDITION_MAP[condition_type](**c["args"]))
+        # Handle both "args" (from rule_to_dict) and "parameters" (from UI editors) keys
+        condition_args = c.get("args") or c.get("parameters", {})
+        conditions.append(CONDITION_MAP[condition_type](**condition_args))
 
-    actions = [
-        ACTION_MAP[a["type"]](**a["args"])
-        for a in data["actions"]
-    ]
+    actions = []
+    for a in data["actions"]:
+        # Handle both "args" (from rule_to_dict) and "parameters" (from UI editors) keys
+        action_args = a.get("args") or a.get("parameters", {})
+        actions.append(ACTION_MAP[a["type"]](**action_args))
 
     return Rule(
         name=data["name"],
