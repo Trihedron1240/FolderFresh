@@ -34,9 +34,9 @@ from .condition_selector import ConditionSelectorPopup
 UI_SCHEMA = {
     "Name Contains": [{"label": "Text to search for:", "parameter_name": "substring", "type": "text", "placeholder": "e.g., backup"}],
     "Name Starts With": [{"label": "Text:", "parameter_name": "prefix", "type": "text", "placeholder": "e.g., DSC"}],
-    "Name Ends With": [{"label": "Text:", "parameter_name": "suffix", "type": "text", "placeholder": "e.g., .tmp"}],
+    "Name Ends With": [{"label": "Text:", "parameter_name": "suffix", "type": "text", "placeholder": "e.g., final"}],
     "Name Equals": [
-        {"label": "Name:", "parameter_name": "value", "type": "text", "placeholder": "Exact filename"},
+        {"label": "Name:", "parameter_name": "value", "type": "text", "placeholder": "e.g., report"},
         {"label": "Case sensitive:", "parameter_name": "case_sensitive", "type": "checkbox"},
     ],
     "Regex Match": [
@@ -75,7 +75,7 @@ DESCRIPTIONS = {
     "Name Contains": "Matches files whose name contains the specified text (case-insensitive).",
     "Name Starts With": "Matches files whose name starts with the specified text.",
     "Name Ends With": "Matches files whose name ends with the specified text.",
-    "Name Equals": "Matches files whose name exactly matches the specified text.",
+    "Name Equals": "Matches files whose name (without extension) exactly matches the specified text.",
     "Regex Match": "Matches files using regular expression patterns.",
     "Extension Is": "Matches files with the specified file extension.",
     "File Size > X bytes": "Matches files larger than the specified size in MB.",

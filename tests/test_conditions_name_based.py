@@ -85,10 +85,10 @@ class TestNameEndsWithCondition:
     """Test NameEndsWithCondition."""
 
     def test_name_ends_with_true(self):
-        """Test NameEndsWithCondition matching true case."""
+        """Test NameEndsWithCondition matching true case (name without extension)."""
         fileinfo = {
-            "name": "data.backup",
-            "path": "/path/data.backup",
+            "name": "report_backup.txt",
+            "path": "/path/report_backup.txt",
         }
 
         cond = NameEndsWithCondition("backup")
@@ -111,8 +111,8 @@ class TestNameEndsWithCondition:
     def test_name_ends_with_case_insensitive(self):
         """Test NameEndsWithCondition is case-insensitive."""
         fileinfo = {
-            "name": "data.BACKUP",
-            "path": "/path/data.BACKUP",
+            "name": "report_BACKUP.txt",
+            "path": "/path/report_BACKUP.txt",
         }
 
         cond = NameEndsWithCondition("backup")
@@ -151,13 +151,13 @@ class TestNameEqualsCondition:
     """Test NameEqualsCondition."""
 
     def test_name_equals_case_insensitive_true(self):
-        """Test NameEqualsCondition case-insensitive match."""
+        """Test NameEqualsCondition case-insensitive match (name without extension)."""
         fileinfo = {
             "name": "README.md",
             "path": "/path/README.md",
         }
 
-        cond = NameEqualsCondition("readme.md", case_sensitive=False)
+        cond = NameEqualsCondition("readme", case_sensitive=False)
         result = cond.evaluate(fileinfo)
 
         assert result is True
@@ -175,13 +175,13 @@ class TestNameEqualsCondition:
         assert result is False
 
     def test_name_equals_case_sensitive_true(self):
-        """Test NameEqualsCondition case-sensitive match."""
+        """Test NameEqualsCondition case-sensitive match (name without extension)."""
         fileinfo = {
             "name": "README.md",
             "path": "/path/README.md",
         }
 
-        cond = NameEqualsCondition("README.md", case_sensitive=True)
+        cond = NameEqualsCondition("README", case_sensitive=True)
         result = cond.evaluate(fileinfo)
 
         assert result is True
@@ -199,13 +199,13 @@ class TestNameEqualsCondition:
         assert result is False
 
     def test_name_equals_default_case_insensitive(self):
-        """Test NameEqualsCondition defaults to case-insensitive."""
+        """Test NameEqualsCondition defaults to case-insensitive (name without extension)."""
         fileinfo = {
             "name": "TestFile.txt",
             "path": "/path/TestFile.txt",
         }
 
-        cond = NameEqualsCondition("testfile.txt")
+        cond = NameEqualsCondition("testfile")
         result = cond.evaluate(fileinfo)
 
         # Should be True (defaults to case_sensitive=False)
@@ -345,11 +345,11 @@ class TestRuleIntegration:
         assert rule.matches(fileinfo) is True
 
     def test_rule_match_with_name_ends_with(self):
-        """Test Rule.matches() with NameEndsWithCondition."""
+        """Test Rule.matches() with NameEndsWithCondition (name without extension)."""
         fileinfo = {
-            "path": "/path/project.backup",
-            "name": "project.backup",
-            "ext": ".backup",
+            "path": "/path/database_backup.sql",
+            "name": "database_backup.sql",
+            "ext": ".sql",
             "size": 5000000,
         }
 
@@ -363,7 +363,7 @@ class TestRuleIntegration:
         assert rule.matches(fileinfo) is True
 
     def test_rule_match_with_name_equals(self):
-        """Test Rule.matches() with NameEqualsCondition."""
+        """Test Rule.matches() with NameEqualsCondition (name without extension)."""
         fileinfo = {
             "path": "/path/README.md",
             "name": "README.md",
@@ -373,7 +373,7 @@ class TestRuleIntegration:
 
         rule = Rule(
             name="Main Readme",
-            conditions=[NameEqualsCondition("README.md", case_sensitive=True)],
+            conditions=[NameEqualsCondition("README", case_sensitive=True)],
             actions=[],
             match_mode="all"
         )
@@ -381,11 +381,11 @@ class TestRuleIntegration:
         assert rule.matches(fileinfo) is True
 
     def test_rule_match_combined_name_conditions(self):
-        """Test Rule with multiple name conditions."""
+        """Test Rule with multiple name conditions (names without extension)."""
         fileinfo = {
-            "path": "/path/draft_data.backup",
-            "name": "draft_data.backup",
-            "ext": ".backup",
+            "path": "/path/draft_data_backup.sql",
+            "name": "draft_data_backup.sql",
+            "ext": ".sql",
             "size": 500,
         }
 
@@ -445,7 +445,7 @@ class TestPreviewMode:
         assert result is True
 
     def test_name_equals_preview(self):
-        """Test NameEqualsCondition works in preview context."""
+        """Test NameEqualsCondition works in preview context (name without extension)."""
         fileinfo = {
             "name": "config.json",
             "path": "/path/config.json",
@@ -453,7 +453,7 @@ class TestPreviewMode:
 
         config = {"dry_run": True}
 
-        cond = NameEqualsCondition("config.json", case_sensitive=True)
+        cond = NameEqualsCondition("config", case_sensitive=True)
         result = cond.evaluate(fileinfo)
 
         assert result is True
@@ -505,13 +505,13 @@ class TestEdgeCases:
         assert result is True
 
     def test_name_equals_whitespace(self):
-        """Test NameEqualsCondition with whitespace in filenames."""
+        """Test NameEqualsCondition with whitespace in filenames (name without extension)."""
         fileinfo = {
             "name": "My Documents.txt",
             "path": "/path/My Documents.txt",
         }
 
-        cond = NameEqualsCondition("my documents.txt")
+        cond = NameEqualsCondition("my documents")
         result = cond.evaluate(fileinfo)
 
         # Case-insensitive by default
@@ -530,13 +530,13 @@ class TestEdgeCases:
         assert result is True
 
     def test_name_ends_with_entire_name(self):
-        """Test NameEndsWithCondition matching entire filename."""
+        """Test NameEndsWithCondition matching entire name (without extension)."""
         fileinfo = {
             "name": "archive.zip",
             "path": "/path/archive.zip",
         }
 
-        cond = NameEndsWithCondition("archive.zip")
+        cond = NameEndsWithCondition("archive")
         result = cond.evaluate(fileinfo)
 
         assert result is True

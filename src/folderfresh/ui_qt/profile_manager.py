@@ -353,8 +353,8 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         name = ask_text_dialog(
             self,
             title="New Profile",
-            prompt="Enter profile name:",
-            placeholder="My Profile",
+            label="Enter profile name:",
+            default_text="My Profile",
         )
 
         if not name:
@@ -376,7 +376,7 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
         self.profiles[new_id] = new_profile
         self._refresh_profile_list()
-        self.profile_created.emit(new_id)
+        self.profile_created.emit(name)
 
     def _on_rename_profile(self, profile_id: str, name_entry: StyledLineEdit) -> None:
         """Rename profile."""
@@ -437,6 +437,7 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         self.active_profile_id = profile_id
         self._refresh_profile_list()
         self._render_editor_pane(profile_id)
+        # Emit signal - connected to profile_manager_backend.set_active_profile() which handles saving
         self.active_profile_changed.emit(profile_id)
         show_info_dialog(self, "Active Profile", "Profile set as active.")
 

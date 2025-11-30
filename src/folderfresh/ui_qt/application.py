@@ -1364,6 +1364,11 @@ class FolderFreshApplication:
             profile = self.profile_manager_backend.get_profile_by_id(profile_id)
             if profile:
                 self.profiles[profile_id] = profile
+                # Refresh ProfileManager window if open
+                if "profiles" in self.active_windows:
+                    self.active_windows["profiles"].refresh_profiles(
+                        list(self.profiles.values())
+                    )
                 show_info_dialog(
                     self.main_window,
                     "Profile Created",

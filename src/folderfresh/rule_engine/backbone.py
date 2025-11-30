@@ -441,7 +441,7 @@ class NameEqualsCondition(Condition):
 
     def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
         """
-        Evaluate if filename exactly equals the value.
+        Evaluate if filename (without extension) exactly equals the value.
 
         Args:
             fileinfo: File information dict
@@ -451,14 +451,16 @@ class NameEqualsCondition(Condition):
         """
         try:
             filename = fileinfo.get("name", "")
+            # Remove extension from filename for comparison
+            name_without_ext = os.path.splitext(filename)[0]
 
             if self.case_sensitive:
-                result = filename == self.value
+                result = name_without_ext == self.value
             else:
-                result = filename.lower() == self.value.lower()
+                result = name_without_ext.lower() == self.value.lower()
 
             case_str = "case-sensitive" if self.case_sensitive else "case-insensitive"
-            print(f"  [CONDITION] NameEquals '{self.value}' with '{filename}' ({case_str}) -> {result}")
+            print(f"  [CONDITION] NameEquals '{self.value}' with '{name_without_ext}' ({case_str}) -> {result}")
             return result
         except Exception as e:
             print(f"  [CONDITION] NameEquals '{self.value}' -> ERROR: {e}")
@@ -472,17 +474,18 @@ class RegexMatchCondition(Condition):
     REGEX_TIMEOUT = 0.1
 
     def __init__(self, pattern: str, ignore_case: bool = False):
-        self.pattern = pattern
+        # Strip leading/trailing whitespace from pattern (handles JSON/config newlines)
+        self.pattern = pattern.strip() if isinstance(pattern, str) else pattern
         self.ignore_case = ignore_case
         self._compiled = None  # Private attribute, not serialized
 
         # Try to compile the regex pattern
         try:
             flags = re.IGNORECASE if ignore_case else 0
-            self._compiled = re.compile(pattern, flags)
+            self._compiled = re.compile(self.pattern, flags)
         except re.error as e:
             # Invalid regex pattern - log but don't crash
-            print(f"  [CONDITION] RegexMatch: Invalid pattern '{pattern}': {e}")
+            print(f"  [CONDITION] RegexMatch: Invalid pattern '{self.pattern}': {e}")
             self._compiled = None
 
     def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
