@@ -17,6 +17,7 @@ from folderfresh.ui_qt.dialogs import (
     browse_folder_dialog
 )
 from folderfresh.logger_qt import log_info, log_error, log_warning
+from folderfresh.actions import do_preview, do_organise
 
 
 class WatchedFoldersBackend(QObject):
@@ -191,8 +192,15 @@ class WatchedFoldersBackend(QObject):
             save_config(self.config_data)
 
             log_info(f"Folder added to watch list: {folder_path}")
+
+            # Organize existing files in the folder
+            try:
+                self._organize_existing_files(folder_path)
+            except Exception as e:
+                log_error(f"Failed to organize existing files: {e}")
+
             self.folder_added.emit(folder_path)
-            show_info_dialog(None, "Watching Folder", f"Now watching: {folder_path}")
+            show_info_dialog(None, "Watching Folder", f"Now watching: {folder_path}\n\nOrganizing existing files...")
 
             return True
 
@@ -296,6 +304,78 @@ class WatchedFoldersBackend(QObject):
             log_error(f"Failed to set folder profile: {e}")
             show_error_dialog(None, "Set Folder Profile Failed", f"Failed to set folder profile:\n{e}")
             return False
+
+    def _organize_existing_files(self, folder_path: str) -> None:
+        """
+        Organize existing files in the folder when it's first added to watch list.
+
+        Args:
+            folder_path: Path to the folder to organize
+        """
+        try:
+            folder_path = Path(folder_path)
+            if not folder_path.is_dir():
+                log_warning(f"Folder not found: {folder_path}")
+                return
+
+            # Get the profile assigned to this folder (or use default)
+            profile_name = self.get_folder_profile(str(folder_path))
+            profiles_doc = self.profile_store.load()
+
+            # Find profile by name
+            target_profile = None
+            for profile in profiles_doc.get("profiles", []):
+                if profile.get("name") == profile_name or profile.get("id") == profile_name:
+                    target_profile = profile
+                    break
+
+            if not target_profile:
+                log_warning(f"Profile not found for folder: {folder_path}")
+                return
+
+            # Load config with profile data
+            config_data = load_config()
+
+            # Merge profile category data into config
+            config_data["custom_categories"] = target_profile.get("custom_categories", {})
+            config_data["category_enabled"] = target_profile.get("category_enabled", {})
+            category_overrides = target_profile.get("category_overrides", {})
+            custom_category_names = {}
+            for cat_name, override_data in category_overrides.items():
+                if isinstance(override_data, dict) and "name" in override_data:
+                    custom_category_names[cat_name] = override_data["name"]
+            config_data["custom_category_names"] = custom_category_names
+
+            # Create app-like object for do_preview and do_organise
+            class TempApp:
+                def __init__(self, folder, cfg, profile):
+                    self.selected_folder = folder
+                    self.config_data = cfg
+                    self.profile = profile
+                    # Use profile settings if available
+                    self.include_sub = type('obj', (object,), {'get': lambda self: True})()
+                    self.skip_hidden = type('obj', (object,), {'get': lambda self: True})()
+                    self.smart_mode = type('obj', (object,), {'get': lambda self: profile.get("settings", {}).get("smart_mode", False)})()
+                    self.safe_mode = type('obj', (object,), {'get': lambda self: profile.get("settings", {}).get("safe_mode", True)})()
+
+            app = TempApp(folder_path, config_data, target_profile)
+
+            # Generate preview of what will be organized
+            moves = do_preview(app)
+
+            if not moves:
+                log_info(f"No files to organize in: {folder_path}")
+                return
+
+            # Organize the files
+            results = do_organise(app, moves)
+
+            # Log results
+            success_count = sum(1 for r in results if not r.get("error"))
+            log_info(f"Organized {success_count}/{len(results)} files in {folder_path}")
+
+        except Exception as e:
+            log_error(f"Failed to organize existing files in {folder_path}: {e}")
 
     def open_folder(self, folder_path: str) -> bool:
         """
