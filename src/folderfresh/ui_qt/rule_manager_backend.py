@@ -191,11 +191,33 @@ class RuleManagerBackend(QObject):
             ):
                 return False
 
+            # Verify active_profile is in profiles_doc
+            if not self.active_profile or "rules" not in self.active_profile:
+                show_error_dialog("Active profile is invalid")
+                return False
+
+            # Count before deletion
+            rules_before = len(self.active_profile["rules"])
+            log_info(f"[delete_rule] Rules before deletion: {rules_before}")
+
+            # Remove rule from profile
             self.active_profile["rules"] = [
                 r for r in self.active_profile["rules"]
                 if r["id"] != rule_id
             ]
+
+            rules_after = len(self.active_profile["rules"])
+            log_info(f"[delete_rule] Rules after deletion: {rules_after}")
+
+            if rules_before == rules_after:
+                log_error(f"[delete_rule] ERROR: Rule was not removed!")
+                show_error_dialog("Failed to delete rule: Rule was not found in profile")
+                return False
+
+            # Save to disk
+            log_info(f"[delete_rule] Saving profile to disk...")
             self.profile_store.save(self.profiles_doc)
+            log_info(f"[delete_rule] Profile saved successfully")
 
             log_info(f"Rule deleted: {rule_dict['name']}")
             self.rule_deleted.emit(rule_id)
@@ -205,6 +227,8 @@ class RuleManagerBackend(QObject):
 
         except Exception as e:
             log_error(f"Failed to delete rule: {e}")
+            import traceback
+            log_error(f"Traceback: {traceback.format_exc()}")
             show_error_dialog(f"Failed to delete rule:\n{e}")
             return False
 
