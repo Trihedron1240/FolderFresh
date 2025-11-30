@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Dict, Any
 from .backbone import (
     Rule,
     NameContainsCondition,
@@ -101,6 +102,49 @@ def rule_to_dict(rule: Rule):
     }
 
 
+def _normalize_condition_args(condition_class_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Normalize condition arguments to use correct parameter names.
+    Handles cases where old rules used label text as parameter keys.
+    """
+    # Map class names to expected parameters
+    expected_params = {
+        "NameContains": ["substring"],
+        "NameStartsWith": ["prefix"],
+        "NameEndsWith": ["suffix"],
+        "NameEquals": ["value", "case_sensitive"],
+        "RegexMatch": ["pattern", "ignore_case"],
+        "ExtensionIs": ["extension"],
+        "FileSizeGreaterThan": ["min_bytes"],
+        "FileAgeGreaterThan": ["days"],
+        "LastModifiedBefore": ["timestamp"],
+        "IsHidden": [],
+        "IsReadOnly": [],
+        "IsDirectory": [],
+        "ParentFolderContains": ["substring"],
+        "FileInFolder": ["folder_pattern"],
+    }
+
+    expected = expected_params.get(condition_class_name, list(args.keys()))
+
+    # If args already has correct keys, return as-is
+    if all(key in expected or key == "" for key in args.keys()):
+        return args
+
+    # If args keys don't match expected, need to normalize
+    # Try to map values by position/type
+    normalized = {}
+    args_list = list(args.values())
+
+    for i, param_name in enumerate(expected):
+        if i < len(args_list):
+            normalized[param_name] = args_list[i]
+        elif param_name in args:
+            normalized[param_name] = args[param_name]
+
+    return normalized if normalized else args
+
+
 def dict_to_rule(data: dict) -> Rule:
     """Convert a saved dict into a Rule object."""
     conditions = []
@@ -115,7 +159,11 @@ def dict_to_rule(data: dict) -> Rule:
 
         # Handle both "args" (from rule_to_dict) and "parameters" (from UI editors) keys
         condition_args = c.get("args") or c.get("parameters", {})
-        conditions.append(CONDITION_MAP[condition_type](**condition_args))
+
+        # Normalize parameter names in case old data used label text as keys
+        normalized_args = _normalize_condition_args(condition_type, condition_args)
+
+        conditions.append(CONDITION_MAP[condition_type](**normalized_args))
 
     actions = []
     for a in data["actions"]:
