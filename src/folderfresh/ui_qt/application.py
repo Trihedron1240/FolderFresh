@@ -677,8 +677,9 @@ class FolderFreshApplication:
             return
 
         # Get options from main window
-        include_subfolders = self.main_window.get_option("include_subfolders")
-        skip_hidden = self.main_window.get_option("skip_hidden")
+        options = self.main_window.get_options()
+        include_subfolders = options.get("include_subfolders", True)
+        skip_hidden = options.get("skip_hidden", True)
 
         # Get ignore extensions from config
         ignore_exts = self._config_data.get("ignore_exts", "")
