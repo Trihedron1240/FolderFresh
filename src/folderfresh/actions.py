@@ -118,6 +118,10 @@ def do_preview(app):
     current_mode = "smart" if app.smart_mode.get() else "simple"
     skip_categories = (last_mode == current_mode)
 
+    # Debug logging
+    from folderfresh.logger_qt import log_info
+    log_info(f"[do_preview] last_mode={last_mode}, current_mode={current_mode}, skip_categories={skip_categories}")
+
     files_all = scan_dir(
         folder,
         include_sub,
