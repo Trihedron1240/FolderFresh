@@ -210,8 +210,8 @@ class RuleManager(QDialog):
         name = ask_text_dialog(
             self,
             title="New Rule",
-            prompt="Enter rule name:",
-            placeholder="My Rule",
+            label="Enter rule name:",
+            default_text="My Rule",
         )
 
         if not name:
