@@ -281,13 +281,20 @@ class ProfileManagerBackend(QObject):
                 "id": f"profile_{uuid.uuid4().hex[:8]}",
                 "name": new_name,
                 "settings": profile["settings"].copy(),
-                "rules": [r.copy() for r in profile.get("rules", [])]
+                "rules": [r.copy() for r in profile.get("rules", [])],
+                "custom_categories": profile.get("custom_categories", {}).copy(),
+                "category_overrides": profile.get("category_overrides", {}).copy(),
+                "category_enabled": profile.get("category_enabled", {}).copy(),
+                "created_at": profile.get("created_at"),
+                "updated_at": profile.get("updated_at")
             }
 
             self.profiles_doc["profiles"].append(new_profile)
             self.profile_store.save(self.profiles_doc)
 
             log_info(f"Profile duplicated: {profile['name']} → {new_name}")
+            # Reload to ensure data is consistent
+            self._load_profiles()
             self.profile_created.emit(new_profile["id"])
 
             return new_profile["id"]
