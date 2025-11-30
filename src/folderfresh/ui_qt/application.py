@@ -181,29 +181,29 @@ class FolderFreshApplication:
 
     def _get_config_with_profile_data(self) -> Dict[str, Any]:
         """
-        Get config data merged with active profile's category data.
+        Get config data merged with active profile's category data and settings.
 
         This ensures that preview/organize operations use the correct
-        custom_categories, category_overrides, and category_enabled
-        from the active profile, not stale data from the old config file.
+        custom_categories, category_overrides, category_enabled,
+        and settings (like rule_fallback_to_sort) from the active profile.
 
         Transforms profile-style category_overrides (with metadata) into
         the old-style custom_category_names (just name strings) for compatibility
         with the legacy naming.py resolve_category() function.
 
         Returns:
-            Config dictionary with profile-specific category data merged in
+            Config dictionary with profile-specific category data and settings merged in
         """
         # Start with current config
         merged_config = self._config_data.copy() if self._config_data else {}
 
-        # Load profile data and merge category information
+        # Load profile data and merge category information and settings
         try:
             if self.profile_store:
                 profiles_doc = self.profile_store.load()
                 active_id = profiles_doc.get("active_profile_id")
 
-                # Find active profile and extract category data
+                # Find active profile and extract category data and settings
                 for profile in profiles_doc.get("profiles", []):
                     if profile.get("id") == active_id:
                         # Merge category data from profile
@@ -223,6 +223,12 @@ class FolderFreshApplication:
                                 custom_category_names[cat_name] = override_data
 
                         merged_config["custom_category_names"] = custom_category_names
+
+                        # Merge settings from profile
+                        profile_settings = profile.get("settings", {})
+                        for key, value in profile_settings.items():
+                            merged_config[key] = value
+
                         break
         except Exception as e:
             # If profile loading fails, just use the config as-is
