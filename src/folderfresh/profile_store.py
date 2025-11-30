@@ -213,26 +213,52 @@ class ProfileStore:
         entries = profile.get("rules", [])
         return [dict_to_rule(entry) for entry in entries]
 
-    def set_rules(self, profile: Dict[str, Any], rules: list[Rule]):
+    def get_rules_for_profile_id(self, profile_id: str) -> list[Dict[str, Any]]:
+        """
+        Get raw rules (as dicts) for a specific profile by ID.
+        Returns an empty list if profile not found or has no rules.
+        """
+        doc = self.load()
+        for p in doc["profiles"]:
+            if p["id"] == profile_id:
+                return p.get("rules", [])
+        return []
+
+    def set_rules(self, rules: list[Rule], profile_id: str = None):
         """
         Convert a list of Rule objects into JSON-serializable dicts
-        and store them inside the profile. Then save the entire
+        and store them inside a profile. Then save the entire
         profiles.json file to persist changes.
+
+        Args:
+            rules: List of Rule objects to store (or raw dicts if coming from UI)
+            profile_id: Optional specific profile ID to update. If not provided, updates active profile.
         """
-        # Update the profile's rules field
-        profile["rules"] = [rule_to_dict(r) for r in rules]
-
-        # Update modified timestamp
-        profile["updated_at"] = now_iso()
-
         # Load the full document to ensure we save the correct state
         doc = self.load()
 
-        # Find the active profile in the document and update it
-        active_id = doc.get("active_profile_id")
+        # Determine which profile to update
+        if profile_id:
+            # Update specific profile by ID
+            target_id = profile_id
+        else:
+            # Fall back to active profile for backward compatibility
+            target_id = doc.get("active_profile_id")
+
+        # Convert rules to dicts - handle both Rule objects and raw dicts
+        rules_as_dicts = []
+        for rule in rules:
+            if isinstance(rule, dict):
+                # Already a dict (from UI), just use as-is
+                rules_as_dicts.append(rule)
+            else:
+                # Rule object, convert to dict
+                rules_as_dicts.append(rule_to_dict(rule))
+
+        # Find and update the target profile
         for p in doc["profiles"]:
-            if p["id"] == active_id:
-                p["rules"] = [rule_to_dict(r) for r in rules]
+            if p["id"] == target_id:
+                p["rules"] = rules_as_dicts
                 p["updated_at"] = now_iso()
                 break
 

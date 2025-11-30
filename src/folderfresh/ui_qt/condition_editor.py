@@ -161,6 +161,18 @@ class ConditionEditor(QDialog):
         self.param_frame.setLayout(self.param_layout.layout)
         main_layout.addWidget(self.param_frame)
 
+        # Preview section
+        preview_frame = CardFrame()
+        preview_layout = VerticalFrame(spacing=8)
+        preview_label = StyledLabel("Preview:", font_size=Fonts.SIZE_SMALL, bold=True)
+        preview_layout.add_widget(preview_label)
+        self.preview_text = StyledLabel("Select a condition to see preview", font_size=Fonts.SIZE_NORMAL)
+        self.preview_text.setWordWrap(True)
+        self.preview_text.setStyleSheet(f"color: {Colors.ACCENT};")
+        preview_layout.add_widget(self.preview_text)
+        preview_frame.setLayout(preview_layout.layout)
+        main_layout.addWidget(preview_frame)
+
         # Description area
         desc_frame = VerticalFrame(spacing=8)
         desc_label = StyledLabel("About this condition:", font_size=Fonts.SIZE_SMALL, bold=True)
@@ -252,6 +264,7 @@ class ConditionEditor(QDialog):
         field_layout.add_widget(field_label)
 
         text_input = StyledLineEdit(placeholder=spec.get("placeholder", ""))
+        text_input.textChanged.connect(self._update_preview)
         field_layout.add_widget(text_input)
 
         self.param_widgets[field_name] = text_input
@@ -267,6 +280,7 @@ class ConditionEditor(QDialog):
 
         numeric_input = StyledLineEdit(placeholder=spec.get("placeholder", "0"))
         numeric_input.setValidator(None)  # TODO: Add QIntValidator for numeric validation
+        numeric_input.textChanged.connect(self._update_preview)
         field_layout.add_widget(numeric_input)
 
         self.param_widgets[field_name] = numeric_input
@@ -283,10 +297,12 @@ class ConditionEditor(QDialog):
         input_row = HorizontalFrame(spacing=8)
 
         size_input = StyledLineEdit(placeholder="0")
+        size_input.textChanged.connect(self._update_preview)
         input_row.add_widget(size_input, 1)
 
         unit_combo = StyledComboBox(["Bytes", "KB", "MB", "GB"])
         unit_combo.setMaximumWidth(100)
+        unit_combo.currentIndexChanged.connect(self._update_preview)
         input_row.add_widget(unit_combo)
 
         field_layout.add_widget(input_row)
@@ -303,6 +319,7 @@ class ConditionEditor(QDialog):
         field_layout.add_widget(field_label)
 
         date_input = StyledLineEdit(placeholder=spec.get("placeholder", "YYYY-MM-DD"))
+        date_input.textChanged.connect(self._update_preview)
         field_layout.add_widget(date_input)
 
         self.param_widgets[field_name] = date_input
@@ -318,6 +335,7 @@ class ConditionEditor(QDialog):
 
         options = spec.get("options", [])
         dropdown = StyledComboBox(options)
+        dropdown.currentIndexChanged.connect(self._update_preview)
         field_layout.add_widget(dropdown)
 
         self.param_widgets[field_name] = dropdown
@@ -327,6 +345,7 @@ class ConditionEditor(QDialog):
         """Create checkbox field."""
         field_name = label
         checkbox = StyledCheckBox(label, checked=False)
+        checkbox.stateChanged.connect(self._update_preview)
         self.param_widgets[field_name] = checkbox
         self.param_layout.layout.insertWidget(len(self.param_widgets) - 1, checkbox)
 
@@ -334,6 +353,36 @@ class ConditionEditor(QDialog):
         """Update description based on selected condition."""
         desc = DESCRIPTIONS.get(condition_type, "")
         self.desc_text.setText(desc)
+
+    def _update_preview(self) -> None:
+        """Update the preview display based on current parameters."""
+        if not self.selected_condition_type:
+            self.preview_text.setText("Select a condition to see preview")
+            return
+
+        parameters = self._collect_parameters()
+        preview = self._format_condition_preview(parameters)
+        self.preview_text.setText(preview)
+
+    def _format_condition_preview(self, parameters: Dict[str, Any]) -> str:
+        """Format condition for preview display with parameters."""
+        cond_type = self.selected_condition_type or "Unknown"
+
+        # Get the main parameter value(s)
+        parts = []
+        for label, value in parameters.items():
+            if value and value != "":  # Skip empty values
+                if isinstance(value, bool):
+                    if value:
+                        parts.append(label.rstrip(":"))
+                else:
+                    parts.append(f"{label.rstrip(':')}={value}")
+
+        # Format the display text
+        if parts:
+            return f"{cond_type}: {', '.join(parts)}"
+        else:
+            return cond_type
 
     def _collect_parameters(self) -> Dict[str, Any]:
         """

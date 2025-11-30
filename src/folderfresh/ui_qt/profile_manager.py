@@ -51,6 +51,7 @@ class ProfileManagerWindow(QDialog):
     active_profile_changed = Signal(str)  # Emits active profile ID
     profile_changed = Signal()  # Emits when any profile changes
     customize_categories_requested = Signal(str)  # Emits profile ID
+    manage_rules_requested = Signal(str)  # Emits profile ID
     closed = Signal()
 
     def __init__(self, parent=None, profiles: List[Dict[str, Any]] = None, active_profile_id: str = None):
@@ -75,6 +76,7 @@ class ProfileManagerWindow(QDialog):
         self.profile_list_items: Dict[str, CardFrame] = {}
         self.profile_store = ProfileStore()
         self.open_category_windows: Dict[str, CategoryManagerWindow] = {}
+        self.open_rules_windows: Dict[str, Any] = {}  # Stores RuleManager windows
 
         self._init_ui()
 
@@ -329,6 +331,10 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         customize_btn.clicked.connect(lambda: self._on_customize_categories(profile_id))
         action_section.add_widget(customize_btn)
 
+        manage_rules_btn = StyledButton("Manage Rules", bg_color=Colors.ACCENT)
+        manage_rules_btn.clicked.connect(lambda: self._on_manage_rules(profile_id))
+        action_section.add_widget(manage_rules_btn)
+
         action_section.add_stretch()
 
         self.editor_scroll.add_widget(action_section)
@@ -465,6 +471,39 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
         # Emit signal for any external handlers
         self.customize_categories_requested.emit(profile_id)
+
+    def _on_manage_rules(self, profile_id: str) -> None:
+        """Open rule manager for profile."""
+        # Check if window already open for this profile
+        if profile_id in self.open_rules_windows:
+            # Bring existing window to front
+            window = self.open_rules_windows[profile_id]
+            window.raise_()
+            window.activateWindow()
+            return
+
+        # Import here to avoid circular imports
+        from .rule_manager import RuleManager
+
+        # Create and show rule manager window
+        rules_window = RuleManager(
+            parent=self,
+            profile_id=profile_id,
+            profile_name=self.profiles.get(profile_id, {}).get("name", "Unknown")
+        )
+
+        # Store reference to keep window alive
+        self.open_rules_windows[profile_id] = rules_window
+
+        # Connect close signal to clean up reference
+        if hasattr(rules_window, 'closed'):
+            rules_window.closed.connect(lambda: self.open_rules_windows.pop(profile_id, None))
+
+        # Show the window (non-modal so user can keep profile manager open)
+        rules_window.show()
+
+        # Emit signal for any external handlers
+        self.manage_rules_requested.emit(profile_id)
 
     def _on_save_profile(
         self,

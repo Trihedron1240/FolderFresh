@@ -36,7 +36,7 @@ from .watched_folders_backend import WatchedFoldersBackend
 from .activity_log_backend import ActivityLogBackend
 from .category_manager_backend import CategoryManagerBackend
 from .duplicate_finder_backend import DuplicateFinderBackend
-from folderfresh.logger_qt import log_error
+from folderfresh.logger_qt import log_error, log_info
 from folderfresh.config import save_config
 
 
@@ -459,12 +459,24 @@ class FolderFreshApplication:
                 except Exception:
                     pass
 
+        # Update tray menu if auto-tidy state changed (while tray is active)
+        if "watch_mode" in options and self._tray_mode_active:
+            try:
+                update_tray_menu(
+                    on_open=lambda icon, item=None: self.main_window.show(),
+                    on_toggle_watch=lambda icon, item=None: self._on_toggle_auto_watch(),
+                    on_exit=lambda icon, item=None: self._request_exit(),
+                    auto_tidy_enabled=options.get("watch_mode", False),
+                )
+            except Exception:
+                pass
+
     def _on_toggle_auto_watch(self) -> None:
         """Toggle auto-watch from tray menu."""
         if hasattr(self.main_window, 'watch_mode_check'):
             current = self.main_window.watch_mode_check.isChecked()
             self.main_window.watch_mode_check.setChecked(not current)
-            # This will trigger options_changed signal
+            # This will trigger options_changed signal, which updates tray menu
 
     def _request_exit(self) -> None:
         """Request exit from tray menu - properly quit the application."""
@@ -653,18 +665,8 @@ class FolderFreshApplication:
     def _on_undo_requested(self) -> None:
         """Undo last operation."""
         if self.main_window_backend:
-            if self.main_window_backend.perform_undo():
-                show_info_dialog(
-                    self.main_window,
-                    "Undo",
-                    "Undo operation completed successfully.",
-                )
-            else:
-                show_warning_dialog(
-                    self.main_window,
-                    "Undo",
-                    "No operations to undo.",
-                )
+            # Backend handles all dialog display, just call perform_undo
+            self.main_window_backend.perform_undo()
 
     @Slot()
     def _on_duplicates_requested(self) -> None:
@@ -690,13 +692,10 @@ class FolderFreshApplication:
         if not hasattr(self, "_duplicate_finder_backend"):
             self._duplicate_finder_backend = DuplicateFinderBackend()
 
-        # Find duplicates
+        # Find duplicates (blocking call, but we skip the modal dialog)
         try:
-            show_info_dialog(
-                self.main_window,
-                "Scanning",
-                f"Searching for duplicate files in:\n{self.selected_folder}",
-            )
+            # Log the start
+            log_info(f"Finding duplicates in: {self.selected_folder}")
 
             duplicate_groups = self._duplicate_finder_backend.find_duplicates(
                 folder=self.selected_folder,
@@ -705,7 +704,16 @@ class FolderFreshApplication:
                 ignore_extensions=ignore_extensions,
             )
 
-            # Open duplicate finder window
+            # Check if any duplicates found
+            if not duplicate_groups:
+                show_info_dialog(
+                    self.main_window,
+                    "No Duplicates Found",
+                    f"No duplicate files found in:\n{self.selected_folder}",
+                )
+                return
+
+            # Open duplicate finder window with results
             self._open_duplicate_finder_window(duplicate_groups)
 
         except Exception as e:
@@ -1002,6 +1010,12 @@ class FolderFreshApplication:
     def _on_active_profile_changed(self, profile_id: str) -> None:
         """Handle active profile change."""
         self.active_profile_id = profile_id
+
+        # Close the rules window if open so it reloads with new profile's rules
+        if "rules" in self.active_windows:
+            self.active_windows["rules"].close()
+            del self.active_windows["rules"]
+
         show_info_dialog(
             self.main_window,
             "Active Profile Changed",
@@ -1048,20 +1062,18 @@ class FolderFreshApplication:
     def _on_rules_requested(self) -> None:
         """Open rules manager window."""
         if "rules" not in self.active_windows or not self.active_windows["rules"].isVisible():
-            # Load rules from backend if not already loaded
-            if self.rule_manager_backend and not self.rules:
-                rules = self.rule_manager_backend.get_all_rules()
-                self.rules = rules
-
-            # Get profile name
+            # Get profile name and ID
             profile_name = "Default"
+            profile_id = self.active_profile_id
+
             if self.active_profile_id and self.active_profile_id in self.profiles:
                 profile_name = self.profiles[self.active_profile_id].get("name", "Default")
 
+            # Create rules window with profile_id for proper loading/saving
             rules_window = RuleManager(
                 parent=self.main_window,
+                profile_id=profile_id,
                 profile_name=profile_name,
-                initial_rules=self.rules,
             )
 
             # Connect window closed signal

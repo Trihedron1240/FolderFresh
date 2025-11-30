@@ -123,10 +123,23 @@ class ActionEditor(QDialog):
         param_layout.add_widget(self.param_label)
 
         self.param_entry = StyledLineEdit(placeholder="Enter parameter value")
+        self.param_entry.textChanged.connect(self._update_preview)
         param_layout.add_widget(self.param_entry)
 
         self.param_frame.setLayout(param_layout.layout)
         main_layout.addWidget(self.param_frame)
+
+        # Preview section
+        preview_frame = CardFrame()
+        preview_layout = VerticalFrame(spacing=8)
+        preview_label = StyledLabel("Preview:", font_size=Fonts.SIZE_SMALL, bold=True)
+        preview_layout.add_widget(preview_label)
+        self.preview_text = StyledLabel("", font_size=Fonts.SIZE_NORMAL)
+        self.preview_text.setWordWrap(True)
+        self.preview_text.setStyleSheet(f"color: {Colors.ACCENT};")
+        preview_layout.add_widget(self.preview_text)
+        preview_frame.setLayout(preview_layout.layout)
+        main_layout.addWidget(preview_frame)
 
         # Description area
         desc_frame = VerticalFrame(spacing=8)
@@ -178,6 +191,34 @@ class ActionEditor(QDialog):
 
         # Update description
         self.desc_text.setText(ACTION_TYPES.get(action_type, ""))
+
+        # Update preview
+        self._update_preview()
+
+    def _update_preview(self) -> None:
+        """Update the preview display based on current action and parameter."""
+        if not self.selected_action_type:
+            self.preview_text.setText("Select an action to see preview")
+            return
+
+        parameter = self.param_entry.text().strip() if self.param_entry.isVisible() else ""
+        preview = self._format_action_preview(parameter)
+        self.preview_text.setText(preview)
+
+    def _format_action_preview(self, parameter: str) -> str:
+        """Format action for preview display with parameter."""
+        action_type = self.selected_action_type or "Unknown"
+
+        # Truncate long commands for display
+        display_param = parameter
+        if len(display_param) > 50:
+            display_param = display_param[:50] + "..."
+
+        # Format the display text
+        if parameter:
+            return f"{action_type}: {display_param}"
+        else:
+            return action_type
 
     def _on_create_action(self) -> None:
         """Create action and emit signal."""

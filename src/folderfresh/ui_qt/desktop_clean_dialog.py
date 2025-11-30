@@ -262,23 +262,32 @@ class DesktopCleanDialog(QDialog):
             files = category_info.get('files', [])
             has_more = category_info.get('has_more', False)
 
-            # Category header
+            # Filter out important files from preview display
+            non_protected_files = [f for f in files if f not in self.important_files]
+            non_protected_count = sum(1 for f in (category_info.get('all_files', files)) if f not in self.important_files)
+
+            # Only show category if there are non-protected files
+            if non_protected_count == 0:
+                continue
+
+            # Category header - show actual count of files that will be organized
             category_label = StyledLabel(
-                f"📁 {category_name} ({count} files)",
+                f"📁 {category_name} ({non_protected_count} files will be organized)",
                 font_size=Fonts.SIZE_SMALL,
                 bold=True,
             )
             preview_layout.addWidget(category_label)
 
-            # File list (first 5)
-            for filename in files:
+            # File list (first 5 non-protected files)
+            for filename in non_protected_files:
                 file_label = MutedLabel(f"    • {filename}")
                 file_label.setWordWrap(True)
                 preview_layout.addWidget(file_label)
 
             # "More" indicator
-            if has_more:
-                more_label = MutedLabel(f"    ... and {count - len(files)} more files")
+            remaining_count = non_protected_count - len(non_protected_files)
+            if remaining_count > 0:
+                more_label = MutedLabel(f"    ... and {remaining_count} more files")
                 preview_layout.addWidget(more_label)
 
             preview_layout.addSpacing(4)

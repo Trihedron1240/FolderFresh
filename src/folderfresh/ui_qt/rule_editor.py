@@ -371,7 +371,23 @@ class RuleEditor(QDialog):
         """Format condition for display with parameters."""
         cond_type = condition.get("type", "Unknown")
 
-        # Get the parameter value
+        # Handle new structure with "parameters" dict
+        if "parameters" in condition and isinstance(condition["parameters"], dict):
+            parameters = condition["parameters"]
+            parts = []
+            for label, value in parameters.items():
+                if value and value != "":  # Skip empty values
+                    if isinstance(value, bool):
+                        if value:
+                            parts.append(label.rstrip(":"))
+                    else:
+                        parts.append(f"{value}")
+            if parts:
+                return f"{cond_type}: {', '.join(parts)}"
+            else:
+                return cond_type
+
+        # Fallback for old structure with flat parameters
         param = ""
         if "value" in condition:
             param = str(condition["value"])
@@ -400,7 +416,19 @@ class RuleEditor(QDialog):
         """Format action for display with parameters."""
         action_type = action.get("type", "Unknown")
 
-        # Get the parameter value
+        # Handle new structure with "parameters" as a string
+        if "parameters" in action and isinstance(action["parameters"], str):
+            param = action["parameters"]
+            if param:
+                # Truncate long commands for display
+                display_param = param
+                if len(display_param) > 50:
+                    display_param = display_param[:50] + "..."
+                return f"{action_type}: {display_param}"
+            else:
+                return action_type
+
+        # Fallback for old structure with flat parameters
         param = ""
         if "destination" in action:
             param = str(action["destination"])
