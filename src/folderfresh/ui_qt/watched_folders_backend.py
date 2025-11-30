@@ -188,6 +188,28 @@ class WatchedFoldersBackend(QObject):
                 except Exception as e:
                     log_warning(f"Failed to start watching folder: {e}")
 
+            # Assign active profile to the folder
+            try:
+                doc = self.profile_store.load()
+                active_id = doc.get("active_profile_id")
+
+                # Find active profile name
+                active_profile_name = None
+                for profile in doc.get("profiles", []):
+                    if profile.get("id") == active_id:
+                        active_profile_name = profile.get("name", "Default")
+                        break
+
+                if active_profile_name:
+                    folder_profile_map = self.config_data.get("folder_profile_map", {})
+                    folder_profile_map[folder_path] = active_profile_name
+                    self.config_data["folder_profile_map"] = folder_profile_map
+                    log_info(f"Assigned profile '{active_profile_name}' to watched folder: {folder_path}")
+                else:
+                    log_warning(f"Could not find active profile for folder: {folder_path}")
+            except Exception as e:
+                log_error(f"Failed to assign active profile to folder: {e}")
+
             # Save config
             save_config(self.config_data)
 
