@@ -383,23 +383,9 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         if not source:
             return
 
-        import time
-        import json
-
-        new_id = f"profile_{int(time.time())}"
-
-        # Deep copy
-        duplicate = json.loads(json.dumps(source))
-        duplicate.update({
-            "id": new_id,
-            "name": f"{source['name']} (copy)",
-            "is_builtin": False,
-        })
-
-        self.profiles[new_id] = duplicate
-        self._refresh_profile_list()
-        self.profile_duplicated.emit(new_id)
-        show_info_dialog(self, "Duplicated", f"Profile duplicated as '{duplicate['name']}'.")
+        # Emit signal with SOURCE profile ID - let backend handle the actual duplication
+        self.profile_duplicated.emit(profile_id)
+        # Backend will handle duplication and emit profile_created signal
 
     def _on_delete_profile(self, profile_id: str) -> None:
         """Delete profile."""
