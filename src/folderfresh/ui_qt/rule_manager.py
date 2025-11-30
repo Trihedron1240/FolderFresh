@@ -27,6 +27,7 @@ from .base_widgets import (
     ScrollableFrame,
 )
 from .dialogs import ask_text_dialog, show_confirmation_dialog, show_warning_dialog
+from .rule_editor import RuleEditor
 
 
 class RuleManager(QDialog):
@@ -37,7 +38,6 @@ class RuleManager(QDialog):
     rule_added = Signal(str)  # Emits new rule name
     rule_deleted = Signal(str)  # Emits deleted rule name
     rule_reordered = Signal()  # Emits when rule order changes
-    activity_log_requested = Signal()
     closed = Signal()
 
     def __init__(self, parent=None, profile_name: str = "Default", initial_rules: List[Dict[str, Any]] = None):
@@ -107,11 +107,6 @@ class RuleManager(QDialog):
         crud_frame.add_widget(down_btn)
 
         button_frame.add_widget(crud_frame)
-
-        # Activity log button (separated)
-        log_btn = StyledButton("📋 Activity Log", bg_color=Colors.SUCCESS)
-        log_btn.clicked.connect(lambda: self.activity_log_requested.emit())
-        button_frame.add_widget(log_btn)
 
         # Close button
         close_btn = StyledButton("Close", bg_color=Colors.BORDER_LIGHT)
@@ -196,14 +191,18 @@ class RuleManager(QDialog):
         return frame
 
     def _on_rule_clicked(self, index: int) -> None:
-        """Handle rule selection."""
-        self.selected_rule_index = index
-        self._refresh_rules_display()
+        """Handle rule selection - opens rule editor."""
+        if not (0 <= index < len(self.rules)):
+            return
 
-        # Emit signal with rule name
-        if 0 <= index < len(self.rules):
-            rule_name = self.rules[index].get("name", "")
-            self.rule_selected.emit(rule_name)
+        self.selected_rule_index = index
+        rule = self.rules[index]
+
+        # Create and show rule editor
+        editor = RuleEditor(self, on_rule_saved=self._on_rule_saved)
+        editor.load_rule(rule)
+        editor.rule_saved.connect(lambda rule_data: self._on_rule_saved(rule_data))
+        editor.exec()
 
     def _on_add_rule(self) -> None:
         """Add a new rule."""
@@ -298,6 +297,14 @@ class RuleManager(QDialog):
 
         self.rule_reordered.emit()
         self._refresh_rules_display()
+
+    def _on_rule_saved(self, rule_data: Dict[str, Any]) -> None:
+        """Handle rule saved from editor."""
+        if self.selected_rule_index is not None and 0 <= self.selected_rule_index < len(self.rules):
+            # Update the rule in the list
+            self.rules[self.selected_rule_index] = rule_data
+            # Refresh display to show updated rule
+            self._refresh_rules_display()
 
     def _on_close(self) -> None:
         """Handle close button."""
