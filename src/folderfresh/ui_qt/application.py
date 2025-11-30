@@ -398,6 +398,7 @@ class FolderFreshApplication:
 
         # Collect current settings from UI
         options = self.main_window.get_options()
+        log_info(f"[OPTIONS_CHANGED] Tray active={self._tray_mode_active}, options={options}")
 
         # Map UI option keys to config keys and update config
         config_updates = {
@@ -424,7 +425,7 @@ class FolderFreshApplication:
                         on_open=lambda icon, item=None: self.main_window.show(),
                         on_toggle_watch=lambda icon, item=None: self._on_toggle_auto_watch(),
                         on_exit=lambda icon, item=None: self._request_exit(),
-                        auto_tidy_enabled=options.get("watch_mode", False),
+                        auto_tidy_enabled=options.get("auto_tidy", False),
                     )
 
                     if not success:
@@ -461,6 +462,7 @@ class FolderFreshApplication:
 
         # Update tray menu if auto-tidy state changed (while tray is active)
         if "auto_tidy" in options and self._tray_mode_active:
+            log_info(f"[TRAY_UPDATE] Updating menu: auto_tidy={options.get('auto_tidy')}")
             try:
                 update_tray_menu(
                     on_open=lambda icon, item=None: self.main_window.show(),
@@ -468,8 +470,9 @@ class FolderFreshApplication:
                     on_exit=lambda icon, item=None: self._request_exit(),
                     auto_tidy_enabled=options.get("auto_tidy", False),
                 )
-            except Exception:
-                pass
+                log_info(f"[TRAY_UPDATE] Menu updated successfully")
+            except Exception as e:
+                log_error(f"[TRAY_UPDATE] Failed to update menu: {e}")
 
     def _on_toggle_auto_watch(self) -> None:
         """Toggle auto-watch from tray menu."""
@@ -478,6 +481,7 @@ class FolderFreshApplication:
         if hasattr(self.main_window, 'watch_mode_check'):
             def toggle():
                 current = self.main_window.watch_mode_check.isChecked()
+                log_info(f"[TRAY] Toggling auto-tidy from {current} to {not current}")
                 self.main_window.watch_mode_check.setChecked(not current)
                 # This will trigger options_changed signal, which updates tray menu
             QTimer.singleShot(0, toggle)
