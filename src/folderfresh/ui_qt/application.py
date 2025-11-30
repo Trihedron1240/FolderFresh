@@ -1064,18 +1064,7 @@ class FolderFreshApplication:
                 initial_rules=self.rules,
             )
 
-            # Connect UI signals to backend
-            if self.rule_manager_backend:
-                rules_window.rule_created.connect(
-                    lambda name, match_mode: self.rule_manager_backend.create_rule(name, match_mode)
-                )
-                rules_window.rule_deleted.connect(
-                    lambda rid: self.rule_manager_backend.delete_rule(rid)
-                )
-                rules_window.rule_reordered.connect(
-                    lambda rid, direction: self.rule_manager_backend.move_rule(rid, direction)
-                )
-
+            # Connect window closed signal
             rules_window.closed.connect(lambda: self._on_window_closed("rules"))
 
             self.active_windows["rules"] = rules_window
