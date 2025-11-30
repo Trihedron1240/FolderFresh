@@ -133,6 +133,9 @@ def scan_dir(
     ignore_set: set[str],
     skip_categories: bool
 ):
+    from folderfresh.logger_qt import log_info
+    log_info(f"[scan_dir] skip_categories={skip_categories}, ALL_CATEGORIES={ALL_CATEGORIES}")
+
     files = []
     iterator = root.rglob("*") if include_sub else root.glob("*")
 

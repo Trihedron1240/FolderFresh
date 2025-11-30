@@ -130,6 +130,9 @@ def do_preview(app):
         skip_categories
     )
 
+    # Debug logging
+    log_info(f"[do_preview] scan_dir returned {len(files_all)} files")
+
     # -------------------------
     # APPLY FILTERS
     # -------------------------
@@ -156,6 +159,9 @@ def do_preview(app):
         if name in dont_move_list:
             continue
         files.append(f)
+
+    # Debug logging
+    log_info(f"[do_preview] after filters: {len(files)} files")
 
     # -------------------------
     # LOAD RULES AND APPLY RULES-FIRST LOGIC
