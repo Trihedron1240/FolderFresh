@@ -10,7 +10,6 @@ from .config import save_config
 from .utils import (
     scan_dir,
     file_is_old_enough,
-    remove_empty_category_folders,
     group_duplicates,
     is_onedrive_placeholder,
 )
@@ -533,8 +532,6 @@ def do_organise(app, moves):
     app.config_data["last_sort_mode"] = "smart" if app.smart_mode.get() else "simple"
     save_config(app.config_data)
 
-    # Clean empty folders
-    remove_empty_category_folders(folder)
 
     # Show popup if any delete actions were blocked by safe mode
     if safe_mode_delete_blocks:
@@ -582,8 +579,6 @@ def do_undo(app):
         log_path.unlink(missing_ok=True)
     except:
         pass
-
-    remove_empty_category_folders(folder)
 
     # Reset last sort mode
     app.config_data["last_sort_mode"] = None
