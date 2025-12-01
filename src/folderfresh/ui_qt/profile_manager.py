@@ -283,6 +283,17 @@ class ProfileManagerWindow(QDialog):
         # A full implementation would use QMenu for popup
         self._on_profile_clicked(profile_id)
 
+    def _reload_editor_if_selected(self, profile_id: str) -> None:
+        """
+        Reload editor pane if the given profile is currently selected.
+        Called when data for a profile changes (e.g., categories).
+
+        Args:
+            profile_id: Profile ID that changed
+        """
+        if profile_id == self.selected_profile_id:
+            self._render_editor_pane(profile_id)
+
     def _render_editor_pane(self, profile_id: str) -> None:
         """
         Render profile editor in right pane.
@@ -567,6 +578,11 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         # Store reference to keep window alive
         self.open_category_windows[profile_id] = category_window
 
+        # When categories change, reload the editor pane if this profile is selected
+        category_window.categories_changed.connect(
+            lambda: self._reload_editor_if_selected(profile_id)
+        )
+
         # Connect close signal to clean up reference
         category_window.closed.connect(lambda: self.open_category_windows.pop(profile_id, None))
 
@@ -616,7 +632,7 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         name_entry: StyledLineEdit,
         desc_entry: StyledTextEdit,
     ) -> None:
-        """Save profile changes."""
+        """Save profile changes directly to disk."""
         new_name = name_entry.text().strip()
         new_desc = desc_entry.toPlainText().strip()
 
@@ -624,13 +640,24 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             show_warning_dialog(self, "Save", "Profile name cannot be empty.")
             return
 
-        if profile_id in self.profiles:
-            self.profiles[profile_id]["name"] = new_name
-            self.profiles[profile_id]["description"] = new_desc
+        # Load fresh from disk
+        doc = self.profile_store.load()
+        found = False
+        for p in doc.get("profiles", []):
+            if p["id"] == profile_id:
+                p["name"] = new_name
+                p["description"] = new_desc
+                p["updated_at"] = datetime.now().isoformat()
+                found = True
+                break
 
+        if found:
+            self.profile_store.save(doc)
             self._refresh_profile_list()
             self.profile_changed.emit()
             show_info_dialog(self, "Saved", "Profile changes saved.")
+        else:
+            show_error_dialog(self, "Save", f"Profile {profile_id} not found.")
 
     def _on_import_profiles(self) -> None:
         """Import profiles from a JSON file."""
@@ -670,8 +697,7 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             # Save updated document
             self.profile_store.save(doc)
 
-            # Reload data
-            self.profiles = {p["id"]: p for p in doc.get("profiles", [])}
+            # Refresh profile list from disk
             self._refresh_profile_list()
 
             show_info_dialog(

@@ -100,11 +100,24 @@ class SettingsWindow(QDialog):
         self._update_settings()
 
     def _update_settings(self) -> None:
-        """Update settings dict and emit signal."""
-        # Always read current state from checkbox, not from cached memory
+        """Update settings dict and save directly to disk."""
         current_settings = {
             "rule_fallback_to_sort": self.rule_fallback_check.isChecked()
         }
+
+        # Save directly to disk
+        try:
+            doc = self.profile_store.load()
+            active_profile = self.profile_store.get_active_profile(doc)
+            if active_profile:
+                if "settings" not in active_profile:
+                    active_profile["settings"] = {}
+                active_profile["settings"]["rule_fallback_to_sort"] = current_settings["rule_fallback_to_sort"]
+                self.profile_store.save(doc)
+        except Exception as e:
+            print(f"Error saving settings to disk: {e}")
+
+        # Emit signal for listeners
         self.settings_changed.emit(current_settings)
 
     def _on_close(self) -> None:
@@ -130,11 +143,11 @@ class SettingsWindow(QDialog):
         if active_profile:
             # Read directly from disk, don't cache in self.settings
             disk_settings = active_profile.get("settings", {})
-            state = disk_settings.get("rule_fallback_to_sort", True)
-            print(f"DEBUG: _refresh_from_disk from profile {active_profile.get('id')}: {state}")
             # Update UI to reflect fresh data without triggering signals
             self.rule_fallback_check.blockSignals(True)
-            self.rule_fallback_check.setChecked(state)
+            self.rule_fallback_check.setChecked(
+                disk_settings.get("rule_fallback_to_sort", True)
+            )
             self.rule_fallback_check.blockSignals(False)
 
     def get_settings(self) -> dict:
@@ -157,8 +170,5 @@ class SettingsWindow(QDialog):
         doc = self.profile_store.load()
         active_profile = self.profile_store.get_active_profile(doc)
         if active_profile:
-            state = active_profile.get("settings", {}).get("rule_fallback_to_sort", True)
-            print(f"DEBUG: _load_initial_state from profile {active_profile.get('id')}: {state}")
-            return state
-        print(f"DEBUG: _load_initial_state no active profile found, returning True")
+            return active_profile.get("settings", {}).get("rule_fallback_to_sort", True)
         return True
