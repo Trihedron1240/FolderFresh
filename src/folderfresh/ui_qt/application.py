@@ -995,8 +995,25 @@ class FolderFreshApplication:
     def _on_categories_requested(self) -> None:
         """Open categories manager window for the active profile."""
         if "categories" not in self.active_windows or not self.active_windows["categories"].isVisible():
+            # Reload actual active profile ID from backend (source of truth)
+            # This ensures we use the true active profile, not a selected one
+            profile_id = None
+            profile_name = "Active Profile"
+
+            if self.profile_manager_backend:
+                active_profile = self.profile_manager_backend.get_active_profile()
+                if active_profile:
+                    profile_id = active_profile["id"]
+                    profile_name = active_profile.get("name", "Active Profile")
+
+            # Fallback to cached active_profile_id if backend unavailable
+            if not profile_id:
+                profile_id = self.active_profile_id
+                if profile_id and profile_id in self.profiles:
+                    profile_name = self.profiles[profile_id].get("name", "Active Profile")
+
             # Check if we have an active profile
-            if not self.active_profile_id:
+            if not profile_id:
                 show_warning_dialog(
                     self.main_window,
                     "No Active Profile",
@@ -1004,14 +1021,9 @@ class FolderFreshApplication:
                 )
                 return
 
-            # Get active profile info
-            profile_name = "Active Profile"
-            if self.active_profile_id in self.profiles:
-                profile_name = self.profiles[self.active_profile_id].get("name", "Active Profile")
-
             # Create backend for the active profile
             try:
-                category_manager_backend = CategoryManagerBackend(self.active_profile_id)
+                category_manager_backend = CategoryManagerBackend(profile_id)
             except Exception as e:
                 show_error_dialog(
                     self.main_window,
@@ -1024,7 +1036,7 @@ class FolderFreshApplication:
             categories_window = CategoryManagerWindow(
                 parent=self.main_window,
                 backend=category_manager_backend,
-                profile_id=self.active_profile_id,
+                profile_id=profile_id,
                 profile_name=profile_name
             )
 
@@ -1107,12 +1119,24 @@ class FolderFreshApplication:
     def _on_rules_requested(self) -> None:
         """Open rules manager window."""
         if "rules" not in self.active_windows or not self.active_windows["rules"].isVisible():
-            # Get profile name and ID
-            profile_name = "Default"
-            profile_id = self.active_profile_id
-
-            if self.active_profile_id and self.active_profile_id in self.profiles:
-                profile_name = self.profiles[self.active_profile_id].get("name", "Default")
+            # Reload actual active profile ID from backend (source of truth)
+            # This ensures we use the true active profile, not a selected one
+            if self.profile_manager_backend:
+                active_profile = self.profile_manager_backend.get_active_profile()
+                if active_profile:
+                    profile_id = active_profile["id"]
+                    profile_name = active_profile.get("name", "Default")
+                else:
+                    profile_id = self.active_profile_id
+                    profile_name = "Default"
+                    if self.active_profile_id and self.active_profile_id in self.profiles:
+                        profile_name = self.profiles[self.active_profile_id].get("name", "Default")
+            else:
+                # Fallback if backend not available
+                profile_id = self.active_profile_id
+                profile_name = "Default"
+                if self.active_profile_id and self.active_profile_id in self.profiles:
+                    profile_name = self.profiles[self.active_profile_id].get("name", "Default")
 
             # Create rules window with profile_id for proper loading/saving
             rules_window = RuleManager(
