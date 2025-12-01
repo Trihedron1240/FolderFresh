@@ -58,7 +58,7 @@ UI_SCHEMA = {
         {"label": "Pattern:", "type": "text", "placeholder": "e.g., 2024-*"},
     ],
     "Color Is": [{"label": "Color:", "type": "dropdown", "options": ["Red", "Blue", "Green", "Yellow"]}],
-    "Has Tag": [{"label": "Tag name:", "type": "text", "placeholder": "e.g., important"}],
+    "Has Tag": [{"label": "Tag name:", "parameter_name": "tag", "type": "text", "placeholder": "e.g., important"}],
     "Metadata Contains": [
         {"label": "Field name:", "type": "text", "placeholder": "e.g., author"},
         {"label": "Keyword:", "type": "text", "placeholder": "e.g., John"},
