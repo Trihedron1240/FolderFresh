@@ -921,7 +921,9 @@ class FolderFreshApplication:
                 if preview_result:
                     # Execute organization
                     self.main_window_backend.execute_organize(
+                        desktop,
                         preview_result,
+                        self._config_data,
                         safe_mode=options.get("safe_mode", True),  # Always safe mode for desktop
                         smart_mode=options.get("smart_sorting", False),
                     )
