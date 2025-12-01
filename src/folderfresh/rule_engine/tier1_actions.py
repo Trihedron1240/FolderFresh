@@ -555,7 +555,21 @@ class CreateFolderAction(Action):
                 message = f"DRY RUN: Would CREATE_FOLDER: {folder_path}"
                 ok = True
             else:
-                os.makedirs(folder_path, exist_ok=True)
+                # Use ensure_directory_exists (same as MoveAction) to create the folder
+                from folderfresh.rule_engine.backbone import ensure_directory_exists
+                if not ensure_directory_exists(folder_path):
+                    message = f"ERROR: CREATE_FOLDER - failed to create: {folder_path}"
+                    print(f"  [ACTION] {message}")
+                    return {
+                        "ok": False,
+                        "log": message,
+                        "meta": {
+                            "type": "create_folder",
+                            "src": file_path,
+                            "dst": folder_path,
+                            "was_dry_run": dry_run
+                        }
+                    }
                 message = f"CREATE_FOLDER: {folder_path}"
                 ok = True
 
