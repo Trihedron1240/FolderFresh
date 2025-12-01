@@ -162,6 +162,7 @@ class UndoManager:
         - rename: old_name -> new_name becomes new_name -> old_name (if new_name exists)
         - copy: delete the copy (if it exists)
         - delete: restore from temp_backup back to original src
+        - delete_to_trash: restore from temp_backup back to original src
 
         Args:
             entry: Undo entry dict from the stack
@@ -179,6 +180,8 @@ class UndoManager:
             return self._undo_copy(entry)
         elif action_type == "delete":
             return self._undo_delete(entry)
+        elif action_type == "delete_to_trash":
+            return self._undo_delete_to_trash(entry)
         else:
             result = {
                 "success": False,
@@ -466,6 +469,76 @@ class UndoManager:
             result = {
                 "success": False,
                 "message": f"UNDO DELETE failed: {str(e)}",
+                "entry": entry
+            }
+            self._log_result(result)
+            return result
+
+    def _undo_delete_to_trash(self, entry: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Undo a delete-to-trash operation: restore file from temp_backup back to original src.
+
+        Args:
+            entry: Delete-to-trash undo entry with src and temp_backup paths
+
+        Returns:
+            Result dict with success status and message
+        """
+        try:
+            src = entry.get("src")
+            temp_backup = entry.get("temp_backup")
+
+            # Validate entry
+            if not src or not temp_backup:
+                result = {
+                    "success": False,
+                    "message": "UNDO DELETE_TO_TRASH: Missing source or backup path in entry",
+                    "entry": entry
+                }
+                self._log_result(result)
+                return result
+
+            # Normalize paths
+            src = normalize_path(src)
+            temp_backup = normalize_path(temp_backup)
+
+            # Check if backup file exists
+            if not os.path.exists(temp_backup):
+                result = {
+                    "success": False,
+                    "message": f"UNDO DELETE_TO_TRASH: Backup file not found at: {temp_backup}",
+                    "entry": entry
+                }
+                self._log_result(result)
+                return result
+
+            # Handle collision: if src path now exists, use safe name
+            restore_path = src
+            collision_handled = False
+            if os.path.exists(src):
+                restore_path = _avoid_overwrite(src)
+                collision_handled = True
+
+            # Restore file from backup
+            shutil.move(temp_backup, restore_path)
+
+            message = f"UNDO DELETE_TO_TRASH: Restored {restore_path} from backup"
+            if collision_handled:
+                message += " (collision avoided)"
+
+            result = {
+                "success": True,
+                "message": message,
+                "entry": entry,
+                "restore_path": restore_path
+            }
+            self._log_result(result)
+            return result
+
+        except Exception as e:
+            result = {
+                "success": False,
+                "message": f"UNDO DELETE_TO_TRASH failed: {str(e)}",
                 "entry": entry
             }
             self._log_result(result)

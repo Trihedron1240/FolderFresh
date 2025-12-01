@@ -15,6 +15,9 @@ All actions follow FolderFresh patterns:
 """
 
 import os
+import shutil
+import time
+import tempfile
 from typing import Dict, Any
 from .backbone import Action, normalize_path
 from .tier2_metadata import METADATA_DB, calculate_quick_hash, calculate_full_hash
@@ -355,7 +358,7 @@ class DeleteToTrashAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "delete_to_trash", "src": None, "was_dry_run": dry_run}
+                "meta": {"type": "delete_to_trash", "src": None, "temp_backup": None, "was_dry_run": dry_run}
             }
 
         if not os.path.exists(file_path):
@@ -364,7 +367,7 @@ class DeleteToTrashAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "delete_to_trash", "src": file_path, "was_dry_run": dry_run}
+                "meta": {"type": "delete_to_trash", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
             }
 
         try:
@@ -380,14 +383,27 @@ class DeleteToTrashAction(Action):
                     "meta": {
                         "type": "delete_to_trash",
                         "src": file_path,
+                        "temp_backup": None,
                         "was_dry_run": dry_run
                     }
                 }
+
+            temp_backup = None
 
             if dry_run:
                 message = f"DRY RUN: Would DELETE_TO_TRASH: {file_name}"
                 ok = True
             else:
+                # Create temporary backup for undo support
+                try:
+                    temp_dir = tempfile.gettempdir()
+                    filename = os.path.basename(file_path)
+                    temp_backup = os.path.join(temp_dir, f"folderfresh_trash_{int(time.time())}_{filename}")
+                    shutil.copy2(file_path, temp_backup)
+                except Exception:
+                    # If backup fails, continue with deletion but without undo support
+                    temp_backup = None
+
                 # Try to use send2trash for safe deletion
                 try:
                     import send2trash
@@ -408,6 +424,7 @@ class DeleteToTrashAction(Action):
                 "meta": {
                     "type": "delete_to_trash",
                     "src": file_path,
+                    "temp_backup": temp_backup,
                     "was_dry_run": dry_run
                 }
             }
@@ -418,7 +435,7 @@ class DeleteToTrashAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "delete_to_trash", "src": file_path, "was_dry_run": dry_run}
+                "meta": {"type": "delete_to_trash", "src": file_path, "temp_backup": None, "was_dry_run": dry_run}
             }
 
 
