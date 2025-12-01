@@ -67,7 +67,7 @@ UI_SCHEMA = {
         {"label": "Field name:", "type": "text", "placeholder": "e.g., status"},
         {"label": "Value:", "type": "text", "placeholder": "e.g., complete"},
     ],
-    "Is Duplicate": [{"label": "Detection method:", "type": "dropdown", "options": ["Quick Hash", "Full Hash"]}],
+    "Is Duplicate": [{"label": "Detection method:", "parameter_name": "match_type", "type": "dropdown", "options": ["Quick Hash", "Full Hash"]}],
 }
 
 # Descriptions for each condition type
@@ -442,6 +442,14 @@ class ConditionEditor(QDialog):
             except (ValueError, IndexError):
                 # If parsing fails, keep the original value
                 pass
+
+        # Convert display values to backend values for "Is Duplicate" condition
+        if self.selected_condition_type == "Is Duplicate" and "match_type" in parameters:
+            match_type_display = parameters["match_type"]  # e.g., "Quick Hash" or "Full Hash"
+            if match_type_display == "Quick Hash":
+                parameters["match_type"] = "quick"
+            elif match_type_display == "Full Hash":
+                parameters["match_type"] = "full"
 
         condition_data = {
             "type": self.selected_condition_type,

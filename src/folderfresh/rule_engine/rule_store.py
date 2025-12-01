@@ -31,6 +31,7 @@ from .tier1_actions import (
 )
 from .tier2_conditions import (
     HasTagCondition,
+    IsDuplicateCondition,
 )
 from .tier2_actions import (
     ColorLabelAction,
@@ -58,6 +59,7 @@ CONDITION_MAP = {
     "IsReadOnly": IsReadOnlyCondition,
     "IsDirectory": IsDirectoryCondition,
     "HasTag": HasTagCondition,
+    "IsDuplicate": IsDuplicateCondition,
 }
 
 # Mapping from display names (with spaces) to camelCase names (for PyQt UI compatibility)
@@ -78,6 +80,7 @@ DISPLAY_NAME_TO_INTERNAL = {
     "Is Read-Only": "IsReadOnly",
     "Is Directory": "IsDirectory",
     "Has Tag": "HasTag",
+    "Is Duplicate": "IsDuplicate",
 }
 
 # Reverse mapping for converting back to display names

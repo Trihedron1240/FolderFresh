@@ -239,8 +239,37 @@ class IsDuplicateCondition(Condition):
                 print(f"  [CONDITION] IsDuplicate - could not calculate hash")
                 return False
 
-            # Find duplicates
+            # First, try to find duplicates in the metadata database
             duplicates = METADATA_DB.find_duplicates(file_path, file_size, hash_value)
+
+            # If no duplicates found in database, scan the file system
+            if len(duplicates) == 0:
+                # Get the parent directory of the file
+                from pathlib import Path
+                parent_dir = Path(file_path).parent
+
+                # Scan for other files with the same size in the parent directory
+                try:
+                    for other_file in parent_dir.rglob("*"):
+                        if other_file.is_file() and str(other_file) != file_path:
+                            try:
+                                other_size = other_file.stat().st_size
+                                if other_size == file_size:
+                                    # Calculate hash of the other file
+                                    if self.match_type == "full":
+                                        from .tier2_metadata import calculate_full_hash
+                                        other_hash = calculate_full_hash(str(other_file))
+                                    else:
+                                        other_hash = calculate_quick_hash(str(other_file))
+
+                                    # Compare hashes
+                                    if other_hash == hash_value:
+                                        duplicates.append(str(other_file))
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+
             result = len(duplicates) > 0
 
             print(f"  [CONDITION] IsDuplicate (match_type={self.match_type}) -> {result}")

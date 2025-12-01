@@ -720,9 +720,19 @@ class RenameAction(Action):
             new_path = os.path.join(parent_dir, new_name)
             new_path = normalize_path(new_path)
 
+            # Track if collision was handled
+            collision_handled = False
+
+            # Always use avoid_overwrite() to prevent collisions
+            # This creates numbered variants like "file (2).txt" when target exists
+            new_path_safe = avoid_overwrite(new_path)
+            collision_handled = (new_path_safe != new_path)
+            new_path = new_path_safe
+
             # SKIP CHECK: If old and new paths are identical, skip (idempotent)
+            # This check is NOW after avoid_overwrite so we properly handle collisions
             if os.path.normcase(os.path.abspath(old_path)) == os.path.normcase(os.path.abspath(new_path)):
-                message = f"SKIP: RENAME - already named '{new_name}'"
+                message = f"SKIP: RENAME - already named '{os.path.basename(new_path)}'"
                 print(f"  [ACTION] {message}")
                 return {
                     "ok": True,  # Not an error, just skipped
@@ -731,22 +741,12 @@ class RenameAction(Action):
                         "type": "rename",
                         "src": old_path,
                         "old_name": old_name,
-                        "new_name": new_name,
-                        "collision_handled": False,
+                        "new_name": os.path.basename(new_path),
+                        "collision_handled": collision_handled,
                         "skipped": True,
                         "was_dry_run": dry_run
                     }
                 }
-
-            # Track if collision was handled
-            collision_handled = False
-
-            # CRITICAL FIX: Use avoid_overwrite() to get a safe destination
-            # This is now called BEFORE the actual rename, ensuring atomicity
-            if config.get("safe_mode", True):
-                new_path_safe = avoid_overwrite(new_path)
-                collision_handled = (new_path_safe != new_path)
-                new_path = new_path_safe
 
             if dry_run:
                 message = f"DRY RUN: Would RENAME: {old_path} -> {new_path}"
@@ -916,11 +916,11 @@ class MoveAction(Action):
             # Track if collision was handled
             collision_handled = False
 
-            # CRITICAL FIX: Use avoid_overwrite() to get a safe destination
-            if config.get("safe_mode", True):
-                new_path_safe = avoid_overwrite(new_path)
-                collision_handled = (new_path_safe != new_path)
-                new_path = new_path_safe
+            # Always use avoid_overwrite() to prevent collisions
+            # This creates numbered variants like "file (2).txt" when target exists
+            new_path_safe = avoid_overwrite(new_path)
+            collision_handled = (new_path_safe != new_path)
+            new_path = new_path_safe
 
             if dry_run:
                 message = f"DRY RUN: Would MOVE: {old_path} -> {new_path}"
@@ -1068,11 +1068,11 @@ class CopyAction(Action):
             # Track if collision was handled
             collision_handled = False
 
-            # CRITICAL FIX: Use avoid_overwrite() to get a safe destination
-            if config.get("safe_mode", True):
-                new_path_safe = avoid_overwrite(new_path)
-                collision_handled = (new_path_safe != new_path)
-                new_path = new_path_safe
+            # Always use avoid_overwrite() to prevent collisions
+            # This creates numbered variants like "file (2).txt" when target exists
+            new_path_safe = avoid_overwrite(new_path)
+            collision_handled = (new_path_safe != new_path)
+            new_path = new_path_safe
 
             if dry_run:
                 message = f"DRY RUN: Would COPY: {old_path} -> {new_path}"
