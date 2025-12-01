@@ -447,7 +447,8 @@ class MarkAsDuplicateAction(Action):
         Args:
             tag: Tag to apply to duplicates (default: "duplicate")
         """
-        self.tag = tag
+        # Strip surrounding quotes if present
+        self.tag = tag.strip('"') if isinstance(tag, str) else tag
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
