@@ -19,8 +19,6 @@ from .profile_manager import ProfileManagerWindow
 from .help_window import HelpWindow
 from .watched_folders_window import WatchedFoldersWindow
 from .duplicate_finder_window import DuplicateFinderWindow
-from .desktop_clean_backend import DesktopCleanBackend
-from .desktop_clean_dialog import DesktopCleanDialog
 from .styles import Colors, Fonts
 from .dialogs import (
     browse_folder_dialog,
@@ -800,15 +798,15 @@ class FolderFreshApplication:
 
     @Slot()
     def _on_desktop_clean_requested(self) -> None:
-        """Clean desktop folder with safety checks and preview."""
-        # Create backend if needed
-        if not hasattr(self, "_desktop_clean_backend"):
-            self._desktop_clean_backend = DesktopCleanBackend()
+        """Change current working directory to desktop."""
+        import os
+        from pathlib import Path
 
         try:
             # Get desktop path
-            desktop = self._desktop_clean_backend.get_desktop_path()
-            if not desktop:
+            desktop = Path.home() / "Desktop"
+
+            if not desktop.exists():
                 show_error_dialog(
                     self.main_window,
                     "Desktop Error",
@@ -816,157 +814,23 @@ class FolderFreshApplication:
                 )
                 return
 
-            # Perform safety checks
-            is_safe, warnings = self._desktop_clean_backend.check_desktop_safety(desktop)
+            # Change working directory to desktop
+            os.chdir(desktop)
 
-            # If critical safety issues, warn user
-            if warnings and not is_safe:
-                show_error_dialog(
-                    self.main_window,
-                    "Desktop Safety Check Failed",
-                    "\n".join(warnings),
-                )
-                return
-
-            # Get file statistics
-            protection_info = self._desktop_clean_backend.get_protection_info(desktop)
-            file_count = protection_info.get("file_count", 0)
-            folder_count = protection_info.get("folder_count", 0)
-
-            # Generate preview
-            preview, info_messages = self._desktop_clean_backend.generate_preview(
-                desktop,
-                self._config_data,
-            )
-
-            if file_count == 0:
-                show_info_dialog(
-                    self.main_window,
-                    "Desktop Clean",
-                    "Your Desktop is already clean! No files to organize.",
-                )
-                return
-
-            # Open preview dialog
-            self._open_desktop_clean_dialog(
-                desktop,
-                warnings,
-                preview,
-                protection_info.get("important_files", []),
-                file_count,
-                folder_count,
-            )
-
-        except Exception as e:
-            log_error(f"Error in desktop clean: {e}")
-            show_error_dialog(
-                self.main_window,
-                "Error",
-                f"Failed to prepare desktop clean: {e}",
-            )
-
-    def _open_desktop_clean_dialog(
-        self,
-        desktop: Path,
-        warnings: List[str],
-        preview: List[Dict[str, Any]],
-        important_files: List[str],
-        file_count: int,
-        folder_count: int,
-    ) -> None:
-        """
-        Open desktop clean preview dialog.
-
-        Args:
-            desktop: Desktop path
-            warnings: Warning messages
-            preview: Preview of file organization
-            important_files: List of important files to protect
-            file_count: Number of files on desktop
-            folder_count: Number of folders on desktop
-        """
-        dialog = DesktopCleanDialog(self.main_window)
-        dialog.set_data(desktop, warnings, preview, important_files, file_count, folder_count)
-        # Store dialog reference so we can access the preview when user confirms
-        self._pending_desktop_clean_dialog = dialog
-        dialog.clean_confirmed.connect(lambda: self._execute_desktop_clean(desktop))
-        dialog.closed.connect(lambda: self._on_desktop_clean_dialog_closed())
-        dialog.show()
-
-    def _execute_desktop_clean(self, desktop: Path) -> None:
-        """
-        Execute desktop cleaning.
-
-        Args:
-            desktop: Desktop path to clean
-        """
-        try:
             show_info_dialog(
                 self.main_window,
-                "Organizing Desktop",
-                "Please wait while your Desktop is being organized...",
+                "Desktop",
+                f"Working directory changed to: {desktop}",
             )
 
-            # Get options
-            options = self.main_window.get_options()
-
-            # Call the actual organization through main window backend
-            if self.main_window_backend:
-                # Use the preview from the dialog that the user already approved
-                # This ensures we execute what the user reviewed, not a regenerated preview
-                preview_result = None
-                if hasattr(self, "_pending_desktop_clean_dialog") and self._pending_desktop_clean_dialog:
-                    preview_result = self._pending_desktop_clean_dialog.preview_data
-
-                # Fallback: if dialog reference is lost, regenerate preview
-                if not preview_result:
-                    preview_result = self.main_window_backend.generate_preview(
-                        desktop,
-                        self._config_data,
-                        include_subfolders=False,  # Never include subfolders on desktop
-                        skip_hidden=options.get("skip_hidden", True),
-                    )
-
-                if preview_result:
-                    # Execute organization
-                    self.main_window_backend.execute_organize(
-                        desktop,
-                        preview_result,
-                        self._config_data,
-                        safe_mode=options.get("safe_mode", True),  # Always safe mode for desktop
-                        smart_mode=options.get("smart_sorting", False),
-                    )
-
-                    show_info_dialog(
-                        self.main_window,
-                        "Desktop Cleaned",
-                        "Your Desktop has been organized successfully!\n\nFiles were copied to preserve originals.",
-                    )
-                else:
-                    show_warning_dialog(
-                        self.main_window,
-                        "No Changes",
-                        "No files found to organize.",
-                    )
-            else:
-                show_warning_dialog(
-                    self.main_window,
-                    "Backend Not Ready",
-                    "Organization backend is not ready. Please try again.",
-                )
-
         except Exception as e:
-            log_error(f"Error executing desktop clean: {e}")
+            log_error(f"Error changing to desktop directory: {e}")
             show_error_dialog(
                 self.main_window,
                 "Error",
-                f"Failed to organize desktop: {e}",
+                f"Failed to change to desktop directory: {e}",
             )
 
-    def _on_desktop_clean_dialog_closed(self) -> None:
-        """Handle desktop clean dialog closed."""
-        # Dialog cleanup if needed
-        pass
 
     # ========== MANAGER WINDOWS ==========
 
