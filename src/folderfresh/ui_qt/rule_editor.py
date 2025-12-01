@@ -704,7 +704,6 @@ class RuleEditor(QDialog):
             "Extract": {"param_key": "target_dir"},
             "CreateFolder": {"param_key": "folder_path"},
             # Tier 2 actions
-            "ColorLabel": {"param_key": "color"},
             "AddTag": {"param_key": "tag"},
             "RemoveTag": {"param_key": "tag"},
             "DeleteToTrash": {"param_key": None},  # DeleteToTrash takes no parameters
