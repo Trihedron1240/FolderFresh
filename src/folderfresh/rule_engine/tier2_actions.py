@@ -372,16 +372,15 @@ class DeleteToTrashAction(Action):
 
             # SAFE MODE CHECK: Don't delete in safe mode
             if safe_mode:
-                message = f"SKIP: DELETE_TO_TRASH - safe mode prevents deletion"
+                message = f"SAFE MODE: DELETE_TO_TRASH blocked - cannot delete files in safe mode"
                 print(f"  [ACTION] {message}")
                 return {
-                    "ok": True,
+                    "ok": False,
                     "log": message,
                     "meta": {
                         "type": "delete_to_trash",
                         "src": file_path,
-                        "was_dry_run": True,  # Treat as dry run
-                        "skipped": True
+                        "was_dry_run": dry_run
                     }
                 }
 

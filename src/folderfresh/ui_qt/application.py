@@ -422,6 +422,21 @@ class FolderFreshApplication:
         self._config_data.update(config_updates)
         save_config(self._config_data)
 
+        # Also update active profile's settings with safe_mode, include_sub, skip_hidden, smart_mode
+        if self.profile_manager_backend and self.active_profile_id:
+            profile_updates = {
+                "settings": {
+                    "safe_mode": options.get("safe_mode"),
+                    "include_sub": options.get("include_subfolders"),
+                    "skip_hidden": options.get("skip_hidden"),
+                    "smart_mode": options.get("smart_sorting"),
+                }
+            }
+            self.profile_manager_backend.apply_profile_updates_silent(
+                self.active_profile_id,
+                profile_updates
+            )
+
         # Handle tray mode toggle
         if "tray_mode" in options:
             tray_enabled = options["tray_mode"]
@@ -1466,12 +1481,23 @@ class FolderFreshApplication:
             profile_name = self.profiles[profile_id].get("name", "Unknown")
             self.main_window.set_status(f"Active Profile: {profile_name}")
 
+            # Load profile settings and update main window options
+            active_profile = self.profiles[profile_id]
+            profile_settings = active_profile.get("settings", {})
+
+            # Map profile settings to main window options
+            options = {
+                "include_subfolders": profile_settings.get("include_sub", True),
+                "skip_hidden": profile_settings.get("skip_hidden", True),
+                "safe_mode": profile_settings.get("safe_mode", True),
+                "smart_sorting": profile_settings.get("smart_mode", False),
+            }
+            self.main_window.set_options(options)
+
             # Update Settings window if open to show new active profile's settings
             if "settings" in self.active_windows:
                 settings_window = self.active_windows["settings"]
-                active_profile = self.profiles[profile_id]
-                new_settings = active_profile.get("settings", {})
-                settings_window.set_settings(new_settings)
+                settings_window.set_settings(profile_settings)
 
     @Slot()
     def _on_rules_reloaded(self) -> None:

@@ -125,6 +125,10 @@ class RuleEditor(QDialog):
         # Buttons
         button_frame = HorizontalFrame(spacing=8)
 
+        test_btn = StyledButton("Test Rule", bg_color=Colors.ACCENT)
+        test_btn.clicked.connect(self._on_test_rule)
+        button_frame.add_widget(test_btn)
+
         save_btn = StyledButton("Save & Close", bg_color=Colors.SUCCESS)
         save_btn.clicked.connect(self._on_save)
         button_frame.add_widget(save_btn)
@@ -354,7 +358,7 @@ class RuleEditor(QDialog):
 
         # Actions that don't require parameters
         PARAM_FREE_ACTIONS = {
-            "delete", "delete to trash"
+            "delete file", "delete to trash"
         }
 
         # Check rule name
@@ -469,6 +473,68 @@ class RuleEditor(QDialog):
             self.on_rule_saved(rule_data)
 
         self.accept()
+
+    def _on_test_rule(self) -> None:
+        """Open rule simulator dialog."""
+        if not self.rule_name:
+            from .dialogs import show_warning_dialog
+            show_warning_dialog(self, "Rule Name Required", "Please enter a rule name before testing.")
+            return
+
+        from .rule_simulator import RuleSimulator
+        from folderfresh.rule_engine.rule_store import ACTION_DISPLAY_NAME_TO_INTERNAL, DISPLAY_NAME_TO_INTERNAL
+
+        # Normalize conditions: convert display names and "parameters" to "args" for backend compatibility
+        normalized_conditions = []
+        for cond in self.conditions:
+            cond_type = cond.get("type", "")
+            cond_params = cond.get("parameters", cond.get("args", {}))
+
+            # Convert condition display names to internal names using the mapping
+            internal_cond_type = DISPLAY_NAME_TO_INTERNAL.get(cond_type, cond_type)
+
+            normalized_cond = {
+                "type": internal_cond_type,
+                "args": cond_params
+            }
+            normalized_conditions.append(normalized_cond)
+
+        # Normalize actions: convert display names to internal names and convert string parameters to dicts
+        normalized_actions = []
+        for action in self.actions:
+            action_type = action.get("type", "")
+            action_params = action.get("parameters", action.get("args", {}))
+
+            # Convert action display names to internal names using the mapping
+            internal_action_type = ACTION_DISPLAY_NAME_TO_INTERNAL.get(action_type, action_type)
+
+            # Convert string parameters to proper dict format based on action type
+            if isinstance(action_params, str):
+                # ActionEditor stores parameters as strings, need to convert to dicts
+                action_args = self._convert_action_parameters(internal_action_type, action_params)
+            else:
+                # Already a dict (from backend or pre-normalized)
+                action_args = action_params
+
+            normalized_action = {
+                "type": internal_action_type,
+                "args": action_args
+            }
+            normalized_actions.append(normalized_action)
+
+        # Collect rule data with normalized format
+        rule_data = {
+            "name": self.rule_name,
+            "match_mode": "all" if self.match_mode == "all (AND)" else "any",
+            "stop_on_match": self.stop_on_match,
+            "conditions": normalized_conditions,
+            "actions": normalized_actions,
+        }
+
+        # Create and show simulator
+        simulator = RuleSimulator(self, rule_name=self.rule_name)
+        simulator.set_rule_info(rule_data)
+        simulator.exec()
 
     def _on_cancel(self) -> None:
         """Handle cancel button."""
@@ -620,7 +686,7 @@ class RuleEditor(QDialog):
         Convert string parameter from ActionEditor to dict format expected by backend.
 
         Args:
-            action_type: Internal action type name (e.g., "Rename", "Move", "Copy", "Delete")
+            action_type: Internal action type name (e.g., "Rename", "Move", "Copy", "Delete", etc.)
             param_string: String parameter value from ActionEditor
 
         Returns:
@@ -628,17 +694,30 @@ class RuleEditor(QDialog):
         """
         # Map internal action type names to their parameter names
         param_mappings = {
+            # Tier 0 actions
             "Rename": {"param_key": "new_name"},
             "Move": {"param_key": "target_dir"},
             "Copy": {"param_key": "target_dir"},
             "Delete": {"param_key": None},  # Delete takes no parameters
+            # Tier 1 actions
+            "TokenRename": {"param_key": "name_pattern"},
+            "RunCommand": {"param_key": "command"},
+            "Archive": {"param_key": "archive_path"},
+            "Extract": {"param_key": "extract_path"},
+            "CreateFolder": {"param_key": "folder_name"},
+            # Tier 2 actions
+            "ColorLabel": {"param_key": "color"},
+            "AddTag": {"param_key": "tag"},
+            "RemoveTag": {"param_key": "tag"},
+            "DeleteToTrash": {"param_key": None},  # DeleteToTrash takes no parameters
+            "MarkAsDuplicate": {"param_key": "method"},
         }
 
         mapping = param_mappings.get(action_type, {})
         param_key = mapping.get("param_key")
 
         if param_key is None:
-            # No parameters for this action (e.g., Delete)
+            # No parameters for this action (e.g., Delete, DeleteToTrash)
             return {}
         else:
             # Return dict with the correct parameter name

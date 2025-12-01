@@ -318,6 +318,7 @@ def do_organise(app, moves):
     min_days = int(app.config_data.get("age_filter_days", 0))
 
     moves_done = []
+    safe_mode_delete_blocks = []  # Track files that couldn't be deleted due to safe mode
 
     # Load rules once (faster)
     store = ProfileStore()
@@ -360,6 +361,10 @@ def do_organise(app, moves):
                     config=app.config_data,
                     preview=False  # Real execution, not dry-run
                 )
+
+                # Collect any safe mode delete blocks
+                if result.get("safe_mode_delete_blocks"):
+                    safe_mode_delete_blocks.extend(result["safe_mode_delete_blocks"])
 
                 # Check if a rule matched and succeeded
                 if result.get("matched") and result.get("success"):
@@ -490,6 +495,15 @@ def do_organise(app, moves):
 
     # Clean empty folders
     remove_empty_category_folders(folder)
+
+    # Show popup if any delete actions were blocked by safe mode
+    if safe_mode_delete_blocks:
+        files_list = "\n".join(f"  • {fname}" for fname in safe_mode_delete_blocks)
+        messagebox.showinfo(
+            "Delete Blocked (Safe Mode)",
+            f"The following files could not be deleted because safe mode is enabled:\n\n{files_list}\n\n"
+            f"To allow deletions, disable safe mode in the settings."
+        )
 
     return moves_done
 

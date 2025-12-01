@@ -685,7 +685,7 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": None, "old_name": None, "new_name": None, "collision_handled": False}
+                "meta": {"type": "rename", "src": None, "old_name": None, "new_name": None, "collision_handled": False, "was_dry_run": dry_run}
             }
 
         if not is_file_accessible(old_path):
@@ -694,7 +694,7 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False}
+                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False, "was_dry_run": dry_run}
             }
 
         if not self.new_name or not str(self.new_name).strip():
@@ -703,7 +703,7 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False}
+                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": None, "collision_handled": False, "was_dry_run": dry_run}
             }
 
         try:
@@ -733,7 +733,8 @@ class RenameAction(Action):
                         "old_name": old_name,
                         "new_name": new_name,
                         "collision_handled": False,
-                        "skipped": True
+                        "skipped": True,
+                        "was_dry_run": dry_run
                     }
                 }
 
@@ -765,7 +766,8 @@ class RenameAction(Action):
                     "src": new_path if not dry_run else old_path,  # Store where file is (or would be)
                     "old_name": old_name,
                     "new_name": new_name,  # Use the name with extension preserved
-                    "collision_handled": collision_handled
+                    "collision_handled": collision_handled,
+                    "was_dry_run": dry_run
                 }
             }
 
@@ -775,7 +777,7 @@ class RenameAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": self.new_name, "collision_handled": False}
+                "meta": {"type": "rename", "src": old_path, "old_name": old_name, "new_name": self.new_name, "collision_handled": False, "was_dry_run": dry_run}
             }
 
 
@@ -840,17 +842,33 @@ class MoveAction(Action):
 
         try:
             old_path = normalize_path(old_path)
-            target_dir = normalize_path(self.target_dir)
 
-            # Ensure target directory exists (create if needed)
-            if not ensure_directory_exists(target_dir):
-                message = f"ERROR: MOVE - failed to create target directory: {target_dir}"
-                print(f"  [ACTION] {message}")
-                return {
-                    "ok": False,
-                    "log": message,
-                    "meta": {"type": "move", "src": old_path, "dst": target_dir, "collision_handled": False}
-                }
+            # Expand tokens in target_dir if it contains any
+            target_dir = self.target_dir
+            if "<" in target_dir and ">" in target_dir:
+                try:
+                    from folderfresh.rule_engine.tier1_actions import expand_tokens
+                    target_dir = expand_tokens(target_dir, fileinfo)
+                except ImportError:
+                    pass  # If tier1_actions not available, use raw target_dir
+
+            # Only normalize if target_dir is not already an absolute path
+            # If it's relative, it stays relative; if absolute, it gets normalized
+            if not os.path.isabs(target_dir):
+                target_dir = normalize_path(target_dir)
+            else:
+                target_dir = os.path.normpath(target_dir)
+
+            # Ensure target directory exists (create if needed) - but only in real mode, not dry_run
+            if not dry_run:
+                if not ensure_directory_exists(target_dir):
+                    message = f"ERROR: MOVE - failed to create target directory: {target_dir}"
+                    print(f"  [ACTION] {message}")
+                    return {
+                        "ok": False,
+                        "log": message,
+                        "meta": {"type": "move", "src": old_path, "dst": target_dir, "collision_handled": False}
+                    }
 
             new_path = os.path.join(target_dir, filename)
             new_path = normalize_path(new_path)
@@ -870,7 +888,8 @@ class MoveAction(Action):
                         "src": old_path,
                         "dst": old_path,  # No actual move
                         "collision_handled": False,
-                        "skipped": True
+                        "skipped": True,
+                        "was_dry_run": dry_run
                     }
                 }
 
@@ -889,7 +908,8 @@ class MoveAction(Action):
                         "src": old_path,
                         "dst": old_path,  # No actual move
                         "collision_handled": False,
-                        "skipped": True
+                        "skipped": True,
+                        "was_dry_run": dry_run
                     }
                 }
 
@@ -918,7 +938,8 @@ class MoveAction(Action):
                     "type": "move",
                     "src": old_path,  # Original location for undo
                     "dst": new_path if not dry_run else old_path,  # New location (or original if preview)
-                    "collision_handled": collision_handled
+                    "collision_handled": collision_handled,
+                    "was_dry_run": dry_run
                 }
             }
 
@@ -928,7 +949,7 @@ class MoveAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False}
+                "meta": {"type": "move", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
             }
 
 
@@ -993,17 +1014,33 @@ class CopyAction(Action):
 
         try:
             old_path = normalize_path(old_path)
-            target_dir = normalize_path(self.target_dir)
 
-            # Ensure target directory exists (create if needed)
-            if not ensure_directory_exists(target_dir):
-                message = f"ERROR: COPY - failed to create target directory: {target_dir}"
-                print(f"  [ACTION] {message}")
-                return {
-                    "ok": False,
-                    "log": message,
-                    "meta": {"type": "copy", "src": old_path, "dst": target_dir, "collision_handled": False}
-                }
+            # Expand tokens in target_dir if it contains any
+            target_dir = self.target_dir
+            if "<" in target_dir and ">" in target_dir:
+                try:
+                    from folderfresh.rule_engine.tier1_actions import expand_tokens
+                    target_dir = expand_tokens(target_dir, fileinfo)
+                except ImportError:
+                    pass  # If tier1_actions not available, use raw target_dir
+
+            # Only normalize if target_dir is not already an absolute path
+            # If it's relative, it stays relative; if absolute, it gets normalized
+            if not os.path.isabs(target_dir):
+                target_dir = normalize_path(target_dir)
+            else:
+                target_dir = os.path.normpath(target_dir)
+
+            # Ensure target directory exists (create if needed) - but only in real mode, not dry_run
+            if not dry_run:
+                if not ensure_directory_exists(target_dir):
+                    message = f"ERROR: COPY - failed to create target directory: {target_dir}"
+                    print(f"  [ACTION] {message}")
+                    return {
+                        "ok": False,
+                        "log": message,
+                        "meta": {"type": "copy", "src": old_path, "dst": target_dir, "collision_handled": False, "was_dry_run": dry_run}
+                    }
 
             new_path = os.path.join(target_dir, filename)
             new_path = normalize_path(new_path)
@@ -1023,7 +1060,8 @@ class CopyAction(Action):
                         "src": old_path,
                         "dst": old_path,  # No actual copy
                         "collision_handled": False,
-                        "skipped": True
+                        "skipped": True,
+                        "was_dry_run": dry_run
                     }
                 }
 
@@ -1052,7 +1090,8 @@ class CopyAction(Action):
                     "type": "copy",
                     "src": old_path,  # Original file (not modified)
                     "dst": new_path if not dry_run else old_path,  # Copy location (or original if preview)
-                    "collision_handled": collision_handled
+                    "collision_handled": collision_handled,
+                    "was_dry_run": dry_run
                 }
             }
 
@@ -1062,7 +1101,7 @@ class CopyAction(Action):
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False}
+                "meta": {"type": "copy", "src": old_path, "dst": None, "collision_handled": False, "was_dry_run": dry_run}
             }
 
 
@@ -1088,15 +1127,6 @@ class DeleteFileAction(Action):
         safe_mode = config.get("safe_mode", True)
         dry_run = config.get("dry_run", False)
 
-        # System folders that should never be deleted from
-        PROTECTED_PATHS = [
-            "c:\\windows",
-            "c:\\program files",
-            "c:\\program files (x86)",
-            "c:\\programdata",
-            "c:\\users\\",
-        ]
-
         # Validation
         if not file_path:
             message = f"ERROR: DELETE - source file path missing"
@@ -1119,18 +1149,15 @@ class DeleteFileAction(Action):
         try:
             file_path = normalize_path(file_path)
 
-            # Safe mode: check if file is in protected system folder
+            # Safe mode: completely block delete action
             if safe_mode:
-                file_path_lower = file_path.lower()
-                for protected in PROTECTED_PATHS:
-                    if file_path_lower.startswith(protected.lower()):
-                        message = f"SAFE MODE: DELETE blocked - file in protected system folder: {file_path}"
-                        print(f"  [ACTION] {message}")
-                        return {
-                            "ok": False,
-                            "log": message,
-                            "meta": {"type": "delete", "src": file_path, "temp_backup": None}
-                        }
+                message = f"SAFE MODE: DELETE blocked - cannot delete files in safe mode"
+                print(f"  [ACTION] {message}")
+                return {
+                    "ok": False,
+                    "log": message,
+                    "meta": {"type": "delete", "src": file_path, "temp_backup": None}
+                }
 
             if dry_run:
                 message = f"DRY RUN: Would DELETE: {file_path}"
@@ -1253,6 +1280,7 @@ class RuleExecutor:
         self.log = []
         self.handled = False
         self.actions_executed = []
+        safe_mode_delete_blocks = []  # Track files that couldn't be deleted due to safe mode
         matched_rule_name = None
         final_dst = None
         success = True
@@ -1268,6 +1296,11 @@ class RuleExecutor:
 
                 # Execute all actions
                 for action in rule.actions:
+                    # Convert move actions to copy in safe mode
+                    if config.get("safe_mode", False) and isinstance(action, MoveAction):
+                        # Create a copy action with the same target directory
+                        action = CopyAction(action.target_dir)
+
                     result = action.run(fileinfo, config)
 
                     # Handle new dict return format from actions
@@ -1302,9 +1335,14 @@ class RuleExecutor:
 
                         else:
                             success = False
+                            # Track if delete was blocked by safe mode
+                            log_msg = result.get("log", "").upper()
+                            if config.get("safe_mode", False) and "DELETE" in log_msg and "SAFE MODE" in log_msg:
+                                safe_mode_delete_blocks.append(fileinfo.get("name", "unknown"))
 
-                        # Record undo entry if action succeeded
-                        if result.get("ok", False):
+                        # Record undo entry if action succeeded and not a dry run
+                        # (dry_run actions should not be recorded in undo history)
+                        if result.get("ok", False) and not config.get("dry_run", False):
                             try:
                                 from folderfresh.undo_manager import UNDO_MANAGER
                                 undo_entry = {
@@ -1343,7 +1381,8 @@ class RuleExecutor:
             "success": success,
             "log": self.log,
             "handled": self.handled,
-            "actions": self.actions_executed
+            "actions": self.actions_executed,
+            "safe_mode_delete_blocks": safe_mode_delete_blocks
         }
 
 

@@ -79,6 +79,7 @@ def process_file_with_rules(src, rules, config, preview=False):
         final_dst = exec_result.get("final_dst")
         success = exec_result.get("success", True)
         handled = exec_result.get("handled", False)
+        safe_mode_delete_blocks = exec_result.get("safe_mode_delete_blocks", [])
 
         # Update result
         result["success"] = success
@@ -91,6 +92,10 @@ def process_file_with_rules(src, rules, config, preview=False):
             else:
                 # If no final_dst was set, keep original
                 result["dst"] = src
+
+        # Pass through safe mode delete blocks
+        if safe_mode_delete_blocks:
+            result["safe_mode_delete_blocks"] = safe_mode_delete_blocks
 
         return result
 

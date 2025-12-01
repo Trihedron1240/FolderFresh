@@ -22,6 +22,20 @@ from .backbone import (
     CopyAction,
     DeleteFileAction,
 )
+from .tier1_actions import (
+    TokenRenameAction,
+    RunCommandAction,
+    ArchiveAction,
+    ExtractAction,
+    CreateFolderAction,
+)
+from .tier2_actions import (
+    ColorLabelAction,
+    AddTagAction,
+    RemoveTagAction,
+    DeleteToTrashAction,
+    MarkAsDuplicateAction,
+)
 
 
 # Mapping to reconstruct classes from saved JSON (camelCase keys)
@@ -71,6 +85,16 @@ ACTION_DISPLAY_NAME_TO_INTERNAL = {
     "Move to Folder": "Move",
     "Copy to Folder": "Copy",
     "Delete File": "Delete",
+    "Rename with Tokens": "TokenRename",
+    "Run Command": "RunCommand",
+    "Archive to ZIP": "Archive",
+    "Extract Archive": "Extract",
+    "Create Folder": "CreateFolder",
+    "Set Color Label": "ColorLabel",
+    "Add Tag": "AddTag",
+    "Remove Tag": "RemoveTag",
+    "Delete to Trash": "DeleteToTrash",
+    "Mark as Duplicate": "MarkAsDuplicate",
 }
 
 ACTION_MAP = {
@@ -78,6 +102,16 @@ ACTION_MAP = {
     "Move": MoveAction,
     "Copy": CopyAction,
     "Delete": DeleteFileAction,
+    "TokenRename": TokenRenameAction,
+    "RunCommand": RunCommandAction,
+    "Archive": ArchiveAction,
+    "Extract": ExtractAction,
+    "CreateFolder": CreateFolderAction,
+    "ColorLabel": ColorLabelAction,
+    "AddTag": AddTagAction,
+    "RemoveTag": RemoveTagAction,
+    "DeleteToTrash": DeleteToTrashAction,
+    "MarkAsDuplicate": MarkAsDuplicateAction,
 }
 
 

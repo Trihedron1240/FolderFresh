@@ -30,10 +30,10 @@ from .base_widgets import (
 # Action types with descriptions
 ACTION_TYPES = {
     "Rename File": "Rename a file to a new name",
-    "Move to Folder": "Move file to a specified folder",
-    "Copy to Folder": "Copy file to a specified folder",
+    "Move to Folder": "Move file to a folder (supports tokens for dynamic paths like <year>/<month>)",
+    "Copy to Folder": "Copy file to a folder (supports tokens for dynamic paths like <year>/<month>)",
     "Delete File": "Permanently delete the file",
-    "Rename with Tokens": "Rename using dynamic tokens (<name>, <date_created>, etc.)",
+    "Rename with Tokens": "Rename using tokens: <name>, <extension>, <date_created>, <date_modified>, <year>, <month>, <day>, <hour>, <minute>, <date_created_year>, <date_created_month>, <date_created_day>, <date_modified_year>, <date_modified_month>, <date_modified_day>",
     "Run Command": "Execute a script or command on the file",
     "Archive to ZIP": "Create a ZIP archive from the file",
     "Extract Archive": "Extract archive file to a folder",
@@ -48,10 +48,10 @@ ACTION_TYPES = {
 # Parameter labels for each action
 ACTION_PARAMETERS = {
     "Rename File": "New name (without extension)",
-    "Move to Folder": "Destination folder path",
-    "Copy to Folder": "Destination folder path",
+    "Move to Folder": "Destination path with optional tokens (e.g., /archive/<year>/<month>)",
+    "Copy to Folder": "Destination path with optional tokens (e.g., /backup/<year>/<month>)",
     "Delete File": "",
-    "Rename with Tokens": "Pattern (e.g., <name>_<date_created>)",
+    "Rename with Tokens": "Pattern with tokens (e.g., <date_modified>_<name><extension>)",
     "Run Command": "Command to execute",
     "Archive to ZIP": "Destination path",
     "Extract Archive": "Destination folder",
