@@ -74,7 +74,8 @@ class FolderFreshApplication:
 
         # Application state
         self.selected_folder: Optional[Path] = None
-        self.active_profile_id: Optional[str] = None
+        self.active_profile_id: Optional[str] = None  # Currently selected profile (for UI updates)
+        self.truly_active_profile_id: Optional[str] = None  # Profile marked as "active" in storage
         self.profiles: Dict[str, Dict[str, Any]] = {}
         self.rules: List[Dict[str, Any]] = []
         self.log_entries: List[Dict[str, Any]] = []
@@ -169,7 +170,8 @@ class FolderFreshApplication:
                     profiles_doc = self.profile_store.load()
                     stored_active_id = profiles_doc.get("active_profile_id")
                     if stored_active_id and stored_active_id in self.profiles:
-                        self.active_profile_id = stored_active_id
+                        self.truly_active_profile_id = stored_active_id
+                        self.active_profile_id = stored_active_id  # Initialize selected to same as active
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -422,8 +424,9 @@ class FolderFreshApplication:
         self._config_data.update(config_updates)
         save_config(self._config_data)
 
-        # Also update active profile's settings with safe_mode, include_sub, skip_hidden, smart_mode
-        if self.profile_manager_backend and self.active_profile_id:
+        # Also update truly active profile's settings with safe_mode, include_sub, skip_hidden, smart_mode
+        # Main window buttons should save to the truly active profile, not just the selected one
+        if self.profile_manager_backend and self.truly_active_profile_id:
             profile_updates = {
                 "settings": {
                     "safe_mode": options.get("safe_mode"),
@@ -433,7 +436,7 @@ class FolderFreshApplication:
                 }
             }
             self.profile_manager_backend.apply_profile_updates_silent(
-                self.active_profile_id,
+                self.truly_active_profile_id,
                 profile_updates
             )
 
@@ -1476,6 +1479,8 @@ class FolderFreshApplication:
     @Slot(str)
     def _on_profile_activated(self, profile_id: str) -> None:
         """Handle profile activated from backend."""
+        self.truly_active_profile_id = profile_id
+        # Also update the selected profile to match the newly activated one
         self.active_profile_id = profile_id
         if profile_id in self.profiles:
             profile_name = self.profiles[profile_id].get("name", "Unknown")
