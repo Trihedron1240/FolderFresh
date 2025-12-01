@@ -52,7 +52,7 @@ UI_SCHEMA = {
     "Is Directory": [],
     "Parent Folder Contains": [{"label": "Text:", "parameter_name": "substring", "type": "text", "placeholder": "e.g., Documents"}],
     "File is in folder containing": [{"label": "Text:", "parameter_name": "folder_pattern", "type": "text", "placeholder": "e.g., Archive"}],
-    "Content Contains": [{"label": "Text to search for:", "type": "text", "placeholder": "Search in file content"}],
+    "Content Contains": [{"label": "Text to search for:", "parameter_name": "keyword", "type": "text", "placeholder": "Search in file content"}],
     "Date Pattern": [
         {"label": "Type:", "type": "dropdown", "options": ["Created", "Modified"]},
         {"label": "Pattern:", "type": "text", "placeholder": "e.g., 2024-*"},

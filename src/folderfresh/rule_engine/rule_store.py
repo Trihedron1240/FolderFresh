@@ -188,6 +188,7 @@ def _normalize_condition_args(condition_class_name: str, args: Dict[str, Any]) -
         "IsDirectory": [],
         "ParentFolderContains": ["substring"],
         "FileInFolder": ["folder_pattern"],
+        "ContentContains": ["keyword"],
     }
 
     expected = expected_params.get(condition_class_name, list(args.keys()))
