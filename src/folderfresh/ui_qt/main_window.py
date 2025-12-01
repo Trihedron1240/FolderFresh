@@ -211,6 +211,10 @@ class MainWindow(QMainWindow):
         self.safe_mode_check = StyledCheckBox("Safe Mode (copy)", checked=True)
         self.safe_mode_check.stateChanged.connect(lambda: self.options_changed.emit())
         options_frame.add_widget(self.safe_mode_check)
+        ToolTip.attach_to(
+            self.safe_mode_check,
+            "Only applies to category sorting. Rules always execute fully."
+        )
 
         self.smart_mode_check = StyledCheckBox("Smart Sorting", checked=False)
         self.smart_mode_check.stateChanged.connect(lambda: self.options_changed.emit())

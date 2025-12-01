@@ -374,7 +374,7 @@ class CategoryManagerWindow(QDialog):
         extensions_text = ask_text_dialog(
             self,
             title="Category Extensions",
-            label="Enter file extensions (semicolon-separated, e.g., doc;docx;pdf):",
+            label="Enter file extensions (semicolon-separated, e.g., .doc;.docx;.pdf):",
             default_text="",
         )
 

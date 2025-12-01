@@ -442,11 +442,16 @@ class DeleteToTrashAction(Action):
 class MarkAsDuplicateAction(Action):
     """Mark a file as a duplicate."""
 
-    def __init__(self, tag: str = "duplicate"):
+    def __init__(self, tag: str = "duplicate", method: str = None):
         """
         Args:
             tag: Tag to apply to duplicates (default: "duplicate")
+            method: Legacy parameter name (accepted for backwards compatibility, ignored)
         """
+        # Support legacy 'method' parameter name for backwards compatibility
+        if method is not None and tag == "duplicate":
+            tag = method
+
         # Strip surrounding quotes if present
         self.tag = tag.strip('"') if isinstance(tag, str) else tag
 
