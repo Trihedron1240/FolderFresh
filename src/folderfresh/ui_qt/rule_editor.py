@@ -666,8 +666,8 @@ class RuleEditor(QDialog):
             param = cmd[:50] + "..." if len(cmd) > 50 else cmd
         elif "target_dir" in action:
             param = str(action["target_dir"])
-        elif "folder_name" in action:
-            param = str(action["folder_name"])
+        elif "folder_path" in action:
+            param = str(action["folder_path"])
         elif "tag" in action:
             param = str(action["tag"])
         elif "color" in action:
@@ -702,7 +702,7 @@ class RuleEditor(QDialog):
             "RunCommand": {"param_key": "command"},
             "Archive": {"param_key": "target_dir"},
             "Extract": {"param_key": "target_dir"},
-            "CreateFolder": {"param_key": "folder_name"},
+            "CreateFolder": {"param_key": "folder_path"},
             # Tier 2 actions
             "ColorLabel": {"param_key": "color"},
             "AddTag": {"param_key": "tag"},

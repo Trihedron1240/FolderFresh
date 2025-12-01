@@ -383,9 +383,9 @@ class RuleSimulator(QDialog):
                 return f"Extract Archive to: {target_dir} → {expanded}"
 
             elif action_type == "CreateFolder":
-                folder_name = args.get("folder_name", "")
-                expanded = expand_tokens(folder_name, fileinfo)
-                return f"Create Folder: {expanded}"
+                folder_path = args.get("folder_path", "")
+                expanded = expand_tokens(folder_path, fileinfo)
+                return f"Create Folder: {folder_path} → {expanded}"
 
             elif action_type == "AddTag":
                 tag = args.get("tag", "")
