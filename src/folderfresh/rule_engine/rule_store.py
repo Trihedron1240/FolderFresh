@@ -22,6 +22,9 @@ from .backbone import (
     CopyAction,
     DeleteFileAction,
 )
+from .tier1_conditions import (
+    ContentContainsCondition,
+)
 from .tier1_actions import (
     TokenRenameAction,
     RunCommandAction,
@@ -61,6 +64,7 @@ CONDITION_MAP = {
     "IsHidden": IsHiddenCondition,
     "IsReadOnly": IsReadOnlyCondition,
     "IsDirectory": IsDirectoryCondition,
+    "ContentContains": ContentContainsCondition,
     "ColorIs": ColorIsCondition,
     "HasTag": HasTagCondition,
     "MetadataContains": MetadataContainsCondition,
@@ -85,6 +89,7 @@ DISPLAY_NAME_TO_INTERNAL = {
     "Is Hidden": "IsHidden",
     "Is Read-Only": "IsReadOnly",
     "Is Directory": "IsDirectory",
+    "Content Contains": "ContentContains",
     "Color Is": "ColorIs",
     "Has Tag": "HasTag",
     "Metadata Contains": "MetadataContains",
