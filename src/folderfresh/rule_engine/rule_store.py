@@ -30,7 +30,10 @@ from .tier1_actions import (
     CreateFolderAction,
 )
 from .tier2_conditions import (
+    ColorIsCondition,
     HasTagCondition,
+    MetadataContainsCondition,
+    MetadataFieldEqualsCondition,
     IsDuplicateCondition,
 )
 from .tier2_actions import (
@@ -58,7 +61,10 @@ CONDITION_MAP = {
     "IsHidden": IsHiddenCondition,
     "IsReadOnly": IsReadOnlyCondition,
     "IsDirectory": IsDirectoryCondition,
+    "ColorIs": ColorIsCondition,
     "HasTag": HasTagCondition,
+    "MetadataContains": MetadataContainsCondition,
+    "MetadataFieldEquals": MetadataFieldEqualsCondition,
     "IsDuplicate": IsDuplicateCondition,
 }
 
@@ -79,7 +85,10 @@ DISPLAY_NAME_TO_INTERNAL = {
     "Is Hidden": "IsHidden",
     "Is Read-Only": "IsReadOnly",
     "Is Directory": "IsDirectory",
+    "Color Is": "ColorIs",
     "Has Tag": "HasTag",
+    "Metadata Contains": "MetadataContains",
+    "Metadata Field Equals": "MetadataFieldEquals",
     "Is Duplicate": "IsDuplicate",
 }
 
