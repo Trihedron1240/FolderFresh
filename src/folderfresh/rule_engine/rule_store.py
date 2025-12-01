@@ -29,6 +29,9 @@ from .tier1_actions import (
     ExtractAction,
     CreateFolderAction,
 )
+from .tier2_conditions import (
+    HasTagCondition,
+)
 from .tier2_actions import (
     ColorLabelAction,
     AddTagAction,
@@ -54,6 +57,7 @@ CONDITION_MAP = {
     "IsHidden": IsHiddenCondition,
     "IsReadOnly": IsReadOnlyCondition,
     "IsDirectory": IsDirectoryCondition,
+    "HasTag": HasTagCondition,
 }
 
 # Mapping from display names (with spaces) to camelCase names (for PyQt UI compatibility)
@@ -73,6 +77,7 @@ DISPLAY_NAME_TO_INTERNAL = {
     "Is Hidden": "IsHidden",
     "Is Read-Only": "IsReadOnly",
     "Is Directory": "IsDirectory",
+    "Has Tag": "HasTag",
 }
 
 # Reverse mapping for converting back to display names
