@@ -1353,20 +1353,26 @@ class RuleExecutor:
 
                         # Record undo entry if action succeeded and not a dry run
                         # (dry_run actions should not be recorded in undo history)
+                        # Only record undoable filesystem operations (not metadata-only operations)
                         if result.get("ok", False) and not config.get("dry_run", False):
-                            try:
-                                from folderfresh.undo_manager import UNDO_MANAGER
-                                undo_entry = {
-                                    "type": result.get("meta", {}).get("type", "unknown"),
-                                    "src": result.get("meta", {}).get("src"),
-                                    "dst": result.get("meta", {}).get("dst"),
-                                    "old_name": result.get("meta", {}).get("old_name"),
-                                    "new_name": result.get("meta", {}).get("new_name"),
-                                    "collision_handled": result.get("meta", {}).get("collision_handled", False)
-                                }
-                                UNDO_MANAGER.record_action(undo_entry)
-                            except ImportError:
-                                pass  # Undo manager not available, continue anyway
+                            action_type = result.get("meta", {}).get("type")
+                            # Only record reversible filesystem operations
+                            undoable_types = {"move", "rename", "copy", "delete", "delete_to_trash"}
+                            if action_type in undoable_types:
+                                try:
+                                    from folderfresh.undo_manager import UNDO_MANAGER
+                                    undo_entry = {
+                                        "type": action_type,
+                                        "src": result.get("meta", {}).get("src"),
+                                        "dst": result.get("meta", {}).get("dst"),
+                                        "old_name": result.get("meta", {}).get("old_name"),
+                                        "new_name": result.get("meta", {}).get("new_name"),
+                                        "collision_handled": result.get("meta", {}).get("collision_handled", False),
+                                        "temp_backup": result.get("meta", {}).get("temp_backup")
+                                    }
+                                    UNDO_MANAGER.record_action(undo_entry)
+                                except ImportError:
+                                    pass  # Undo manager not available, continue anyway
                     else:
                         # Legacy string return (backward compatibility)
                         self.log.append(f"  -> {result}")
