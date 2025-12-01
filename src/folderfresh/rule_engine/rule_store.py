@@ -24,6 +24,7 @@ from .backbone import (
 )
 from .tier1_conditions import (
     ContentContainsCondition,
+    DatePatternCondition,
 )
 from .tier1_actions import (
     TokenRenameAction,
@@ -65,6 +66,7 @@ CONDITION_MAP = {
     "IsReadOnly": IsReadOnlyCondition,
     "IsDirectory": IsDirectoryCondition,
     "ContentContains": ContentContainsCondition,
+    "DatePattern": DatePatternCondition,
     "ColorIs": ColorIsCondition,
     "HasTag": HasTagCondition,
     "MetadataContains": MetadataContainsCondition,
@@ -90,6 +92,7 @@ DISPLAY_NAME_TO_INTERNAL = {
     "Is Read-Only": "IsReadOnly",
     "Is Directory": "IsDirectory",
     "Content Contains": "ContentContains",
+    "Date Pattern": "DatePattern",
     "Color Is": "ColorIs",
     "Has Tag": "HasTag",
     "Metadata Contains": "MetadataContains",
@@ -189,6 +192,7 @@ def _normalize_condition_args(condition_class_name: str, args: Dict[str, Any]) -
         "ParentFolderContains": ["substring"],
         "FileInFolder": ["folder_pattern"],
         "ContentContains": ["keyword"],
+        "DatePattern": ["date_type", "pattern"],
     }
 
     expected = expected_params.get(condition_class_name, list(args.keys()))

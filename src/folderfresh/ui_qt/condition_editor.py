@@ -54,8 +54,8 @@ UI_SCHEMA = {
     "File is in folder containing": [{"label": "Text:", "parameter_name": "folder_pattern", "type": "text", "placeholder": "e.g., Archive"}],
     "Content Contains": [{"label": "Text to search for:", "parameter_name": "keyword", "type": "text", "placeholder": "Search in file content"}],
     "Date Pattern": [
-        {"label": "Type:", "type": "dropdown", "options": ["Created", "Modified"]},
-        {"label": "Pattern:", "type": "text", "placeholder": "e.g., 2024-*"},
+        {"label": "Type:", "parameter_name": "date_type", "type": "dropdown", "options": ["Created", "Modified"]},
+        {"label": "Pattern:", "parameter_name": "pattern", "type": "text", "placeholder": "e.g., 2024-*"},
     ],
     "Color Is": [{"label": "Color:", "parameter_name": "color", "type": "dropdown", "options": ["Red", "Blue", "Green", "Yellow"]}],
     "Has Tag": [{"label": "Tag name:", "parameter_name": "tag", "type": "text", "placeholder": "e.g., important"}],
