@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 import os
 import shutil
 import time
@@ -284,6 +285,45 @@ def do_preview(app):
 
 
 # =============================================================================
+# DELETE EMPTY FOLDERS
+# =============================================================================
+
+def delete_empty_folders(folder_path: Path) -> List[str]:
+    """
+    Delete all completely empty folders recursively.
+    Works bottom-up to ensure parent folders can be deleted if they become empty.
+
+    Args:
+        folder_path: Root folder to search
+
+    Returns:
+        List of deleted folder paths
+    """
+    deleted = []
+    try:
+        # Walk bottom-up so we delete deepest folders first
+        for dirpath in sorted(Path(folder_path).rglob("*"), key=lambda p: len(p.parts), reverse=True):
+            if not dirpath.is_dir():
+                continue
+
+            # Skip the root folder itself
+            if dirpath == folder_path:
+                continue
+
+            # Delete if completely empty
+            try:
+                if not any(dirpath.iterdir()):  # Check if directory is empty
+                    dirpath.rmdir()
+                    deleted.append(str(dirpath))
+            except Exception:
+                pass  # Skip folders that can't be deleted
+    except Exception:
+        pass  # Silent fail if folder doesn't exist
+
+    return deleted
+
+
+# =============================================================================
 # ORGANISE
 # =============================================================================
 
@@ -495,6 +535,7 @@ def do_organise(app, moves):
 
     # Clean empty folders
     remove_empty_category_folders(folder)
+    delete_empty_folders(Path(folder))
 
     # Show popup if any delete actions were blocked by safe mode
     if safe_mode_delete_blocks:
@@ -544,6 +585,7 @@ def do_undo(app):
         pass
 
     remove_empty_category_folders(folder)
+    delete_empty_folders(Path(folder))
 
     # Reset last sort mode
     app.config_data["last_sort_mode"] = None
