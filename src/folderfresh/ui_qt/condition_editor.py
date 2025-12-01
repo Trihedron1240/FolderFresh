@@ -57,15 +57,15 @@ UI_SCHEMA = {
         {"label": "Type:", "type": "dropdown", "options": ["Created", "Modified"]},
         {"label": "Pattern:", "type": "text", "placeholder": "e.g., 2024-*"},
     ],
-    "Color Is": [{"label": "Color:", "type": "dropdown", "options": ["Red", "Blue", "Green", "Yellow"]}],
+    "Color Is": [{"label": "Color:", "parameter_name": "color", "type": "dropdown", "options": ["Red", "Blue", "Green", "Yellow"]}],
     "Has Tag": [{"label": "Tag name:", "parameter_name": "tag", "type": "text", "placeholder": "e.g., important"}],
     "Metadata Contains": [
-        {"label": "Field name:", "type": "text", "placeholder": "e.g., author"},
-        {"label": "Keyword:", "type": "text", "placeholder": "e.g., John"},
+        {"label": "Field name:", "parameter_name": "field", "type": "text", "placeholder": "e.g., author"},
+        {"label": "Keyword:", "parameter_name": "keyword", "type": "text", "placeholder": "e.g., John"},
     ],
     "Metadata Field Equals": [
-        {"label": "Field name:", "type": "text", "placeholder": "e.g., status"},
-        {"label": "Value:", "type": "text", "placeholder": "e.g., complete"},
+        {"label": "Field name:", "parameter_name": "field", "type": "text", "placeholder": "e.g., status"},
+        {"label": "Value:", "parameter_name": "value", "type": "text", "placeholder": "e.g., complete"},
     ],
     "Is Duplicate": [{"label": "Detection method:", "parameter_name": "match_type", "type": "dropdown", "options": ["Quick Hash", "Full Hash"]}],
 }
@@ -450,6 +450,11 @@ class ConditionEditor(QDialog):
                 parameters["match_type"] = "quick"
             elif match_type_display == "Full Hash":
                 parameters["match_type"] = "full"
+
+        # Convert display values to backend values for "Color Is" condition
+        if self.selected_condition_type == "Color Is" and "color" in parameters:
+            color_display = parameters["color"]  # e.g., "Red", "Blue"
+            parameters["color"] = color_display.lower()
 
         condition_data = {
             "type": self.selected_condition_type,
