@@ -1332,6 +1332,17 @@ class RuleExecutor:
                                 final_dst = meta.get("src")
                             elif meta.get("type") == "copy":
                                 final_dst = meta.get("dst")
+                            elif meta.get("type") == "archive":
+                                final_dst = meta.get("dst")
+                            elif meta.get("type") == "extract":
+                                final_dst = meta.get("dst")
+                            elif meta.get("type") == "run_command":
+                                final_dst = meta.get("src")
+                            elif meta.get("type") == "create_folder":
+                                final_dst = meta.get("src")
+                            else:
+                                # For other action types (e.g., tags, labels, delete to trash), keep original
+                                final_dst = meta.get("src", fileinfo.get("path"))
 
                         else:
                             success = False
