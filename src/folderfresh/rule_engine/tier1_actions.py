@@ -528,13 +528,12 @@ class CreateFolderAction(Action):
 
         try:
             folder_path = expand_tokens(self.folder_path, fileinfo)
-            folder_path = normalize_path(folder_path)
 
-            # Convert relative paths to absolute (relative to source file's directory)
+            # Path normalization: match MoveAction's approach
             if not os.path.isabs(folder_path):
-                source_dir = os.path.dirname(file_path) if file_path else os.getcwd()
-                folder_path = os.path.join(source_dir, folder_path)
                 folder_path = normalize_path(folder_path)
+            else:
+                folder_path = os.path.normpath(folder_path)
 
             # SKIP CHECK: Folder already exists
             if os.path.isdir(folder_path):
