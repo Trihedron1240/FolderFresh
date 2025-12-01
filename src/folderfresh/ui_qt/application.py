@@ -44,13 +44,14 @@ class FolderFreshApplication:
     Manages UI windows, state, and backend integration.
     """
 
-    def __init__(self, qt_app: QApplication, config_data: Optional[Dict[str, Any]] = None):
+    def __init__(self, qt_app: QApplication, config_data: Optional[Dict[str, Any]] = None, profile_store=None):
         """
         Initialize application.
 
         Args:
             qt_app: QApplication instance
             config_data: Configuration dictionary (optional)
+            profile_store: ProfileStore instance (optional, but needed for proper initialization)
         """
         self.qt_app = qt_app
         self.main_window: Optional[MainWindow] = None
@@ -58,7 +59,7 @@ class FolderFreshApplication:
 
         # Backend references (will be set by launcher)
         self.watcher_manager = None
-        self.profile_store = None
+        self.profile_store = profile_store  # Set from parameter if provided
         self.rule_engine = None
         self._config_data = config_data or {}
 
@@ -123,6 +124,7 @@ class FolderFreshApplication:
 
     def _connect_main_window_signals(self) -> None:
         """Connect main window signals to application slots."""
+        print("[APP_INIT] Connecting main window signals...")
         # Folder selection
         self.main_window.folder_chosen.connect(self._on_folder_chosen)
         self.main_window.folder_open_requested.connect(self._on_folder_open_requested)
@@ -141,6 +143,8 @@ class FolderFreshApplication:
 
         # Options/settings changes
         self.main_window.options_changed.connect(self._on_options_changed)
+        self.main_window.profile_update_silent_requested.connect(self._on_profile_update_silent_requested)
+        print("[APP_INIT] profile_update_silent_requested signal connected!")
 
         # Sidebar signals
         if self.main_window.sidebar:
@@ -170,6 +174,8 @@ class FolderFreshApplication:
                     if stored_active_id and stored_active_id in self.profiles:
                         self.truly_active_profile_id = stored_active_id
                         self.active_profile_id = stored_active_id  # Initialize selected to same as active
+                        # Update main window so it knows which profile to use for silent updates
+                        self.main_window.truly_active_profile_id = stored_active_id
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -260,6 +266,10 @@ class FolderFreshApplication:
         """Connect ProfileManagerBackend signals to UI updates."""
         if self.profile_manager_backend:
             # Connect profile signals to UI
+            self.profile_manager_backend.settings_updated.connect(
+                self._on_profile_settings_updated
+            )
+
             self.profile_manager_backend.profiles_reloaded.connect(
                 self._on_profiles_reloaded
             )
@@ -275,6 +285,37 @@ class FolderFreshApplication:
             self.profile_manager_backend.profile_activated.connect(
                 self._on_profile_activated
             )
+    def _on_profile_settings_updated(self, profile_id: str, settings: dict):
+        # Only update MainWindow if this profile is the active one
+        if profile_id != self.truly_active_profile_id:
+            return
+
+        # Map backend settings → MainWindow UI keys
+        mapped = {}
+
+        if "include_sub" in settings:
+            mapped["include_subfolders"] = settings["include_sub"]
+
+        if "skip_hidden" in settings:
+            mapped["skip_hidden"] = settings["skip_hidden"]
+
+        if "safe_mode" in settings:
+            mapped["safe_mode"] = settings["safe_mode"]
+
+        if "smart_mode" in settings:
+            mapped["smart_sorting"] = settings["smart_mode"]
+
+        if "auto_tidy" in settings:
+            mapped["auto_tidy"] = settings["auto_tidy"]
+
+        if "startup" in settings:
+            mapped["startup"] = settings["startup"]
+
+        if "tray_mode" in settings:
+            mapped["tray_mode"] = settings["tray_mode"]
+
+        # Update MainWindow without triggering signals
+        self.main_window.set_options(mapped)
 
     def _connect_rule_manager_backend_signals(self) -> None:
         """Connect RuleManagerBackend signals to UI updates."""
@@ -498,6 +539,20 @@ class FolderFreshApplication:
                 log_info(f"[TRAY_UPDATE] Menu updated successfully")
             except Exception as e:
                 log_error(f"[TRAY_UPDATE] Failed to update menu: {e}")
+
+    def _on_profile_update_silent_requested(self, profile_id: str, updates_dict: dict) -> None:
+        """
+        Handle silent profile update requests from main window.
+        Applies updates directly to disk without going through normal options_changed flow.
+
+        Args:
+            profile_id: ID of profile to update
+            updates_dict: Dictionary of updates to apply
+        """
+        log_info(f"[PROFILE_UPDATE_SILENT] Received update for profile {profile_id}: {updates_dict}")
+        if self.profile_manager_backend:
+            success = self.profile_manager_backend.apply_profile_updates_silent(profile_id, updates_dict)
+            log_info(f"[PROFILE_UPDATE_SILENT] Update applied: {success}")
 
     def _on_toggle_auto_watch(self) -> None:
         """Toggle auto-watch from tray menu."""
@@ -1355,6 +1410,8 @@ class FolderFreshApplication:
         self.truly_active_profile_id = profile_id
         # Also update the selected profile to match the newly activated one
         self.active_profile_id = profile_id
+        # Update main window so it knows which profile to use for silent updates
+        self.main_window.truly_active_profile_id = profile_id
         if profile_id in self.profiles:
             profile_name = self.profiles[profile_id].get("name", "Unknown")
             self.main_window.set_status(f"Active Profile: {profile_name}")

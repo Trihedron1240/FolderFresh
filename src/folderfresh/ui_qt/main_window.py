@@ -37,6 +37,8 @@ from .base_widgets import (
     HorizontalFrame,
     VerticalFrame,
 )
+from folderfresh.profile_store import ProfileStore
+
 
 
 class MainWindow(QMainWindow):
@@ -55,6 +57,7 @@ class MainWindow(QMainWindow):
     watched_folders_requested = Signal()
     help_requested = Signal()
     options_changed = Signal()
+    profile_update_silent_requested = Signal(str, dict)  # (profile_id, updates_dict)
 
     def __init__(self):
         super().__init__()
@@ -66,7 +69,9 @@ class MainWindow(QMainWindow):
         self.selected_folder: Optional[Path] = None
         self.advanced_visible = False
         self.tray_mode_enabled = False  # Track if tray mode is currently active
-
+        self.truly_active_profile_id: Optional[str] = None  # ID of truly active profile (for silent updates)
+        self._block_include_sub_signals = False  # Block signals during initialization
+        self.profile_store = ProfileStore()
         self._init_ui()
 
     def _init_ui(self) -> None:
@@ -167,6 +172,58 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(choose_btn)
 
         parent_layout.addWidget(header_frame)
+    def _refresh_from_disk(self):
+        doc = self.profile_store.load()
+        active = self.profile_store.get_active_profile(doc)
+        if not active:
+            return
+
+        disk = active.get("settings", {})
+
+        # Block signals so they don't save again
+        self._block_include_sub_signals = True
+
+        self.include_sub_check.setChecked(disk.get("include_sub", True))
+        self.skip_hidden_check.setChecked(disk.get("skip_hidden", True))
+        self.safe_mode_check.setChecked(disk.get("safe_mode", True))
+        self.smart_mode_check.setChecked(disk.get("smart_sorting", False))
+        self.watch_mode_check.setChecked(disk.get("auto_tidy", False))
+        self.startup_check.setChecked(disk.get("startup", False))
+        self.tray_mode_check.setChecked(disk.get("tray_mode", False))
+
+        self._block_include_sub_signals = False
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._refresh_from_disk()
+    def _on_include_sub_changed(self) -> None:
+        """Handle include_sub checkbox change - emit signal for backend to handle."""
+        if self._block_include_sub_signals:
+            return
+
+        # Emit silent profile update signal
+        if self.truly_active_profile_id:
+            updates = {
+                "settings": {
+                    "include_sub": self.include_sub_check.isChecked()
+                }
+            }
+            self.profile_update_silent_requested.emit(self.truly_active_profile_id, updates)
+        else:
+            # Fallback: just emit options_changed
+            self.options_changed.emit()
+
+    def _save_option(self, key: str, value):
+        try:
+            doc = self.profile_store.load()
+            active = self.profile_store.get_active_profile(doc)
+            if not active:
+                return
+            if "settings" not in active:
+                active["settings"] = {}
+            active["settings"][key] = value
+            self.profile_store.save(doc)
+        except Exception as e:
+            print("Error saving option:", key, e)
 
     def _create_main_card(self, parent_layout) -> None:
         """Create main card with options, buttons, and preview."""
@@ -201,7 +258,10 @@ class MainWindow(QMainWindow):
         options_frame = HorizontalFrame(spacing=12)
 
         self.include_sub_check = StyledCheckBox("Include subfolders", checked=True)
-        self.include_sub_check.stateChanged.connect(lambda: self.options_changed.emit())
+        self.include_sub_check.stateChanged.connect(
+            lambda: self._on_include_sub_changed()
+        )
+
         options_frame.add_widget(self.include_sub_check)
 
         self.skip_hidden_check = StyledCheckBox("Ignore hidden/system files", checked=True)
@@ -381,6 +441,8 @@ class MainWindow(QMainWindow):
             # Allow close when tray mode is disabled
             event.accept()
 
+
+
     # ========== PUBLIC METHODS FOR BACKEND INTEGRATION ==========
 
     def set_selected_folder(self, folder_path: Optional[Path]) -> None:
@@ -469,24 +531,47 @@ class MainWindow(QMainWindow):
     def set_options(self, options: dict) -> None:
         """
         Set option states from dictionary.
+        Blocks signals during programmatic updates to avoid feedback loops.
 
         Args:
             options: Dictionary with option states
         """
-        if "include_subfolders" in options:
-            self.include_sub_check.setChecked(options["include_subfolders"])
-        if "skip_hidden" in options:
-            self.skip_hidden_check.setChecked(options["skip_hidden"])
-        if "safe_mode" in options:
-            self.safe_mode_check.setChecked(options["safe_mode"])
-        if "smart_sorting" in options:
-            self.smart_mode_check.setChecked(options["smart_sorting"])
-        if "auto_tidy" in options:
-            self.watch_mode_check.setChecked(options["auto_tidy"])
-        if "startup" in options:
-            self.startup_check.setChecked(options["startup"])
-        if "tray_mode" in options:
-            self.tray_mode_check.setChecked(options["tray_mode"])
+        # Block all checkbox signals during programmatic updates to avoid feedback loops
+        self._block_include_sub_signals = True
+        try:
+            # Block signals from all checkboxes while updating
+            self.include_sub_check.blockSignals(True)
+            self.skip_hidden_check.blockSignals(True)
+            self.safe_mode_check.blockSignals(True)
+            self.smart_mode_check.blockSignals(True)
+            self.watch_mode_check.blockSignals(True)
+            self.startup_check.blockSignals(True)
+            self.tray_mode_check.blockSignals(True)
+
+            if "include_subfolders" in options:
+                self.include_sub_check.setChecked(options["include_subfolders"])
+            if "skip_hidden" in options:
+                self.skip_hidden_check.setChecked(options["skip_hidden"])
+            if "safe_mode" in options:
+                self.safe_mode_check.setChecked(options["safe_mode"])
+            if "smart_sorting" in options:
+                self.smart_mode_check.setChecked(options["smart_sorting"])
+            if "auto_tidy" in options:
+                self.watch_mode_check.setChecked(options["auto_tidy"])
+            if "startup" in options:
+                self.startup_check.setChecked(options["startup"])
+            if "tray_mode" in options:
+                self.tray_mode_check.setChecked(options["tray_mode"])
+        finally:
+            # Re-enable all signals
+            self.include_sub_check.blockSignals(False)
+            self.skip_hidden_check.blockSignals(False)
+            self.safe_mode_check.blockSignals(False)
+            self.smart_mode_check.blockSignals(False)
+            self.watch_mode_check.blockSignals(False)
+            self.startup_check.blockSignals(False)
+            self.tray_mode_check.blockSignals(False)
+            self._block_include_sub_signals = False
 
     def set_tray_mode_enabled(self, enabled: bool) -> None:
         """

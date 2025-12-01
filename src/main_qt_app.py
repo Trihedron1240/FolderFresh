@@ -132,12 +132,9 @@ class FolderFreshQtApplication:
 
             log_info("QApplication created and styled")
 
-            # Create main application window
-            self.main_app = FolderFreshApplication(self.qt_app, self.config_data)
+            # Create main application window, passing profile_store so it can be used during initialization
+            self.main_app = FolderFreshApplication(self.qt_app, self.config_data, profile_store=self.profile_store)
             self.main_window = self.main_app.main_window
-
-            # Assign backend references to main_app
-            self.main_app.profile_store = self.profile_store
 
             log_info("Main window created")
 

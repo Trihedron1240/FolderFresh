@@ -32,7 +32,7 @@ class ProfileManagerBackend(QObject):
     profile_deleted = Signal(str)  # profile_id
     profile_activated = Signal(str)  # profile_id
     profiles_reloaded = Signal()
-
+    settings_updated = Signal(str, dict)
     def __init__(self):
         """Initialize ProfileManager backend"""
         super().__init__()
@@ -357,6 +357,10 @@ class ProfileManagerBackend(QObject):
 
             log_info(f"Profile updated: {profile.get('name', profile_id)}")
             self.profile_updated.emit(profile_id)
+            # Emit settings updated
+            if "settings" in updates_dict:
+                updated_settings = updates_dict["settings"]
+                self.settings_updated.emit(profile_id, updated_settings)
 
             return True
 

@@ -384,6 +384,30 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
         self.editor_scroll.add_widget(fallback_section)
 
+        # Include subfolders setting section
+        include_sub_section = VerticalFrame(spacing=8)
+
+        include_sub_label = StyledLabel("File Scanning:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        include_sub_section.add_widget(include_sub_label)
+
+        include_sub_check = StyledCheckBox(
+            "Include subfolders",
+            checked=profile.get("settings", {}).get("include_sub", True)
+        )
+        include_sub_check.stateChanged.connect(
+            lambda state: self._on_include_sub_changed(profile_id, include_sub_check)
+        )
+        include_sub_section.add_widget(include_sub_check)
+
+        include_sub_help = MutedLabel(
+            "When enabled: Scan and organize files in subfolders.\n"
+            "When disabled: Only organize files in the selected folder."
+        )
+        include_sub_help.setWordWrap(True)
+        include_sub_section.add_widget(include_sub_help)
+
+        self.editor_scroll.add_widget(include_sub_section)
+
         # Action buttons
         action_section = HorizontalFrame(spacing=8)
 
@@ -485,6 +509,15 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         updates = {
             "settings": {
                 "rule_fallback_to_sort": checkbox.isChecked()
+            }
+        }
+        self.profile_update_silent_requested.emit(profile_id, updates)
+
+    def _on_include_sub_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
+        """Handle include subfolders checkbox change - emit silent signal for backend to handle."""
+        updates = {
+            "settings": {
+                "include_sub": checkbox.isChecked()
             }
         }
         self.profile_update_silent_requested.emit(profile_id, updates)
