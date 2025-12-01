@@ -17,6 +17,7 @@ import hashlib
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 from threading import Lock
+from .backbone import normalize_path
 
 
 class MetadataDB:
@@ -172,6 +173,7 @@ class MetadataDB:
             True if successful or already existed
         """
         try:
+            file_path = normalize_path(file_path)
             with self._lock:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
@@ -214,6 +216,7 @@ class MetadataDB:
             True if successful
         """
         try:
+            file_path = normalize_path(file_path)
             with self._lock:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
@@ -253,6 +256,7 @@ class MetadataDB:
             List of tag strings
         """
         try:
+            file_path = normalize_path(file_path)
             with self._lock:
                 conn = sqlite3.connect(self.db_path)
                 cursor = conn.cursor()
