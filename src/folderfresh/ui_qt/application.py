@@ -887,6 +887,8 @@ class FolderFreshApplication:
         """
         dialog = DesktopCleanDialog(self.main_window)
         dialog.set_data(desktop, warnings, preview, important_files, file_count, folder_count)
+        # Store dialog reference so we can access the preview when user confirms
+        self._pending_desktop_clean_dialog = dialog
         dialog.clean_confirmed.connect(lambda: self._execute_desktop_clean(desktop))
         dialog.closed.connect(lambda: self._on_desktop_clean_dialog_closed())
         dialog.show()
@@ -910,13 +912,20 @@ class FolderFreshApplication:
 
             # Call the actual organization through main window backend
             if self.main_window_backend:
-                # Generate preview first
-                preview_result = self.main_window_backend.generate_preview(
-                    desktop,
-                    self._config_data,
-                    include_subfolders=False,  # Never include subfolders on desktop
-                    skip_hidden=options.get("skip_hidden", True),
-                )
+                # Use the preview from the dialog that the user already approved
+                # This ensures we execute what the user reviewed, not a regenerated preview
+                preview_result = None
+                if hasattr(self, "_pending_desktop_clean_dialog") and self._pending_desktop_clean_dialog:
+                    preview_result = self._pending_desktop_clean_dialog.preview_data
+
+                # Fallback: if dialog reference is lost, regenerate preview
+                if not preview_result:
+                    preview_result = self.main_window_backend.generate_preview(
+                        desktop,
+                        self._config_data,
+                        include_subfolders=False,  # Never include subfolders on desktop
+                        skip_hidden=options.get("skip_hidden", True),
+                    )
 
                 if preview_result:
                     # Execute organization

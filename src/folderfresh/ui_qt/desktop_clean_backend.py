@@ -155,6 +155,8 @@ class DesktopCleanBackend(QObject):
         """
         Generate a preview of what will be organized.
 
+        Uses rules-first execution: rules are applied first, then fallback to categorization.
+
         Args:
             desktop: Desktop path
             config: Configuration dictionary with ignore options
@@ -162,70 +164,94 @@ class DesktopCleanBackend(QObject):
         Returns:
             Tuple of (preview_list, info_messages)
         """
-        preview = []
-        info = []
-
         try:
-            # Get ignore extensions
-            ignore_exts = config.get("ignore_exts", "")
-            ignore_set = {ext.strip().lower() for ext in ignore_exts.split(";") if ext.strip()}
+            # Use the main preview generation that includes rules
+            from folderfresh.actions import do_preview
 
-            # Scan desktop (no subfolders for desktop)
-            files = scan_dir(
-                desktop,
-                include_sub=False,
-                skip_hidden=config.get("skip_hidden", True),
-                ignore_set=ignore_set,
-                skip_categories=False,
-            )
+            # Create a simple app-like object for do_preview
+            class PreviewApp:
+                def __init__(self, folder, config_data):
+                    self.selected_folder = folder
+                    self.config_data = config_data
+                    self.include_sub = type('obj', (object,), {'get': lambda self: False})()
+                    self.skip_hidden = type('obj', (object,), {'get': lambda self: config_data.get("skip_hidden", True)})()
+                    self.smart_mode = type('obj', (object,), {'get': lambda self: config_data.get("smart_sorting", False)})()
 
-            # Group by file type
-            file_count = len(files)
-            if file_count == 0:
-                info.append("No files to organize on Desktop")
-                return [], info
+            app = PreviewApp(desktop, config)
+            preview = do_preview(app)
 
-            # Simple categorization preview
-            categories = {}
-            for file_path in files:
-                # Determine category
-                ext = file_path.suffix.lower()
-                if ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.heic']:
-                    category = 'Images'
-                elif ext == '.pdf':
-                    category = 'PDF'
-                elif ext in ['.doc', '.docx', '.txt', '.rtf', '.odt', '.ppt', '.pptx', '.xls', '.xlsx', '.csv']:
-                    category = 'Documents'
-                elif ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm']:
-                    category = 'Videos'
-                elif ext in ['.mp3', '.wav', '.flac', '.m4a', '.aac']:
-                    category = 'Audio'
-                elif ext in ['.zip', '.rar', '.7z', '.tar', '.gz']:
-                    category = 'Archives'
-                else:
-                    category = 'Other'
-
-                if category not in categories:
-                    categories[category] = []
-                categories[category].append(file_path)
-
-            # Build preview
-            for category, file_list in sorted(categories.items()):
-                preview.append({
-                    'category': category,
-                    'count': len(file_list),
-                    'files': [str(f.name) for f in file_list[:5]],  # First 5 files
-                    'has_more': len(file_list) > 5,
-                })
-
-            # Generate info messages
-            info.append(f"Found {file_count} files on Desktop")
-            info.append(f"Will create {len(categories)} categories: {', '.join(sorted(categories.keys()))}")
-
+            info = [f"Found {len(preview)} files to organize (including rules)" if preview else "No files to organize on Desktop"]
             return preview, info
 
         except Exception as e:
-            error_msg = f"Error generating preview: {e}"
+            # Fallback to simple categorization if do_preview fails
+            from folderfresh.logger_qt import log_error
+            log_error(f"Error in rules-based preview: {e}. Falling back to simple categorization.")
+
+            info = [f"Using fallback categorization (error: {str(e)[:50]})"]
+            preview = []
+
+            try:
+                # Get ignore extensions
+                ignore_exts = config.get("ignore_exts", "")
+                ignore_set = {ext.strip().lower() for ext in ignore_exts.split(";") if ext.strip()}
+
+                # Scan desktop (no subfolders for desktop)
+                files = scan_dir(
+                    desktop,
+                    include_sub=False,
+                    skip_hidden=config.get("skip_hidden", True),
+                    ignore_set=ignore_set,
+                    skip_categories=False,
+                )
+
+                # Group by file type
+                file_count = len(files)
+                if file_count == 0:
+                    info = ["No files to organize on Desktop"]
+                    return [], info
+
+                # Simple categorization preview
+                categories = {}
+                for file_path in files:
+                    # Determine category
+                    ext = file_path.suffix.lower()
+                    if ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.heic']:
+                        category = 'Images'
+                    elif ext == '.pdf':
+                        category = 'PDF'
+                    elif ext in ['.doc', '.docx', '.txt', '.rtf', '.odt', '.ppt', '.pptx', '.xls', '.xlsx', '.csv']:
+                        category = 'Documents'
+                    elif ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm']:
+                        category = 'Videos'
+                    elif ext in ['.mp3', '.wav', '.flac', '.m4a', '.aac']:
+                        category = 'Audio'
+                    elif ext in ['.zip', '.rar', '.7z', '.tar', '.gz']:
+                        category = 'Archives'
+                    else:
+                        category = 'Other'
+
+                    if category not in categories:
+                        categories[category] = []
+                    categories[category].append(file_path)
+
+                # Build preview
+                for category, file_list in sorted(categories.items()):
+                    preview.append({
+                        'category': category,
+                        'count': len(file_list),
+                        'files': [str(f.name) for f in file_list[:5]],  # First 5 files
+                        'has_more': len(file_list) > 5,
+                    })
+
+                # Generate info messages
+                info.append(f"Found {file_count} files on Desktop")
+                info.append(f"Will create {len(categories)} categories: {', '.join(sorted(categories.keys()))}")
+
+                return preview, info
+
+            except Exception as e:
+                error_msg = f"Error generating preview: {e}"
             log_error(error_msg)
             return [], [error_msg]
 
