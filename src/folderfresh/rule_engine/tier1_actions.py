@@ -509,87 +509,79 @@ class ExtractAction(Action):
 # ============================================================================
 
 class CreateFolderAction(Action):
-    """Create a folder (with optional token expansion)."""
+    """Create a folder using the same normalization and token logic as MoveAction."""
 
     def __init__(self, folder_path: str):
-        """
-        Args:
-            folder_path: Path to create (can include tokens and nested paths)
-        """
-        self.folder_path = folder_path
+        self.target_dir = folder_path
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
-        """
-        Create the folder.
-        """
         config = config or {}
-        file_path = fileinfo.get("path", "")
         dry_run = config.get("dry_run", False)
 
+        # We keep fileinfo just in case tokens require file context
+        old_path = fileinfo.get("path")
+
+        # Expand tokens IN THE DIRECTORY
+        target_dir = self.target_dir
+
         try:
-            folder_path = expand_tokens(self.folder_path, fileinfo)
+            # Use the SAME token rule as MoveAction
+            if "<" in target_dir and ">" in target_dir:
+                from folderfresh.rule_engine.tier1_actions import expand_tokens
+                target_dir = expand_tokens(target_dir, fileinfo)
+        except Exception as e:
+            message = f"ERROR: CREATE_FOLDER token expansion failed - {e}"
+            print(f"  [ACTION] {message}")
+            return {"ok": False, "log": message, "meta": {"type": "create_folder"}}
 
-            # Path normalization: match MoveAction's approach
-            if not os.path.isabs(folder_path):
-                folder_path = normalize_path(folder_path)
-            else:
-                folder_path = os.path.normpath(folder_path)
+        # Normalize EXACTLY the same as MoveAction
+        if not os.path.isabs(target_dir):
+            target_dir = normalize_path(target_dir)
+        else:
+            target_dir = os.path.normpath(target_dir)
 
-            # SKIP CHECK: Folder already exists
-            if os.path.isdir(folder_path):
-                message = f"SKIP: CREATE_FOLDER - already exists: {folder_path}"
-                print(f"  [ACTION] {message}")
-                return {
-                    "ok": True,
-                    "log": message,
-                    "meta": {
-                        "type": "create_folder",
-                        "src": file_path,
-                        "dst": folder_path,
-                        "was_dry_run": dry_run,
-                        "skipped": True
-                    }
-                }
-
-            if dry_run:
-                message = f"DRY RUN: Would CREATE_FOLDER: {folder_path}"
-                ok = True
-            else:
-                # Use ensure_directory_exists (same as MoveAction) to create the folder
-                from folderfresh.rule_engine.backbone import ensure_directory_exists
-                if not ensure_directory_exists(folder_path):
-                    message = f"ERROR: CREATE_FOLDER - failed to create: {folder_path}"
-                    print(f"  [ACTION] {message}")
-                    return {
-                        "ok": False,
-                        "log": message,
-                        "meta": {
-                            "type": "create_folder",
-                            "src": file_path,
-                            "dst": folder_path,
-                            "was_dry_run": dry_run
-                        }
-                    }
-                message = f"CREATE_FOLDER: {folder_path}"
-                ok = True
-
+        # SKIP if directory already exists
+        if os.path.isdir(target_dir):
+            message = f"SKIP: CREATE_FOLDER - already exists: {target_dir}"
             print(f"  [ACTION] {message}")
             return {
-                "ok": ok,
+                "ok": True,
                 "log": message,
                 "meta": {
                     "type": "create_folder",
-                    "src": file_path,
-                    "dst": folder_path,
+                    "dst": target_dir,
+                    "skipped": True,
+                    "was_dry_run": dry_run
+                }
+            }
+
+        # Create ONLY the folder (no move)
+        try:
+            if dry_run:
+                message = f"DRY RUN: Would CREATE_FOLDER: {target_dir}"
+            else:
+                from folderfresh.rule_engine.backbone import ensure_directory_exists
+                if not ensure_directory_exists(target_dir):
+                    raise RuntimeError("ensure_directory_exists returned False")
+                message = f"CREATE_FOLDER: {target_dir}"
+
+            print(f"  [ACTION] {message}")
+
+            return {
+                "ok": True,
+                "log": message,
+                "meta": {
+                    "type": "create_folder",
+                    "dst": target_dir,
                     "was_dry_run": dry_run
                 }
             }
 
         except Exception as e:
-            message = f"ERROR: CREATE_FOLDER failed - {str(e)}"
+            message = f"ERROR: CREATE_FOLDER failed - {e}"
             print(f"  [ACTION] {message}")
             return {
                 "ok": False,
                 "log": message,
-                "meta": {"type": "create_folder", "src": file_path, "was_dry_run": dry_run}
+                "meta": {"type": "create_folder", "dst": None, "was_dry_run": dry_run}
             }

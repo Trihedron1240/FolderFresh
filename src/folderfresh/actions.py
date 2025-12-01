@@ -535,7 +535,6 @@ def do_organise(app, moves):
 
     # Clean empty folders
     remove_empty_category_folders(folder)
-    delete_empty_folders(Path(folder))
 
     # Show popup if any delete actions were blocked by safe mode
     if safe_mode_delete_blocks:
@@ -585,7 +584,6 @@ def do_undo(app):
         pass
 
     remove_empty_category_folders(folder)
-    delete_empty_folders(Path(folder))
 
     # Reset last sort mode
     app.config_data["last_sort_mode"] = None
