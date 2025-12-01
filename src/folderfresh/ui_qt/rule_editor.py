@@ -402,8 +402,16 @@ class RuleEditor(QDialog):
                 return False, f"Action {i + 1} has no type selected."
 
             # Skip parameter check for actions that don't require parameters
-            action_type_lower = action_type.lower()
-            if action_type_lower not in PARAM_FREE_ACTIONS:
+            # Normalize type for comparison: handle both display names and internal names
+            action_type_normalized = action_type.lower().replace(" ", "").replace("-", "")
+
+            is_param_free = False
+            for param_free_name in PARAM_FREE_ACTIONS:
+                if param_free_name.replace(" ", "").replace("-", "") == action_type_normalized:
+                    is_param_free = True
+                    break
+
+            if not is_param_free:
                 if not action_params or (isinstance(action_params, dict) and not any(action_params.values())):
                     if isinstance(action_params, str):
                         if not action_params.strip():
