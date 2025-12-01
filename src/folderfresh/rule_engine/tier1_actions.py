@@ -111,7 +111,8 @@ class TokenRenameAction(Action):
         Args:
             name_pattern: Filename pattern with tokens, e.g., "<date_modified>_<name><extension>"
         """
-        self.name_pattern = name_pattern
+        # Strip surrounding quotes if present
+        self.name_pattern = name_pattern.strip('"') if isinstance(name_pattern, str) else name_pattern
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -224,7 +225,8 @@ class RunCommandAction(Action):
         Args:
             command: Command to execute (e.g., "powershell -command ...", "cmd /c ...", or script path)
         """
-        self.command = command
+        # Strip surrounding quotes if present
+        self.command = command.strip('"') if isinstance(command, str) else command
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -336,7 +338,8 @@ class ArchiveAction(Action):
         Args:
             target_dir: Directory to zip file into (can include tokens)
         """
-        self.target_dir = target_dir
+        # Strip surrounding quotes if present
+        self.target_dir = target_dir.strip('"') if isinstance(target_dir, str) else target_dir
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -421,7 +424,8 @@ class ExtractAction(Action):
         Args:
             target_dir: Directory to extract into (can include tokens)
         """
-        self.target_dir = target_dir
+        # Strip surrounding quotes if present
+        self.target_dir = target_dir.strip('"') if isinstance(target_dir, str) else target_dir
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -512,7 +516,8 @@ class CreateFolderAction(Action):
     """Create a folder using the same normalization and token logic as MoveAction."""
 
     def __init__(self, folder_path: str):
-        self.target_dir = folder_path
+        # Strip surrounding quotes if present
+        self.target_dir = folder_path.strip('"') if isinstance(folder_path, str) else folder_path
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         config = config or {}

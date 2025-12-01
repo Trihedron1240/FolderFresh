@@ -546,7 +546,8 @@ class ParentFolderContainsCondition(Condition):
     """Check if parent folder name contains a substring."""
 
     def __init__(self, substring: str):
-        self.substring = substring
+        # Strip surrounding quotes if present
+        self.substring = substring.strip('"') if isinstance(substring, str) else substring
 
     def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
         """
@@ -585,7 +586,8 @@ class FileInFolderCondition(Condition):
     """Check if file's parent path contains a folder pattern."""
 
     def __init__(self, folder_pattern: str):
-        self.folder_pattern = folder_pattern
+        # Strip surrounding quotes if present
+        self.folder_pattern = folder_pattern.strip('"') if isinstance(folder_pattern, str) else folder_pattern
 
     def evaluate(self, fileinfo: Dict[str, Any]) -> bool:
         """
@@ -660,7 +662,8 @@ class RenameAction(Action):
     """Rename a file to a new name."""
 
     def __init__(self, new_name: str):
-        self.new_name = new_name
+        # Strip surrounding quotes if present
+        self.new_name = new_name.strip('"') if isinstance(new_name, str) else new_name
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -785,7 +788,8 @@ class MoveAction(Action):
     """Move a file to a new directory."""
 
     def __init__(self, target_dir: str):
-        self.target_dir = target_dir
+        # Strip surrounding quotes if present
+        self.target_dir = target_dir.strip('"') if isinstance(target_dir, str) else target_dir
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
@@ -957,7 +961,8 @@ class CopyAction(Action):
     """Copy a file to a new directory."""
 
     def __init__(self, target_dir: str):
-        self.target_dir = target_dir
+        # Strip surrounding quotes if present
+        self.target_dir = target_dir.strip('"') if isinstance(target_dir, str) else target_dir
 
     def run(self, fileinfo: Dict[str, Any], config: Dict[str, Any] = None) -> Dict[str, Any]:
         """
