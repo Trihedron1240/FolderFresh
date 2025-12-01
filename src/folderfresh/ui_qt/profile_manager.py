@@ -408,6 +408,104 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
         self.editor_scroll.add_widget(include_sub_section)
 
+        # Ignore hidden/system files setting section
+        skip_hidden_section = VerticalFrame(spacing=8)
+
+        skip_hidden_label = StyledLabel("File Filtering:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        skip_hidden_section.add_widget(skip_hidden_label)
+
+        skip_hidden_check = StyledCheckBox(
+            "Ignore hidden/system files",
+            checked=profile.get("settings", {}).get("skip_hidden", True)
+        )
+        skip_hidden_check.stateChanged.connect(
+            lambda state: self._on_skip_hidden_changed(profile_id, skip_hidden_check)
+        )
+        skip_hidden_section.add_widget(skip_hidden_check)
+
+        skip_hidden_help = MutedLabel(
+            "When enabled: Skip hidden and system files during organization.\n"
+            "When disabled: Include all files."
+        )
+        skip_hidden_help.setWordWrap(True)
+        skip_hidden_section.add_widget(skip_hidden_help)
+
+        self.editor_scroll.add_widget(skip_hidden_section)
+
+        # Safe mode setting section
+        safe_mode_section = VerticalFrame(spacing=8)
+
+        safe_mode_label = StyledLabel("Organization Mode:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        safe_mode_section.add_widget(safe_mode_label)
+
+        safe_mode_check = StyledCheckBox(
+            "Safe Mode (copy files)",
+            checked=profile.get("settings", {}).get("safe_mode", True)
+        )
+        safe_mode_check.stateChanged.connect(
+            lambda state: self._on_safe_mode_changed(profile_id, safe_mode_check)
+        )
+        safe_mode_section.add_widget(safe_mode_check)
+
+        safe_mode_help = MutedLabel(
+            "When enabled: Files are copied to their destination (original stays in place).\n"
+            "When disabled: Files are moved to their destination (original is removed).\n"
+            "Note: This only applies to category sorting. Rules always execute fully."
+        )
+        safe_mode_help.setWordWrap(True)
+        safe_mode_section.add_widget(safe_mode_help)
+
+        self.editor_scroll.add_widget(safe_mode_section)
+
+        # Smart sorting setting section
+        smart_mode_section = VerticalFrame(spacing=8)
+
+        smart_mode_label = StyledLabel("Sorting Strategy:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        smart_mode_section.add_widget(smart_mode_label)
+
+        smart_mode_check = StyledCheckBox(
+            "Smart Sorting",
+            checked=profile.get("settings", {}).get("smart_mode", False)
+        )
+        smart_mode_check.stateChanged.connect(
+            lambda state: self._on_smart_mode_changed(profile_id, smart_mode_check)
+        )
+        smart_mode_section.add_widget(smart_mode_check)
+
+        smart_mode_help = MutedLabel(
+            "When enabled: Uses advanced rules to detect screenshots, assignments,\n"
+            "photos, invoices, messaging media and more.\n"
+            "When disabled: Uses standard category-based sorting."
+        )
+        smart_mode_help.setWordWrap(True)
+        smart_mode_section.add_widget(smart_mode_help)
+
+        self.editor_scroll.add_widget(smart_mode_section)
+
+        # Rule fallback to sort setting section
+        rule_fallback_section = VerticalFrame(spacing=8)
+
+        rule_fallback_label = StyledLabel("Fallback Behavior:", font_size=Fonts.SIZE_NORMAL, bold=True)
+        rule_fallback_section.add_widget(rule_fallback_label)
+
+        rule_fallback_check = StyledCheckBox(
+            "Fallback to Sort",
+            checked=profile.get("settings", {}).get("rule_fallback_to_sort", False)
+        )
+        rule_fallback_check.stateChanged.connect(
+            lambda state: self._on_rule_fallback_changed(profile_id, rule_fallback_check)
+        )
+        rule_fallback_section.add_widget(rule_fallback_check)
+
+        rule_fallback_help = MutedLabel(
+            "When enabled: Files not matched by any rule fall back to category sorting.\n"
+            "When disabled: Unmatched files stay in place."
+        )
+        rule_fallback_help.setWordWrap(True)
+        rule_fallback_section.add_widget(rule_fallback_help)
+
+        self.editor_scroll.add_widget(rule_fallback_section)
+
         # Action buttons
         action_section = HorizontalFrame(spacing=8)
 
@@ -518,6 +616,42 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         updates = {
             "settings": {
                 "include_sub": checkbox.isChecked()
+            }
+        }
+        self.profile_update_silent_requested.emit(profile_id, updates)
+
+    def _on_skip_hidden_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
+        """Handle skip hidden/system files checkbox change - emit silent signal for backend to handle."""
+        updates = {
+            "settings": {
+                "skip_hidden": checkbox.isChecked()
+            }
+        }
+        self.profile_update_silent_requested.emit(profile_id, updates)
+
+    def _on_safe_mode_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
+        """Handle safe mode checkbox change - emit silent signal for backend to handle."""
+        updates = {
+            "settings": {
+                "safe_mode": checkbox.isChecked()
+            }
+        }
+        self.profile_update_silent_requested.emit(profile_id, updates)
+
+    def _on_smart_mode_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
+        """Handle smart mode checkbox change - emit silent signal for backend to handle."""
+        updates = {
+            "settings": {
+                "smart_mode": checkbox.isChecked()
+            }
+        }
+        self.profile_update_silent_requested.emit(profile_id, updates)
+
+    def _on_rule_fallback_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
+        """Handle rule fallback to sort checkbox change - emit silent signal for backend to handle."""
+        updates = {
+            "settings": {
+                "rule_fallback_to_sort": checkbox.isChecked()
             }
         }
         self.profile_update_silent_requested.emit(profile_id, updates)

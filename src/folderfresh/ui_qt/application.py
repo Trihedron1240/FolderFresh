@@ -105,22 +105,27 @@ class FolderFreshApplication:
             except Exception:
                 pass
 
-        # Restore checkbox options from config
-        if self._config_data:
+        # Restore checkbox options from active profile in JSON (single source of truth)
+        if self.profile_store:
             try:
-                # Map config keys to UI option keys
-                options = {
-                    "include_subfolders": self._config_data.get("include_sub", True),
-                    "skip_hidden": self._config_data.get("skip_hidden", True),
-                    "safe_mode": self._config_data.get("safe_mode", True),
-                    "smart_sorting": self._config_data.get("smart_mode", False),
-                    "auto_tidy": self._config_data.get("watch_mode", False),
-                    "startup": self._config_data.get("startup", False),
-                    "tray_mode": self._config_data.get("tray_mode", False),
-                }
-                self.main_window.set_options(options)
+                profiles_doc = self.profile_store.load()
+                active_profile = self.profile_store.get_active_profile(profiles_doc)
+                if active_profile:
+                    settings = active_profile.get("settings", {})
+                    # Map profile settings to UI option keys
+                    options = {
+                        "include_subfolders": settings.get("include_sub", True),
+                        "skip_hidden": settings.get("skip_hidden", True),
+                        "safe_mode": settings.get("safe_mode", True),
+                        "smart_sorting": settings.get("smart_mode", False),
+                        "rule_fallback_to_sort": settings.get("rule_fallback_to_sort", False),
+                        "auto_tidy": settings.get("auto_tidy", False),
+                        "startup": settings.get("startup", False),
+                        "tray_mode": settings.get("tray_mode", False),
+                    }
+                    self.main_window.set_options(options)
             except Exception as e:
-                log_error(f"Failed to restore checkbox options: {e}")
+                log_error(f"Failed to restore checkbox options from profile: {e}")
 
     def _connect_main_window_signals(self) -> None:
         """Connect main window signals to application slots."""
@@ -151,7 +156,6 @@ class FolderFreshApplication:
             self.main_window.sidebar.rules_clicked.connect(self._on_rules_requested)
             self.main_window.sidebar.activity_log_clicked.connect(self._on_view_activity_log)
             self.main_window.sidebar.categories_clicked.connect(self._on_categories_requested)
-            self.main_window.sidebar.settings_clicked.connect(self._on_settings_requested)
 
     def _initialize_backends(self) -> None:
         """Initialize all backend modules."""
@@ -304,6 +308,9 @@ class FolderFreshApplication:
 
         if "smart_mode" in settings:
             mapped["smart_sorting"] = settings["smart_mode"]
+
+        if "rule_fallback_to_sort" in settings:
+            mapped["rule_fallback_to_sort"] = settings["rule_fallback_to_sort"]
 
         if "auto_tidy" in settings:
             mapped["auto_tidy"] = settings["auto_tidy"]
@@ -1145,31 +1152,6 @@ class FolderFreshApplication:
             self.active_windows["activity_log"] = log_window
             log_window.show()
 
-    def _on_settings_requested(self) -> None:
-        """Open settings window."""
-        from folderfresh.ui_qt.settings_window import SettingsWindow
-
-        if "settings" not in self.active_windows or not self.active_windows["settings"].isVisible():
-            # Get current settings from profile
-            current_settings = {}
-            if self.profile_store:
-                doc = self.profile_store.load()
-                active_profile = self.profile_store.get_active_profile(doc)
-                if active_profile:
-                    current_settings = active_profile.get("settings", {})
-
-            settings_window = SettingsWindow(
-                parent=self.main_window,
-                initial_settings=current_settings,
-            )
-
-            # Connect settings changes to save
-            settings_window.settings_changed.connect(self._on_settings_changed_in_window)
-            settings_window.closed.connect(self._on_settings_window_closed)
-            settings_window.closed.connect(lambda: self._on_window_closed("settings"))
-
-            self.active_windows["settings"] = settings_window
-            settings_window.show()
 
     def _on_settings_changed_in_window(self, settings: dict) -> None:
         """Handle settings change from settings window."""

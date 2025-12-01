@@ -186,7 +186,8 @@ class MainWindow(QMainWindow):
         self.include_sub_check.setChecked(disk.get("include_sub", True))
         self.skip_hidden_check.setChecked(disk.get("skip_hidden", True))
         self.safe_mode_check.setChecked(disk.get("safe_mode", True))
-        self.smart_mode_check.setChecked(disk.get("smart_sorting", False))
+        self.smart_mode_check.setChecked(disk.get("smart_mode", False))
+        self.rule_fallback_check.setChecked(disk.get("rule_fallback_to_sort", False))
         self.watch_mode_check.setChecked(disk.get("auto_tidy", False))
         self.startup_check.setChecked(disk.get("startup", False))
         self.tray_mode_check.setChecked(disk.get("tray_mode", False))
@@ -205,6 +206,23 @@ class MainWindow(QMainWindow):
             updates = {
                 "settings": {
                     "include_sub": self.include_sub_check.isChecked()
+                }
+            }
+            self.profile_update_silent_requested.emit(self.truly_active_profile_id, updates)
+        else:
+            # Fallback: just emit options_changed
+            self.options_changed.emit()
+
+    def _on_rule_fallback_changed(self) -> None:
+        """Handle rule fallback to sort checkbox change - emit signal for backend to handle."""
+        if self._block_include_sub_signals:
+            return
+
+        # Emit silent profile update signal
+        if self.truly_active_profile_id:
+            updates = {
+                "settings": {
+                    "rule_fallback_to_sort": self.rule_fallback_check.isChecked()
                 }
             }
             self.profile_update_silent_requested.emit(self.truly_active_profile_id, updates)
@@ -282,6 +300,17 @@ class MainWindow(QMainWindow):
         ToolTip.attach_to(
             self.smart_mode_check,
             "Uses advanced rules to detect screenshots, assignments,\nphotos, invoices, messaging media and more."
+        )
+
+        self.rule_fallback_check = StyledCheckBox("Fallback to Sort", checked=False)
+        self.rule_fallback_check.stateChanged.connect(
+            lambda: self._on_rule_fallback_changed()
+        )
+        options_frame.add_widget(self.rule_fallback_check)
+        ToolTip.attach_to(
+            self.rule_fallback_check,
+            "When enabled: Files not matched by any rule fall back to category sorting.\n"
+            "When disabled: Unmatched files stay in place."
         )
 
         self.watch_mode_check = StyledCheckBox("Auto-tidy", checked=False)
@@ -523,6 +552,7 @@ class MainWindow(QMainWindow):
             "skip_hidden": self.skip_hidden_check.isChecked(),
             "safe_mode": self.safe_mode_check.isChecked(),
             "smart_sorting": self.smart_mode_check.isChecked(),
+            "rule_fallback_to_sort": self.rule_fallback_check.isChecked(),
             "auto_tidy": self.watch_mode_check.isChecked(),
             "startup": self.startup_check.isChecked(),
             "tray_mode": self.tray_mode_check.isChecked(),
@@ -544,6 +574,7 @@ class MainWindow(QMainWindow):
             self.skip_hidden_check.blockSignals(True)
             self.safe_mode_check.blockSignals(True)
             self.smart_mode_check.blockSignals(True)
+            self.rule_fallback_check.blockSignals(True)
             self.watch_mode_check.blockSignals(True)
             self.startup_check.blockSignals(True)
             self.tray_mode_check.blockSignals(True)
@@ -556,6 +587,8 @@ class MainWindow(QMainWindow):
                 self.safe_mode_check.setChecked(options["safe_mode"])
             if "smart_sorting" in options:
                 self.smart_mode_check.setChecked(options["smart_sorting"])
+            if "rule_fallback_to_sort" in options:
+                self.rule_fallback_check.setChecked(options["rule_fallback_to_sort"])
             if "auto_tidy" in options:
                 self.watch_mode_check.setChecked(options["auto_tidy"])
             if "startup" in options:
@@ -568,6 +601,7 @@ class MainWindow(QMainWindow):
             self.skip_hidden_check.blockSignals(False)
             self.safe_mode_check.blockSignals(False)
             self.smart_mode_check.blockSignals(False)
+            self.rule_fallback_check.blockSignals(False)
             self.watch_mode_check.blockSignals(False)
             self.startup_check.blockSignals(False)
             self.tray_mode_check.blockSignals(False)
