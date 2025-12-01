@@ -231,16 +231,35 @@ class RunCommandAction(Action):
         Execute the command.
 
         In dry_run or safe_mode: Don't execute, only preview.
+
+        Supported placeholders:
+        - {file} → full path
+        - {dir} → parent directory
+        - {name} → filename without extension
+        - {ext} → extension (including dot)
+        - {basename} → filename with extension
         """
         config = config or {}
         file_path = fileinfo.get("path", "")
         dry_run = config.get("dry_run", False)
         safe_mode = config.get("safe_mode", True)
 
-        # Expand tokens in command
+        # Expand tokens in command (angle bracket tokens like <name>, <extension>)
         command = expand_tokens(self.command, fileinfo)
-        # Also replace {path} and {name} placeholders
-        command = command.replace("{path}", file_path).replace("{name}", fileinfo.get("name", ""))
+
+        # Replace curly brace placeholders for RunCommand
+        file_path_obj = Path(file_path) if file_path else None
+        if file_path_obj:
+            parent_dir = str(file_path_obj.parent)
+            name_without_ext = file_path_obj.stem
+            extension = file_path_obj.suffix  # includes dot
+            basename = file_path_obj.name
+
+            command = command.replace("{file}", file_path)
+            command = command.replace("{dir}", parent_dir)
+            command = command.replace("{name}", name_without_ext)
+            command = command.replace("{ext}", extension)
+            command = command.replace("{basename}", basename)
 
         if dry_run or safe_mode:
             message = f"DRY RUN: Would execute: {command}"

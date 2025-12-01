@@ -350,9 +350,27 @@ class RuleSimulator(QDialog):
 
             elif action_type == "RunCommand":
                 command = args.get("command", "")
-                if len(command) > 60:
-                    command = command[:60] + "..."
-                return f"Run Command: {command}"
+                # Expand the command with actual file values for preview
+                expanded_command = expand_tokens(command, fileinfo) if "<" in command else command
+
+                # Replace curly brace placeholders for display preview
+                file_path = fileinfo.get("path", "")
+                if file_path:
+                    from pathlib import Path
+                    file_path_obj = Path(file_path)
+                    expanded_command = expanded_command.replace("{file}", str(file_path))
+                    expanded_command = expanded_command.replace("{dir}", str(file_path_obj.parent))
+                    expanded_command = expanded_command.replace("{name}", file_path_obj.stem)
+                    expanded_command = expanded_command.replace("{ext}", file_path_obj.suffix)
+                    expanded_command = expanded_command.replace("{basename}", file_path_obj.name)
+
+                # Truncate for display if too long
+                if len(expanded_command) > 80:
+                    display_command = expanded_command[:80] + "..."
+                else:
+                    display_command = expanded_command
+
+                return f"Run Command: {display_command}\n  Supported placeholders: {{file}}, {{dir}}, {{name}}, {{ext}}, {{basename}}"
 
             elif action_type == "Archive":
                 archive_path = args.get("archive_path", "")
