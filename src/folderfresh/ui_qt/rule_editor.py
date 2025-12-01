@@ -365,10 +365,6 @@ class RuleEditor(QDialog):
         if not self.rule_name or not self.rule_name.strip():
             return False, "Rule name is required. Please enter a name for this rule."
 
-        # Check at least one condition
-        if not self.conditions:
-            return False, "At least one condition is required.\n\nAdd a condition that describes which files to match."
-
         # Check at least one action
         if not self.actions:
             return False, "At least one action is required.\n\nAdd an action that describes what to do with matched files."
