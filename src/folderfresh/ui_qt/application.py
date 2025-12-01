@@ -798,10 +798,7 @@ class FolderFreshApplication:
 
     @Slot()
     def _on_desktop_clean_requested(self) -> None:
-        """Change current working directory to desktop."""
-        import os
-        from pathlib import Path
-
+        """Set desktop as selected folder (same as choosing the Desktop folder)."""
         try:
             # Get desktop path
             desktop = Path.home() / "Desktop"
@@ -814,21 +811,22 @@ class FolderFreshApplication:
                 )
                 return
 
-            # Change working directory to desktop
-            os.chdir(desktop)
+            # Set desktop as selected folder (same as "choose folder")
+            self.selected_folder = desktop
+            self.main_window.set_selected_folder(desktop)
+            self.main_window.enable_action_buttons(True)
 
-            show_info_dialog(
-                self.main_window,
-                "Desktop",
-                f"Working directory changed to: {desktop}",
-            )
+            # Save folder path to config
+            if self._config_data:
+                self._config_data["last_folder"] = str(desktop)
+                save_config(self._config_data)
 
         except Exception as e:
-            log_error(f"Error changing to desktop directory: {e}")
+            log_error(f"Error setting desktop folder: {e}")
             show_error_dialog(
                 self.main_window,
                 "Error",
-                f"Failed to change to desktop directory: {e}",
+                f"Failed to set desktop folder: {e}",
             )
 
 
