@@ -373,12 +373,14 @@ class RuleSimulator(QDialog):
                 return f"Run Command: {display_command}\n  Supported placeholders: {{file}}, {{dir}}, {{name}}, {{ext}}, {{basename}}"
 
             elif action_type == "Archive":
-                archive_path = args.get("archive_path", "")
-                return f"Archive to ZIP: {archive_path}"
+                target_dir = args.get("target_dir", "")
+                expanded = expand_tokens(target_dir, fileinfo)
+                return f"Archive to ZIP: {target_dir} → {expanded}"
 
             elif action_type == "Extract":
-                extract_path = args.get("extract_path", "")
-                return f"Extract Archive to: {extract_path}"
+                target_dir = args.get("target_dir", "")
+                expanded = expand_tokens(target_dir, fileinfo)
+                return f"Extract Archive to: {target_dir} → {expanded}"
 
             elif action_type == "CreateFolder":
                 folder_name = args.get("folder_name", "")

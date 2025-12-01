@@ -664,10 +664,8 @@ class RuleEditor(QDialog):
             # Truncate long commands
             cmd = str(action["command"])
             param = cmd[:50] + "..." if len(cmd) > 50 else cmd
-        elif "archive_path" in action:
-            param = str(action["archive_path"])
-        elif "extract_path" in action:
-            param = str(action["extract_path"])
+        elif "target_dir" in action:
+            param = str(action["target_dir"])
         elif "folder_name" in action:
             param = str(action["folder_name"])
         elif "tag" in action:
@@ -702,8 +700,8 @@ class RuleEditor(QDialog):
             # Tier 1 actions
             "TokenRename": {"param_key": "name_pattern"},
             "RunCommand": {"param_key": "command"},
-            "Archive": {"param_key": "archive_path"},
-            "Extract": {"param_key": "extract_path"},
+            "Archive": {"param_key": "target_dir"},
+            "Extract": {"param_key": "target_dir"},
             "CreateFolder": {"param_key": "folder_name"},
             # Tier 2 actions
             "ColorLabel": {"param_key": "color"},
