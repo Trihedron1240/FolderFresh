@@ -54,6 +54,9 @@ class ProfileManagerWindow(QDialog):
     profile_changed = Signal()  # Emits when any profile changes
     customize_categories_requested = Signal(str)  # Emits profile ID
     manage_rules_requested = Signal(str)  # Emits profile ID
+    profile_update_requested = Signal(str, dict)  # Emits (profile_id, updates_dict)
+    profile_update_silent_requested = Signal(str, dict)  # Emits (profile_id, updates_dict) without dialog
+    set_active_requested = Signal(str)  # Emits profile_id
     closed = Signal()
 
     def __init__(self, parent=None, profiles: List[Dict[str, Any]] = None, active_profile_id: str = None):
@@ -478,26 +481,13 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             show_info_dialog(self, "Renamed", f"Profile '{old_name}' renamed to '{new_name}'.")
 
     def _on_fallback_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
-        """Handle fallback checkbox change - save directly to disk."""
-        # Save directly to disk (the single source of truth, no memory cache)
-        try:
-            doc = self.profile_store.load()
-            found = False
-            for profile in doc.get("profiles", []):
-                if profile["id"] == profile_id:
-                    if "settings" not in profile:
-                        profile["settings"] = {}
-                    profile["settings"]["rule_fallback_to_sort"] = checkbox.isChecked()
-                    profile["updated_at"] = datetime.now().isoformat()
-                    found = True
-                    break
-
-            if found:
-                self.profile_store.save(doc)
-            else:
-                log_error(f"Profile {profile_id} not found in profiles document")
-        except Exception as e:
-            log_error(f"Failed to save fallback setting: {e}")
+        """Handle fallback checkbox change - emit silent signal for backend to handle."""
+        updates = {
+            "settings": {
+                "rule_fallback_to_sort": checkbox.isChecked()
+            }
+        }
+        self.profile_update_silent_requested.emit(profile_id, updates)
 
     def _on_duplicate_profile(self, profile_id: str) -> None:
         """Duplicate profile."""
@@ -547,13 +537,8 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         self.profile_deleted.emit(profile_id)
 
     def _on_set_active(self, profile_id: str) -> None:
-        """Set profile as active."""
-        self._set_active_profile_id(profile_id)
-        self._refresh_profile_list()
-        self._render_editor_pane(profile_id)
-        # Emit signal - connected to profile_manager_backend.set_active_profile() which handles saving
-        self.active_profile_changed.emit(profile_id)
-        show_info_dialog(self, "Active Profile", "Profile set as active.")
+        """Set profile as active - emit signal for backend to handle."""
+        self.set_active_requested.emit(profile_id)
 
     def _on_customize_categories(self, profile_id: str) -> None:
         """Open category customization dialog for profile."""
@@ -632,7 +617,7 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         name_entry: StyledLineEdit,
         desc_entry: StyledTextEdit,
     ) -> None:
-        """Save profile changes directly to disk."""
+        """Save profile changes - emit signal for backend to handle."""
         new_name = name_entry.text().strip()
         new_desc = desc_entry.toPlainText().strip()
 
@@ -640,24 +625,11 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
             show_warning_dialog(self, "Save", "Profile name cannot be empty.")
             return
 
-        # Load fresh from disk
-        doc = self.profile_store.load()
-        found = False
-        for p in doc.get("profiles", []):
-            if p["id"] == profile_id:
-                p["name"] = new_name
-                p["description"] = new_desc
-                p["updated_at"] = datetime.now().isoformat()
-                found = True
-                break
-
-        if found:
-            self.profile_store.save(doc)
-            self._refresh_profile_list()
-            self.profile_changed.emit()
-            show_info_dialog(self, "Saved", "Profile changes saved.")
-        else:
-            show_error_dialog(self, "Save", f"Profile {profile_id} not found.")
+        updates = {
+            "name": new_name,
+            "description": new_desc
+        }
+        self.profile_update_requested.emit(profile_id, updates)
 
     def _on_import_profiles(self) -> None:
         """Import profiles from a JSON file."""

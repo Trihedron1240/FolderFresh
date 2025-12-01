@@ -239,6 +239,9 @@ class ProfileManagerBackend(QObject):
             True if successful
         """
         try:
+            # Reload from disk to ensure we have the latest data
+            self._load_profiles()
+
             profile = self.get_profile_by_id(profile_id)
             if not profile:
                 show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_id}")
@@ -250,12 +253,115 @@ class ProfileManagerBackend(QObject):
 
             log_info(f"Active profile set: {profile['name']}")
             self.profile_activated.emit(profile_id)
+            show_info_dialog(None, "Active Profile", "Profile set as active.")
 
             return True
 
         except Exception as e:
             log_error(f"Failed to set active profile: {e}")
             show_error_dialog(None, "Set Active Profile Failed", f"Failed to set active profile:\n{e}")
+            return False
+
+    def apply_profile_updates(self, profile_id: str, updates_dict: Dict) -> bool:
+        """
+        Apply merge-safe updates to a profile.
+
+        Loads latest data from disk, applies only the fields in updates_dict,
+        and preserves all other fields including category fields.
+
+        Args:
+            profile_id: Profile to update
+            updates_dict: Dictionary with fields to update
+
+        Returns:
+            True if successful
+        """
+        try:
+            # Reload from disk to get latest data
+            self._load_profiles()
+
+            profile = self.get_profile_by_id(profile_id)
+            if not profile:
+                log_error(f"Profile not found: {profile_id}")
+                return False
+
+            # Merge updates: only update fields in updates_dict, preserve all others
+            for key, value in updates_dict.items():
+                if key == "settings" and isinstance(value, dict):
+                    # For settings, do a deep merge
+                    if "settings" not in profile:
+                        profile["settings"] = {}
+                    profile["settings"].update(value)
+                else:
+                    # For other fields, direct assignment
+                    profile[key] = value
+
+            # Update timestamp
+            from datetime import datetime
+            profile["updated_at"] = datetime.now().isoformat()
+
+            # Save the full document with all fields intact
+            self.profile_store.save(self.profiles_doc)
+
+            log_info(f"Profile updated: {profile.get('name', profile_id)}")
+            self.profile_updated.emit(profile_id)
+            show_info_dialog(None, "Saved", "Profile changes saved.")
+
+            return True
+
+        except Exception as e:
+            log_error(f"Failed to apply profile updates: {e}")
+            show_error_dialog(None, "Update Profile Failed", f"Failed to update profile:\n{e}")
+            return False
+
+    def apply_profile_updates_silent(self, profile_id: str, updates_dict: Dict) -> bool:
+        """
+        Apply merge-safe updates to a profile without showing dialogs.
+
+        Loads latest data from disk, applies only the fields in updates_dict,
+        and preserves all other fields including category fields.
+
+        Args:
+            profile_id: Profile to update
+            updates_dict: Dictionary with fields to update
+
+        Returns:
+            True if successful
+        """
+        try:
+            # Reload from disk to get latest data
+            self._load_profiles()
+
+            profile = self.get_profile_by_id(profile_id)
+            if not profile:
+                log_error(f"Profile not found: {profile_id}")
+                return False
+
+            # Merge updates: only update fields in updates_dict, preserve all others
+            for key, value in updates_dict.items():
+                if key == "settings" and isinstance(value, dict):
+                    # For settings, do a deep merge
+                    if "settings" not in profile:
+                        profile["settings"] = {}
+                    profile["settings"].update(value)
+                else:
+                    # For other fields, direct assignment
+                    profile[key] = value
+
+            # Update timestamp
+            from datetime import datetime
+            profile["updated_at"] = datetime.now().isoformat()
+
+            # Save the full document with all fields intact
+            self.profile_store.save(self.profiles_doc)
+
+            log_info(f"Profile updated: {profile.get('name', profile_id)}")
+            self.profile_updated.emit(profile_id)
+
+            return True
+
+        except Exception as e:
+            log_error(f"Failed to apply profile updates: {e}")
             return False
 
     def duplicate_profile(self, profile_id: str) -> Optional[str]:

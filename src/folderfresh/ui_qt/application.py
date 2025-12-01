@@ -973,6 +973,16 @@ class FolderFreshApplication:
                 profiles_window.active_profile_changed.connect(
                     lambda pid: self.profile_manager_backend.set_active_profile(pid)
                 )
+                # Connect new merge-safe signals
+                profiles_window.profile_update_requested.connect(
+                    lambda pid, updates: self.profile_manager_backend.apply_profile_updates(pid, updates)
+                )
+                profiles_window.profile_update_silent_requested.connect(
+                    lambda pid, updates: self.profile_manager_backend.apply_profile_updates_silent(pid, updates)
+                )
+                profiles_window.set_active_requested.connect(
+                    lambda pid: self.profile_manager_backend.set_active_profile(pid)
+                )
 
             # Connect signal to handler
             profiles_window.profile_selected.connect(self._on_profile_selected)
