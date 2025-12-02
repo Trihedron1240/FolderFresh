@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
             return
 
         disk = active.get("settings", {})
-
+        config = doc.get("config", {})
         # Block signals so they don't save again
         self._block_include_sub_signals = True
 

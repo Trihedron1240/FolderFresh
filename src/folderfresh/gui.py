@@ -275,7 +275,7 @@ class FolderFreshApp(ctk.CTk):
             command=self.on_toggle_watch
         )
         self.watch_mode.grid(row=0, column=4, sticky="w", padx=8, pady=4)
-        if self.config_data.get("watch_mode", False):
+        if self.config_data.get("auto_tidy", True):
             self.watch_mode.select()
         else:
             self.watch_mode.deselect()
@@ -564,7 +564,8 @@ class FolderFreshApp(ctk.CTk):
         Called once during app startup, before _start_watched_folders().
         """
         # Load from config (single source for persistence)
-        self.auto_tidy_enabled = self.config_data.get("watch_mode", False)
+        # Watched folders always have auto_tidy enabled by default
+        self.auto_tidy_enabled = self.config_data.get("auto_tidy", True)
 
         # Sync UI toggle to match
         if self.auto_tidy_enabled:
@@ -575,23 +576,32 @@ class FolderFreshApp(ctk.CTk):
         print(f"[AUTO-TIDY] State initialized: auto_tidy_enabled={self.auto_tidy_enabled}")
 
     def _start_watched_folders(self):
-        """Start multi-folder watchers at launch."""
-        # Only start watchers if Auto-Tidy is enabled in config
-        if not self.auto_tidy_enabled:
-            return
+        """Start multi-folder watchers at launch. Watched folders always auto-tidy."""
+        watched_folders = [f for f in self.config_data.get("watched_folders", [])
+                          if Path(f).exists()]
 
-        folders_to_watch = [f for f in self.config_data.get("watched_folders", [])
-                           if Path(f).exists()]
+        # Check folder watch status for each folder
+        folder_watch_status = self.config_data.get("folder_watch_status", {})
 
-        for folder in folders_to_watch:
+        active_count = 0
+        for folder in watched_folders:
             try:
-                self.watcher_manager.watch_folder(folder)
-                print(f"[AUTO-TIDY] Watching: {folder}")
+                # Normalize path for consistent lookup
+                normalized_folder = str(Path(folder).resolve())
+                # Default to True if not explicitly set to False
+                is_active = folder_watch_status.get(normalized_folder, True)
+
+                if is_active:
+                    self.watcher_manager.watch_folder(folder)
+                    print(f"[AUTO-TIDY] Watching: {folder}")
+                    active_count += 1
+                else:
+                    print(f"[AUTO-TIDY] Folder paused (not watching): {folder}")
             except Exception as e:
                 print(f"[AUTO-TIDY ERROR] Failed to watch {folder}: {e}")
 
-        if folders_to_watch:
-            self.set_status(f"✓ Auto-tidy enabled ({len(folders_to_watch)} folder(s))")
+        if active_count > 0:
+            self.set_status(f"✓ Watching {active_count}/{len(watched_folders)} folder(s) for auto-tidy")
 
     def enable_auto_tidy(self):
         """
@@ -600,7 +610,7 @@ class FolderFreshApp(ctk.CTk):
         """
         print("[AUTO-TIDY] Enabling Auto-Tidy...")
         self.auto_tidy_enabled = True
-        self.config_data["watch_mode"] = True
+        self.config_data["auto_tidy"] = True
         save_config(self.config_data)
 
         # Sync UI (if not already selected)
@@ -631,7 +641,7 @@ class FolderFreshApp(ctk.CTk):
         """
         print("[AUTO-TIDY] Disabling Auto-Tidy...")
         self.auto_tidy_enabled = False
-        self.config_data["watch_mode"] = False
+        self.config_data["auto_tidy"] = False
         save_config(self.config_data)
 
         # Sync UI (if not already deselected)
@@ -1000,7 +1010,7 @@ class FolderFreshApp(ctk.CTk):
 
         # Save global settings
         global_cfg = load_config()
-        global_cfg["watch_mode"] = bool(self.watch_mode.get())
+        global_cfg["auto_tidy"] = bool(self.watch_mode.get())
         global_cfg["tray_mode"] = bool(self.tray_mode.get())
         save_config(global_cfg)
 
@@ -1166,20 +1176,12 @@ class FolderFreshApp(ctk.CTk):
 
     def on_toggle_watch(self):
         """
-        Handle Auto-Tidy toggle from UI checkbox.
-        Uses canonical state helpers to ensure consistency.
+        Auto-Tidy toggle handler - watched folders always auto-tidy.
+        This prevents unchecking the auto-tidy checkbox.
         """
-        desired_state = bool(self.watch_mode.get())
-
-        # No change needed
-        if desired_state == self.auto_tidy_enabled:
-            return
-
-        # Transition to desired state
-        if desired_state:
-            self.enable_auto_tidy()
-        else:
-            self.disable_auto_tidy()
+        # Always keep the checkbox selected (watched folders always auto-tidy)
+        if not self.watch_mode.get():
+            self.watch_mode.select()
 
 
     def on_toggle_tray(self):

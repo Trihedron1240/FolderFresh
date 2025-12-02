@@ -326,7 +326,7 @@ def delete_empty_folders(folder_path: Path) -> List[str]:
 # ORGANISE
 # =============================================================================
 
-def do_organise(app, moves):
+def do_organise(app, moves, profile=None):
     """
     SAFELY organise files using a RULE-FIRST processing pipeline.
 
@@ -339,6 +339,11 @@ def do_organise(app, moves):
        e. If no category → leave file untouched
 
     NEVER delete files unless DeleteAction is explicitly triggered by a rule.
+
+    Args:
+        app: Application object with config_data and selected_folder
+        moves: List of files to organize
+        profile: Optional profile object to use. If None, uses active profile.
     """
 
     folder = app.selected_folder
@@ -362,7 +367,9 @@ def do_organise(app, moves):
     # Load rules once (faster)
     store = ProfileStore()
     doc = store.load()
-    profile = store.get_active_profile(doc)
+    # Use provided profile or fall back to active profile
+    if profile is None:
+        profile = store.get_active_profile(doc)
     rules = store.get_rules(profile)
 
     for m in moves:

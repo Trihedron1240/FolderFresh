@@ -155,6 +155,10 @@ class FolderFreshQtApplication:
         try:
             log_info("Initializing backend integrations...")
 
+            # Initialize watcher first so folders_backend can reference it
+            if not self._initialize_watcher():
+                return False
+
             # Initialize backend modules
             self.profile_backend = ProfileManagerBackend()
             self.rule_backend = RuleManagerBackend()
@@ -238,16 +242,28 @@ class FolderFreshQtApplication:
 
             self.watcher_manager = WatcherManager(self.main_app)
 
-            # Watch configured folders
+            # Watch configured folders (check status for each)
             watched_folders = self.config_data.get("watched_folders", [])
+            folder_watch_status = self.config_data.get("folder_watch_status", {})
+
+            active_count = 0
             for folder_path in watched_folders:
                 try:
-                    self.watcher_manager.watch_folder(folder_path)
-                    log_info(f"Watching folder: {folder_path}")
+                    # Normalize path for consistent lookup
+                    normalized_path = str(Path(folder_path).resolve())
+                    # Default to True if not explicitly set to False
+                    is_active = folder_watch_status.get(normalized_path, True)
+
+                    if is_active:
+                        self.watcher_manager.watch_folder(folder_path)
+                        log_info(f"Watching folder: {folder_path}")
+                        active_count += 1
+                    else:
+                        log_info(f"Folder paused (not watching): {folder_path}")
                 except Exception as e:
                     log_warning(f"Failed to watch folder {folder_path}: {e}")
 
-            log_info(f"File watcher initialized ({len(watched_folders)} folders)")
+            log_info(f"File watcher initialized ({active_count}/{len(watched_folders)} folders active)")
 
             return True
 
@@ -272,11 +288,7 @@ class FolderFreshQtApplication:
             if not self._initialize_ui():
                 return 1
 
-            # Initialize watcher
-            if not self._initialize_watcher():
-                log_warning("Watcher initialization failed, continuing without auto-tidy")
-
-            # Initialize backends
+            # Initialize backends (which includes watcher initialization)
             if not self._initialize_backends():
                 return 1
 

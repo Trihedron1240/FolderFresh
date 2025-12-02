@@ -174,6 +174,7 @@ class ProfileStore:
             "ignore_exts",
             "age_filter_days",
             "rule_fallback_to_sort",
+            "auto_tidy",
         ):
             if k in settings:
                 cfg[k] = settings[k]

@@ -69,7 +69,7 @@ class TrayIcon:
             on_open: Callback for "Open" action
             on_toggle_watch: Callback for toggle watch action
             on_exit: Callback for exit action
-            auto_tidy_enabled: Current auto-tidy state
+            auto_tidy_enabled: Current auto-tidy state (deprecated, ignored)
 
         Returns:
             True if successful, False otherwise
@@ -82,11 +82,8 @@ class TrayIcon:
 
         try:
             # Build menu
-            auto_tidy_label = "Turn Auto-tidy OFF" if auto_tidy_enabled else "Turn Auto-tidy ON"
-
             menu = pystray.Menu(
                 pystray.MenuItem("Open FolderFresh", on_open),
-                pystray.MenuItem(auto_tidy_label, on_toggle_watch),
                 pystray.MenuItem("Exit", on_exit),
             )
 
@@ -147,9 +144,9 @@ class TrayIcon:
 
         Args:
             on_open: Callback for "Open" action
-            on_toggle_watch: Callback for toggle watch action
+            on_toggle_watch: Callback for toggle watch action (deprecated, ignored)
             on_exit: Callback for exit action
-            auto_tidy_enabled: Current auto-tidy state
+            auto_tidy_enabled: Current auto-tidy state (deprecated, ignored)
 
         Returns:
             True if successful, False otherwise
@@ -158,11 +155,8 @@ class TrayIcon:
             return False
 
         try:
-            auto_tidy_label = "Turn Auto-tidy OFF" if auto_tidy_enabled else "Turn Auto-tidy ON"
-
             menu = pystray.Menu(
                 pystray.MenuItem("Open FolderFresh", on_open),
-                pystray.MenuItem(auto_tidy_label, on_toggle_watch),
                 pystray.MenuItem("Exit", on_exit),
             )
 

@@ -482,30 +482,6 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
 
         self.editor_scroll.add_widget(smart_mode_section)
 
-        # Rule fallback to sort setting section
-        rule_fallback_section = VerticalFrame(spacing=8)
-
-        rule_fallback_label = StyledLabel("Fallback Behavior:", font_size=Fonts.SIZE_NORMAL, bold=True)
-        rule_fallback_section.add_widget(rule_fallback_label)
-
-        rule_fallback_check = StyledCheckBox(
-            "Fallback to Sort",
-            checked=profile.get("settings", {}).get("rule_fallback_to_sort", False)
-        )
-        rule_fallback_check.stateChanged.connect(
-            lambda state: self._on_rule_fallback_changed(profile_id, rule_fallback_check)
-        )
-        rule_fallback_section.add_widget(rule_fallback_check)
-
-        rule_fallback_help = MutedLabel(
-            "When enabled: Files not matched by any rule fall back to category sorting.\n"
-            "When disabled: Unmatched files stay in place."
-        )
-        rule_fallback_help.setWordWrap(True)
-        rule_fallback_section.add_widget(rule_fallback_help)
-
-        self.editor_scroll.add_widget(rule_fallback_section)
-
         # Action buttons
         action_section = HorizontalFrame(spacing=8)
 
@@ -643,15 +619,6 @@ Type: {'Built-in' if profile.get('is_builtin') else 'Custom'}"""
         updates = {
             "settings": {
                 "smart_mode": checkbox.isChecked()
-            }
-        }
-        self.profile_update_silent_requested.emit(profile_id, updates)
-
-    def _on_rule_fallback_changed(self, profile_id: str, checkbox: StyledCheckBox) -> None:
-        """Handle rule fallback to sort checkbox change - emit silent signal for backend to handle."""
-        updates = {
-            "settings": {
-                "rule_fallback_to_sort": checkbox.isChecked()
             }
         }
         self.profile_update_silent_requested.emit(profile_id, updates)

@@ -6,7 +6,7 @@ import threading
 from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 
-from .utils import file_is_old_enough, is_hidden_win, is_onedrive_placeholder
+from .utils import file_is_old_enough, is_hidden_win, is_onedrive_placeholder, is_placeholder_file
 from .sorting import pick_smart_category, pick_category
 from .constants import DEFAULT_CATEGORIES
 from .naming import resolve_category
@@ -43,9 +43,15 @@ class AutoTidyHandler(FileSystemEventHandler):
         from .config import load_config  # avoid circular import
 
         folder_map = self.app.config_data.get("folder_profile_map", {})
-        folder_key = str(self.root)
+        normalized_root = str(self.root.resolve()).lower()
 
-        profile_name = folder_map.get(folder_key)
+        # Search for profile by normalizing all stored paths
+        profile_name = None
+        for stored_path, mapped_profile in folder_map.items():
+            stored_normalized = str(Path(stored_path).resolve()).lower()
+            if stored_normalized == normalized_root:
+                profile_name = mapped_profile
+                break
 
         # No mapping → use the *current* active config_data
         if not profile_name:
@@ -69,7 +75,7 @@ class AutoTidyHandler(FileSystemEventHandler):
         # Load global baseline config
         base_cfg = load_config()
 
-        # Merge the profile’s settings into a fresh copy
+        # Merge the profile's settings into a fresh copy
         merged_cfg = self.app.profile_store.merge_profile_into_config(
             profile_obj,
             base_cfg
@@ -85,6 +91,40 @@ class AutoTidyHandler(FileSystemEventHandler):
     # ---------------------------------------------------
     # Ignore logic (now uses cfg)
     # ---------------------------------------------------
+    def get_folder_profile_obj(self):
+        """
+        Get the profile object for this folder.
+        Returns the profile object that should be used for rules.
+        """
+        from .config import load_config  # avoid circular import
+
+        folder_map = self.app.config_data.get("folder_profile_map", {})
+        normalized_root = str(self.root.resolve()).lower()
+
+        # Search for profile by normalizing all stored paths
+        profile_name = None
+        for stored_path, mapped_profile in folder_map.items():
+            stored_normalized = str(Path(stored_path).resolve()).lower()
+            if stored_normalized == normalized_root:
+                profile_name = mapped_profile
+                break
+
+        # Load profile storage file
+        doc = self.app.profile_store.load()
+
+        # No mapping → use active profile
+        if not profile_name:
+            return self.app.profile_store.get_active_profile(doc)
+
+        # Search for profile by name
+        for p in doc["profiles"]:
+            if p["name"].lower() == profile_name.lower():
+                return p
+
+        # Missing profile → fall back to active
+        print(f"[Watcher] WARNING: No such profile '{profile_name}'. Using active profile.")
+        return self.app.profile_store.get_active_profile(doc)
+
     def should_ignore(self, p: Path, cfg) -> bool:
         root = self.root
 
@@ -130,84 +170,81 @@ class AutoTidyHandler(FileSystemEventHandler):
                 return True
         except:
             pass
-
+        # Ignore files ending with log.json
+        if p.name.lower().endswith("log.json"):
+            return True
         return False
 
     # ---------------------------------------------------
-    # Robust stabilization
+    # Wait until file stops changing and is not locked
     # ---------------------------------------------------
-    def _can_open_rw(self, p: Path) -> bool:
-        """Try to open file read/write to detect an exclusive writer (Explorer rename often locks)."""
+    def _can_access_file(self, p: Path) -> bool:
+        """Check if file can be accessed (not locked by another process)."""
         try:
-            # Try r+b/r+ to detect write locks. Close immediately.
-            with open(p, "r+b"):
+            # Try to open file for reading to detect locks
+            with open(p, "rb"):
                 return True
-        except Exception:
-            # r+b may fail if inaccessible; try r
-            try:
-                with open(p, "rb"):
-                    return True
-            except Exception:
-                return False
+        except (IOError, OSError, PermissionError):
+            return False
 
-    def wait_until_stable(self, p: Path, cfg=None, timeout=20.0) -> bool:
+    def wait_until_stable(self, p: Path, attempts=4, delay=0.25) -> bool:
         """
-        Wait until file:
-         - exists
-         - is older than MIN_FILE_AGE
-         - can be opened (best-effort)
-         - size hasn't changed for STABLE_WINDOW
+        Wait until file is stable AND not locked:
+        1. Size doesn't change over multiple checks
+        2. File is accessible (not locked by another process)
+        3. File is old enough to not be a fresh creation
 
-        Returns True if stable, False on timeout or if file disappears.
+        This prevents organizing files that are still being written to.
         """
-        start = time.time()
+        stable_count = 0
         last_size = -1
-        last_change = time.time()
 
-        while True:
-            # Timeout guard
-            if (time.time() - start) > timeout:
-                log_activity(f"⚠️  WATCHER: wait_until_stable timeout for '{p.name}'")
-                return False
-
-            # If file vanished, stop
-            if not p.exists():
-                log_activity(f"ℹ️  WATCHER: {p.name} disappeared while waiting for stabilization")
-                return False
-
-            # min age to avoid immediate placeholder handling
+        for _ in range(attempts):
             try:
-                mtime = p.stat().st_mtime
-            except Exception:
-                time.sleep(self._CHECK_INTERVAL)
-                continue
+                # Skip check if file doesn't exist
+                if not p.exists():
+                    return False
 
-            if (time.time() - mtime) < self._MIN_FILE_AGE:
-                # still very fresh; wait a bit
-                time.sleep(self._CHECK_INTERVAL)
-                continue
+                # Check file age - skip very fresh files
+                try:
+                    mtime = p.stat().st_mtime
+                    age = time.time() - mtime
+                    if age < 0.1:  # File is less than 100ms old
+                        stable_count = 0
+                        time.sleep(delay)
+                        continue
+                except:
+                    return False
 
-            # Try to see if we can open (best-effort lock probe)
-            if not self._can_open_rw(p):
-                # file likely still locked by writer (Explorer, another process)
-                time.sleep(self._CHECK_INTERVAL)
-                continue
+                # Check if file can be accessed (not locked)
+                if not self._can_access_file(p):
+                    stable_count = 0
+                    time.sleep(delay)
+                    continue
 
-            # Check size stability
-            try:
-                size = p.stat().st_size
-            except Exception:
-                time.sleep(self._CHECK_INTERVAL)
-                continue
+                # Check size stability
+                try:
+                    size = p.stat().st_size
+                except:
+                    return False
 
-            if size != last_size:
+                if size == last_size and last_size != -1:
+                    stable_count += 1
+                else:
+                    stable_count = 0
+
                 last_size = size
-                last_change = time.time()
 
-            if (time.time() - last_change) >= self._STABLE_WINDOW:
-                return True
+                # If size was same for 2 consecutive checks, file is stable
+                if stable_count >= 1:
+                    return True
 
-            time.sleep(self._CHECK_INTERVAL)
+                time.sleep(delay)
+
+            except Exception:
+                return False
+
+        return False
 
     # ---------------------------------------------------
     # Fallback to category sorting (ONLY if no rule matched)
@@ -286,7 +323,17 @@ class AutoTidyHandler(FileSystemEventHandler):
         latest_config = load_config()
         folder_watch_status = latest_config.get("folder_watch_status", {})
         normalized_root = str(self.root.resolve())
-        is_watching = folder_watch_status.get(normalized_root, True)
+
+        # Check all keys in folder_watch_status to find a match
+        # Normalize both paths for case-insensitive comparison on Windows
+        is_watching = True  # Default to watching if not explicitly set
+        for stored_path, status in folder_watch_status.items():
+            # Normalize both sides for comparison (case-insensitive on Windows)
+            stored_normalized = str(Path(stored_path).resolve()).lower()
+            root_normalized = normalized_root.lower()
+            if stored_normalized == root_normalized:
+                is_watching = status
+                break
 
         if not is_watching:
             log_activity(f"📝 WATCHER: Folder is paused, skipping: {normalized_root}")
@@ -305,7 +352,7 @@ class AutoTidyHandler(FileSystemEventHandler):
         log_activity(f"📝 WATCHER: Processing file: {filename}")
 
         # 2. Wait for stabilization (includes lock checks and quiet size window)
-        if not self.wait_until_stable(p, cfg):
+        if not self.wait_until_stable(p):
             log_activity(f"⚠️  WATCHER: {filename} skipped (timeout waiting for stabilization)")
             return
 
@@ -314,6 +361,10 @@ class AutoTidyHandler(FileSystemEventHandler):
         # 3. APPLY IGNORE FILTERS
         if is_onedrive_placeholder(p):
             log_activity(f"ℹ️  WATCHER: {filename} ignored (OneDrive placeholder)")
+            return
+
+        if is_placeholder_file(p):
+            log_activity(f"ℹ️  WATCHER: {filename} ignored (placeholder/auto-generated file - user may still be naming it)")
             return
 
         if self.should_ignore(p, cfg):
@@ -328,8 +379,8 @@ class AutoTidyHandler(FileSystemEventHandler):
         # 4. RULE-FIRST EXECUTION
         try:
             store = ProfileStore()
-            doc = store.load()
-            profile = store.get_active_profile(doc)
+            # Use the folder's assigned profile instead of the active profile
+            profile = self.get_folder_profile_obj()
             rules = store.get_rules(profile)
 
             if rules:
@@ -385,12 +436,15 @@ class AutoTidyHandler(FileSystemEventHandler):
         if delay is None:
             delay = self._DEBOUNCE_DELAY
 
+        log_activity(f"ℹ️  WATCHER: Scheduling file for processing: {Path(path).name}")
+
         with self._timers_lock:
             # Cancel existing timer if present
             t = self._timers.get(path)
             if t and t.is_alive():
                 try:
                     t.cancel()
+                    log_activity(f"ℹ️  WATCHER: Cancelled previous timer for {Path(path).name}")
                 except Exception:
                     pass
 
@@ -418,17 +472,20 @@ class AutoTidyHandler(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
             return
+        log_activity(f"ℹ️  WATCHER: File created: {Path(event.src_path).name}")
         # schedule processing after debounce window
         self._schedule_for_path(event.src_path)
 
     def on_moved(self, event):
         if event.is_directory:
             return
+        log_activity(f"ℹ️  WATCHER: File moved: {Path(event.dest_path).name}")
         # destination is final name - schedule that path
         self._schedule_for_path(event.dest_path)
 
     def on_modified(self, event):
         if event.is_directory:
             return
+        log_activity(f"ℹ️  WATCHER: File modified: {Path(event.src_path).name}")
         # modifications often happen during writes; reschedule
         self._schedule_for_path(event.src_path)

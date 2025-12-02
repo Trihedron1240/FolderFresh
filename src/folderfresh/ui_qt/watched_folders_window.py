@@ -36,6 +36,7 @@ class WatchedFoldersWindow(QDialog):
     add_folder_clicked = Signal()
     remove_folder_clicked = Signal(str)  # folder_path
     profile_changed = Signal(str, str)  # folder_path, profile_id
+    folder_toggled = Signal(str, bool)  # folder_path, is_active
     closed = Signal()
 
     def __init__(self, parent=None):
@@ -175,12 +176,22 @@ class WatchedFoldersWindow(QDialog):
 
         row_layout.addWidget(profile_dropdown)
 
+        # Pause/Resume button
+        pause_btn = StyledButton(
+            "⏸ Pause" if is_active else "▶ Resume",
+            bg_color=Colors.DANGER if is_active else Colors.ACCENT,
+        )
+        pause_btn.setMaximumWidth(100)
+        pause_btn.clicked.connect(lambda: self._on_pause_resume_clicked(folder_str))
+        row_layout.addWidget(pause_btn)
+
         # Store row data
         self.folder_rows[folder_str] = {
             "frame": row_frame,
             "label": folder_label,
             "status": status_label,
             "dropdown": profile_dropdown,
+            "pause_btn": pause_btn,
             "is_active": is_active,
             "is_selected": False,
         }
@@ -248,6 +259,13 @@ class WatchedFoldersWindow(QDialog):
             status_color = Colors.SUCCESS if is_active else Colors.MUTED
             row_data["status"].setStyleSheet(f"color: {status_color}; font-size: 12pt;")
 
+            # Update pause/resume button
+            if "pause_btn" in row_data:
+                pause_btn = row_data["pause_btn"]
+                pause_btn.setText("⏸ Pause" if is_active else "▶ Resume")
+                bg_color = Colors.DANGER if is_active else Colors.ACCENT
+                pause_btn.setStyleSheet(f"background-color: {bg_color}; color: white; border: none; border-radius: 6px; padding: 8px 12px;")
+
     def _on_profile_changed(self, folder_path: str) -> None:
         """
         Handle profile dropdown change.
@@ -259,6 +277,19 @@ class WatchedFoldersWindow(QDialog):
             dropdown = self.folder_rows[folder_path]["dropdown"]
             profile_id = dropdown.currentData()
             self.profile_changed.emit(folder_path, profile_id)
+
+    def _on_pause_resume_clicked(self, folder_path: str) -> None:
+        """
+        Handle pause/resume button click.
+
+        Args:
+            folder_path: Path to the folder
+        """
+        if folder_path in self.folder_rows:
+            row_data = self.folder_rows[folder_path]
+            current_state = row_data["is_active"]
+            new_state = not current_state
+            self.folder_toggled.emit(folder_path, new_state)
 
     def refresh_folders(self, folders: List[tuple], profiles: Dict[str, str]) -> None:
         """

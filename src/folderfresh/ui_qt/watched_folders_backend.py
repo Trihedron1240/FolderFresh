@@ -75,11 +75,17 @@ class WatchedFoldersBackend(QObject):
         Returns:
             Profile name
         """
-        # Normalize path for consistent lookup
-        normalized_path = str(Path(folder_path).resolve())
+        # Normalize path for consistent lookup (case-insensitive on Windows)
+        normalized_path = str(Path(folder_path).resolve()).lower()
         folder_profile_map = self.config_data.get("folder_profile_map", {})
-        # Check both normalized and original path for compatibility
-        return folder_profile_map.get(normalized_path, folder_profile_map.get(folder_path, "Default"))
+
+        # Search for profile by normalizing all stored paths
+        for stored_path, profile_name in folder_profile_map.items():
+            stored_normalized = str(Path(stored_path).resolve()).lower()
+            if stored_normalized == normalized_path:
+                return profile_name
+
+        return "Default"
 
     def get_available_profiles(self) -> List[str]:
         """Get list of available profile names"""
@@ -190,6 +196,11 @@ class WatchedFoldersBackend(QObject):
 
             self.config_data["watched_folders"].append(folder_path)
 
+            # Mark folder as active (not paused)
+            if "folder_watch_status" not in self.config_data:
+                self.config_data["folder_watch_status"] = {}
+            self.config_data["folder_watch_status"][folder_path] = True
+
             # Start watching in WatcherManager if available
             if self.watcher_manager:
                 try:
@@ -277,8 +288,8 @@ class WatchedFoldersBackend(QObject):
             # Stop watching in WatcherManager if available
             if self.watcher_manager:
                 try:
-                    self.watcher_manager.unwatch_folder(normalized_input)
-                    log_info(f"Stopped watching folder: {normalized_input}")
+                    self.watcher_manager.unwatch_folder(actual_folder_path)
+                    log_info(f"Stopped watching folder: {actual_folder_path}")
                 except Exception as e:
                     log_warning(f"Failed to stop watching folder: {e}")
 
@@ -371,7 +382,7 @@ class WatchedFoldersBackend(QObject):
             folder_path: Path to the folder to organize
         """
         try:
-            folder_path = Path(folder_path)
+            folder_path = Path(folder_path).resolve()
             if not folder_path.is_dir():
                 log_warning(f"Folder not found: {folder_path}")
                 return
@@ -425,8 +436,8 @@ class WatchedFoldersBackend(QObject):
                 log_info(f"No files to organize in: {folder_path}")
                 return
 
-            # Organize the files
-            results = do_organise(app, moves)
+            # Organize the files using the folder's assigned profile
+            results = do_organise(app, moves, profile=target_profile)
 
             # Log results
             success_count = sum(1 for r in results if not r.get("error"))
@@ -489,15 +500,15 @@ class WatchedFoldersBackend(QObject):
             # Normalize path for consistent comparison
             normalized_path = str(Path(folder_path).resolve())
 
-            # Check if folder is in watched list using normalized comparison
+            # Find the actual folder path as stored in watched_folders
             watched_folders = self.get_watched_folders()
-            is_in_watched_list = False
+            actual_folder_path = None
             for wf in watched_folders:
                 if str(Path(wf).resolve()) == normalized_path:
-                    is_in_watched_list = True
+                    actual_folder_path = wf
                     break
 
-            if not is_in_watched_list:
+            if actual_folder_path is None:
                 show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
                 return False
 
@@ -511,15 +522,15 @@ class WatchedFoldersBackend(QObject):
 
             self.config_data["folder_watch_status"][normalized_path] = is_active
 
-            # Update watcher if available
+            # Update watcher if available - use the actual stored path
             if self.watcher_manager:
                 try:
                     if is_active:
-                        self.watcher_manager.watch_folder(normalized_path)
-                        log_info(f"Resumed watching folder: {normalized_path}")
+                        self.watcher_manager.watch_folder(actual_folder_path)
+                        log_info(f"Resumed watching folder: {actual_folder_path}")
                     else:
-                        self.watcher_manager.unwatch_folder(normalized_path)
-                        log_info(f"Paused watching folder: {normalized_path}")
+                        self.watcher_manager.unwatch_folder(actual_folder_path)
+                        log_info(f"Paused watching folder: {actual_folder_path}")
                 except Exception as e:
                     log_warning(f"Failed to update watcher status: {e}")
 
@@ -529,8 +540,12 @@ class WatchedFoldersBackend(QObject):
             log_info(f"Folder watch status updated: {folder_path} = {is_active}")
             self.folder_toggled.emit(folder_path, is_active)
 
-            # Emit resume signal if transitioning from paused to watching
+            # Organize existing files and emit resume signal if transitioning from paused to watching
             if is_resuming:
+                log_info(f"Organizing existing files in resumed folder: {actual_folder_path}")
+                # Reload config to ensure folder_profile_map is current
+                self.config_data = load_config()
+                self._organize_existing_files(str(actual_folder_path))
                 self.folder_resumed.emit(folder_path)
 
             return True
