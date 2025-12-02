@@ -127,7 +127,7 @@ class FolderFreshApplication:
                         "rule_fallback_to_sort": settings.get("rule_fallback_to_sort", False),
                         "auto_tidy": settings.get("auto_tidy", False),
                         "startup": settings.get("startup", False),
-                        "tray_mode": settings.get("tray_mode", False),
+                        "tray_mode": self._config_data.get("tray_mode", False),
                         "advanced_visible": self._config_data.get("advanced_visible", False),
                     }
                     self.main_window.set_options(options)
