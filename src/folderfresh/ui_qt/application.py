@@ -1007,6 +1007,29 @@ class FolderFreshApplication:
         if profile_id in self.profiles:
             self.rules = self.profiles[profile_id].get("rules", [])
 
+        # Refresh MainWindow UI with selected profile's settings
+        if self.profile_store:
+            try:
+                profiles_doc = self.profile_store.load()
+                profiles = profiles_doc.get("profiles", [])
+                for profile in profiles:
+                    if profile["id"] == profile_id:
+                        settings = profile.get("settings", {})
+                        options = {
+                            "include_subfolders": settings.get("include_sub", True),
+                            "skip_hidden": settings.get("skip_hidden", True),
+                            "safe_mode": settings.get("safe_mode", True),
+                            "smart_sorting": settings.get("smart_mode", False),
+                            "rule_fallback_to_sort": settings.get("rule_fallback_to_sort", False),
+                            "auto_tidy": settings.get("auto_tidy", False),
+                            "startup": settings.get("startup", False),
+                            "tray_mode": settings.get("tray_mode", False),
+                        }
+                        self.main_window.set_options(options)
+                        break
+            except Exception as e:
+                log_error(f"Failed to refresh MainWindow on profile selection: {e}")
+
     @Slot(str)
     def _on_profile_created(self, profile_id: str) -> None:
         """Handle new profile creation."""
@@ -1408,6 +1431,10 @@ class FolderFreshApplication:
                 "skip_hidden": profile_settings.get("skip_hidden", True),
                 "safe_mode": profile_settings.get("safe_mode", True),
                 "smart_sorting": profile_settings.get("smart_mode", False),
+                "rule_fallback_to_sort": profile_settings.get("rule_fallback_to_sort", False),
+                "auto_tidy": profile_settings.get("auto_tidy", False),
+                "startup": profile_settings.get("startup", False),
+                "tray_mode": profile_settings.get("tray_mode", False),
             }
             self.main_window.set_options(options)
 
