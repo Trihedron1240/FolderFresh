@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from datetime import datetime
+import queue
 
 from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtCore import Qt, QTimer, Slot
@@ -80,9 +81,14 @@ class FolderFreshApplication:
         self.log_entries: List[Dict[str, Any]] = []
         self._tray_mode_active = False  # Track if tray mode is currently active
 
+        # Thread-safe callback queue for tray interactions
+        self._callback_queue: queue.Queue = queue.Queue()
+        self._callback_timer: Optional[QTimer] = None
+
         self._setup_main_window()
         self._initialize_backends()
         self._connect_signals()
+        self._setup_callback_processor()
 
     @property
     def config_data(self) -> Dict[str, Any]:
@@ -495,9 +501,9 @@ class FolderFreshApplication:
                 try:
                     success = create_tray(
                         app_name="FolderFresh",
-                        on_open=lambda icon, item=None: self.main_window.show(),
-                        on_toggle_watch=lambda icon, item=None: self._on_toggle_auto_watch(),
-                        on_exit=lambda icon, item=None: self._request_exit(),
+                        on_open=lambda icon, item=None: self._schedule_on_main_thread(self.show_main_window),
+                        on_toggle_watch=lambda icon, item=None: self._schedule_on_main_thread(self._on_toggle_auto_watch),
+                        on_exit=lambda icon, item=None: self._schedule_on_main_thread(self._request_exit),
                         auto_tidy_enabled=options.get("auto_tidy", False),
                     )
 
@@ -538,9 +544,9 @@ class FolderFreshApplication:
             log_info(f"[TRAY_UPDATE] Updating menu: auto_tidy={options.get('auto_tidy')}")
             try:
                 update_tray_menu(
-                    on_open=lambda icon, item=None: self.main_window.show(),
-                    on_toggle_watch=lambda icon, item=None: self._on_toggle_auto_watch(),
-                    on_exit=lambda icon, item=None: self._request_exit(),
+                    on_open=lambda icon, item=None: self._schedule_on_main_thread(self.show_main_window),
+                    on_toggle_watch=lambda icon, item=None: self._schedule_on_main_thread(self._on_toggle_auto_watch),
+                    on_exit=lambda icon, item=None: self._schedule_on_main_thread(self._request_exit),
                     auto_tidy_enabled=options.get("auto_tidy", False),
                 )
                 log_info(f"[TRAY_UPDATE] Menu updated successfully")
@@ -1077,6 +1083,9 @@ class FolderFreshApplication:
                 watched_window.profile_changed.connect(
                     lambda path, profile: self.watched_folders_backend.set_folder_profile(path, profile)
                 )
+                watched_window.folder_toggled.connect(
+                    lambda path, is_active: self.watched_folders_backend.toggle_folder_watch(path, is_active)
+                )
 
                 # Connect backend signals to update UI
                 self.watched_folders_backend.folder_added.connect(
@@ -1084,6 +1093,9 @@ class FolderFreshApplication:
                 )
                 self.watched_folders_backend.folder_removed.connect(
                     lambda path: watched_window.remove_folder_from_list(path)
+                )
+                self.watched_folders_backend.folder_toggled.connect(
+                    lambda path, is_active: watched_window.set_folder_active(path, is_active)
                 )
 
             watched_window.closed.connect(lambda: self._on_window_closed("watched"))
@@ -1267,6 +1279,59 @@ class FolderFreshApplication:
         if window_key in self.active_windows:
             del self.active_windows[window_key]
 
+        # If profile manager was closed, restore main window to show truly active profile settings
+        if window_key == "profiles":
+            if self.truly_active_profile_id and self.truly_active_profile_id in self.profiles:
+                profile = self.profiles[self.truly_active_profile_id]
+                settings = profile.get("settings", {})
+                options = {
+                    "include_subfolders": settings.get("include_sub", True),
+                    "skip_hidden": settings.get("skip_hidden", True),
+                    "safe_mode": settings.get("safe_mode", True),
+                    "smart_sorting": settings.get("smart_mode", False),
+                    "rule_fallback_to_sort": settings.get("rule_fallback_to_sort", False),
+                    "auto_tidy": settings.get("auto_tidy", False),
+                    "startup": settings.get("startup", False),
+                    "tray_mode": settings.get("tray_mode", False),
+                }
+                self.main_window.set_options(options)
+                # Reset active_profile_id to truly_active_profile_id
+                self.active_profile_id = self.truly_active_profile_id
+
+    # ========== THREADING HELPERS ==========
+
+    def _setup_callback_processor(self) -> None:
+        """
+        Setup a timer to process callbacks from the queue.
+        This is safe to call from the main thread and will process
+        callbacks queued from other threads.
+        """
+        self._callback_timer = QTimer()
+        self._callback_timer.timeout.connect(self._process_callback_queue)
+        self._callback_timer.start(10)  # Check queue every 10ms
+
+    def _process_callback_queue(self) -> None:
+        """Process all pending callbacks from the queue."""
+        try:
+            while not self._callback_queue.empty():
+                callback = self._callback_queue.get_nowait()
+                try:
+                    callback()
+                except Exception as e:
+                    log_error(f"Error executing queued callback: {e}")
+        except queue.Empty:
+            pass
+
+    def _schedule_on_main_thread(self, callback) -> None:
+        """
+        Schedule a callback to execute on the main Qt thread.
+        Safe to call from tray thread or other threads.
+
+        Args:
+            callback: Function to call on main thread
+        """
+        self._callback_queue.put(callback)
+
     # ========== PUBLIC API ==========
 
     def show_main_window(self) -> None:
@@ -1283,6 +1348,10 @@ class FolderFreshApplication:
 
     def close_all_windows(self) -> None:
         """Close all windows gracefully."""
+        # Stop callback processor
+        if self._callback_timer:
+            self._callback_timer.stop()
+
         # Close any open dialogs
         for window in list(self.active_windows.values()):
             try:
@@ -1305,8 +1374,20 @@ class FolderFreshApplication:
             profiles: List of profile dictionaries
         """
         self.profiles = {p["id"]: p for p in profiles}
-        if profiles and not self.active_profile_id:
-            self.active_profile_id = profiles[0]["id"]
+        if profiles:
+            # Load the truly active profile from storage
+            if not self.truly_active_profile_id and self.profile_store:
+                try:
+                    profiles_doc = self.profile_store.load()
+                    active_id = profiles_doc.get("active_profile_id")
+                    if active_id:
+                        self.truly_active_profile_id = active_id
+                        self.active_profile_id = active_id
+                except Exception:
+                    pass
+            # Fall back to first profile if we still don't have one
+            if not self.active_profile_id:
+                self.active_profile_id = profiles[0]["id"]
 
     def set_log_entries(self, entries: List[Dict[str, Any]]) -> None:
         """
@@ -1338,19 +1419,6 @@ class FolderFreshApplication:
             log_window = self.active_windows["activity_log"]
             if log_window.isVisible():
                 log_window.add_log_entry(timestamp, action, details)
-
-    def update_status(self, message: str, progress: float = None) -> None:
-        """
-        Update status bar.
-
-        Args:
-            message: Status message
-            progress: Optional progress value (0.0-1.0)
-        """
-        if self.main_window:
-            self.main_window.set_status(message)
-            if progress is not None:
-                self.main_window.set_progress(progress)
 
     # ========== BACKEND SIGNAL HANDLERS ==========
 
@@ -1418,9 +1486,6 @@ class FolderFreshApplication:
         # Update main window so it knows which profile to use for silent updates
         self.main_window.truly_active_profile_id = profile_id
         if profile_id in self.profiles:
-            profile_name = self.profiles[profile_id].get("name", "Unknown")
-            self.main_window.set_status(f"Active Profile: {profile_name}")
-
             # Load profile settings and update main window options
             active_profile = self.profiles[profile_id]
             profile_settings = active_profile.get("settings", {})
