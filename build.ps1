@@ -3,7 +3,7 @@
 # ---------------------------
 
 # 1) Set the new version here:
-$version = "1.5.0"
+$version = "2.0.0"
 
 # 2) Write version into VERSION file
 Set-Content -Path "src/folderfresh/VERSION" -Value $version
@@ -25,7 +25,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Building FolderFresh $version..."
 pyinstaller --onefile --windowed --clean --noupx `
   --add-data "src/folderfresh/VERSION;folderfresh" `
-  --name FolderFresh src/main.py
+  --name FolderFresh src/main_qt_app.py
 
 
 if ($LASTEXITCODE -ne 0) {

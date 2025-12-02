@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta property="og:title" content="FolderFresh — Smart Automatic Folder Organizer">
-  <meta property="og:description" content="A lightweight Windows tool that organises messy folders with profiles, per-folder rules, auto-tidy, smart sorting, preview mode, custom categories, and full safety controls.">
+  <meta property="og:title" content="FolderFresh — Intelligent File Automation Engine for Windows">
+  <meta property="og:description" content="A powerful, rule-based file automation engine that intelligently organises, manages, and processes your files in real-time. Features advanced rule engine, profiles, real-time auto-sync, smart category sorting, and complete control over folder workflows.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://trihedron1240.github.io/FolderFresh/">
-  <meta property="og:image" content="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Main_window_1.4.0.png">
+  <meta property="og:image" content="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_main.png">
 
   <meta name="robots" content="index, follow">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FolderFresh — Smart Automatic Folder Organizer</title>
+  <title>FolderFresh — Intelligent File Automation Engine for Windows</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <meta name="description" content="FolderFresh automatically organises any folder by sorting files into clean categories. Includes profiles, smart sorting, per-folder rules, undo, preview mode, safe mode, and multi-folder Auto-Tidy.">
+  <meta name="description" content="A powerful, rule-based file automation engine for Windows. Create custom rules with flexible conditions and actions. Features advanced rule engine, real-time auto-sync, smart category sorting, profiles, and complete control over file automation.">
   <link rel="canonical" href="https://trihedron1240.github.io/FolderFresh/">
 
   <style>
@@ -68,19 +68,18 @@
         <!-- Text -->
         <div class="order-2 lg:order-1 text-center lg:text-left">
           <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight text-white">
-            Keep your folders organised<br>
-            <span class="text-[var(--ff-blue)]">automatically.</span>
+            Powerful file automation<br>
+            <span class="text-[var(--ff-blue)]">with complete control.</span>
           </h1>
 
           <p class="mt-6 text-lg text-[var(--ff-muted)] max-w-xl">
-            FolderFresh sorts files into clean category folders as they appear.  
-            Version 1.4.0 introduces profiles, per-folder profile mapping, a redesigned Profile Manager, improved Auto-Tidy, ignore patterns, don’t-move lists, Smart Sorting upgrades, and more.
+            Version 2.0.0 is a complete architectural transformation with a new PySide6 UI, advanced rule engine, profile system, real-time auto-sync, and smart category sorting. A full-featured automation platform for power users and developers.
           </p>
 
           <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
             <a href="https://github.com/Trihedron1240/FolderFresh/releases/latest"
                class="inline-flex items-center gap-3 bg-[var(--ff-blue)] text-white px-5 py-3 rounded-lg font-semibold shadow hover:bg-[var(--ff-blue-light)] transition">
-              Download v1.4.0
+              Download v2.0.0
             </a>
 
             <a href="#features"
@@ -90,7 +89,7 @@
           </div>
 
           <div class="mt-6 text-sm text-[var(--ff-muted)]">
-            Open source • Profiles • Multi-folder Auto-Tidy • Reversible • Safe by default
+            Open source (GPL-3.0) • Rule Engine • Profiles • Real-Time Auto-Sync • Smart Categories
           </div>
         </div>
 
@@ -98,10 +97,10 @@
         <div class="order-1 lg:order-2 flex justify-center">
           <div class="relative bg-[var(--ff-panel)] rounded-3xl p-6 shadow-2xl w-[360px] lg:w-[420px] border border-[var(--ff-border)]">
             <div class="rounded-xl overflow-hidden bg-[var(--ff-bg)] border border-[var(--ff-border)]">
-              <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Main_window_1.4.0.png" alt="FolderFresh preview" class="w-full block" />
+              <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_main.png" alt="FolderFresh preview" class="w-full block" />
             </div>
             <div class="mt-4 flex justify-between items-center text-sm text-[var(--ff-muted)]">
-              <div>Main Window (v1.4.0)</div>
+              <div>Main Window (v2.0.0)</div>
               <div class="font-mono text-xs">Live Preview</div>
             </div>
           </div>
@@ -116,54 +115,54 @@
     <div class="max-w-6xl mx-auto px-6">
       <h2 class="text-3xl font-bold text-center text-white">Features</h2>
       <p class="text-center text-[var(--ff-muted)] mt-3 mb-10">
-        Everything included in FolderFresh 1.4.0
+        Everything included in FolderFresh 2.0.0 — A complete file automation platform
       </p>
 
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Profiles</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Create multiple profiles with custom settings for different workflows.</p>
+          <h3 class="font-semibold text-lg text-white">Advanced Rule Engine</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Create powerful reusable rules with multi-condition matching (filename, size, date, path, metadata) and flexible actions (move, copy, rename, delete, archive).</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Per-Folder Profile Mapping</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Assign a specific profile to each watched folder for maximum control.</p>
+          <h3 class="font-semibold text-lg text-white">Profile System</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Create multiple automation profiles and assign a specific profile to each watched folder for complete workflow control.</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Auto-Tidy</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Automatically organises new files in real time across multiple folders.</p>
+          <h3 class="font-semibold text-lg text-white">Real-Time Auto-Sync</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Watch multiple folders simultaneously. Each folder respects its assigned profile. Waits for files to finish writing before processing.</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Smart Sorting</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Detects screenshots, photos, messaging media, invoices, school work, and more.</p>
+          <h3 class="font-semibold text-lg text-white">Smart Category Sorting</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Auto-detects screenshots, camera roll, messaging media, assignments, invoices, backups, and more. Fully customizable categories.</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Ignore Patterns</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Exclude files using substring or wildcard patterns (e.g., *.tmp, backup, temp_*).</p>
+          <h3 class="font-semibold text-lg text-white">Test & Preview Mode</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Preview rule effects before applying to real files. Test mode lets you see planned actions without executing them.</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Don't-Move List</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Lock specific files or paths so they are never touched.</p>
+          <h3 class="font-semibold text-lg text-white">PySide6 UI</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Modern, complete architectural overhaul from customtkinter to PySide6 for a professional, responsive interface.</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Preview & Undo</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">See every planned move before sorting. Undo restores everything safely.</p>
+          <h3 class="font-semibold text-lg text-white">Safety & Control</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Safe deletion with confirmation. Undo history to revert file operations. Pause/resume automation without losing configuration.</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Custom Categories</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Add full custom categories with extensions and renaming rules.</p>
+          <h3 class="font-semibold text-lg text-white">Activity Log</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Detailed automation history for debugging. Monitor all file operations and rule executions in real-time.</p>
         </div>
 
         <div class="p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] shadow">
-          <h3 class="font-semibold text-lg text-white">Safe Mode</h3>
-          <p class="mt-2 text-sm text-[var(--ff-muted)]">Copy instead of moving for full safety.</p>
+          <h3 class="font-semibold text-lg text-white">System Tray Mode</h3>
+          <p class="mt-2 text-sm text-[var(--ff-muted)]">Minimize to system tray while maintaining background automation. Run silently in the background.</p>
         </div>
 
       </div>
@@ -175,20 +174,32 @@
     <div class="max-w-7xl mx-auto px-6">
 
       <h2 class="text-3xl font-bold text-center text-white">Screenshots</h2>
-      <p class="text-center text-[var(--ff-muted)] mt-2">FolderFresh 1.4.0 in action.</p>
+      <p class="text-center text-[var(--ff-muted)] mt-2">FolderFresh 2.0.0 in action.</p>
 
-      <div class="mt-12 grid gap-12 md:grid-cols-2 lg:grid-cols-2">
+      <div class="mt-12 grid gap-12 md:grid-cols-2 lg:grid-cols-3">
 
         <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
-          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Main_window_1.4.0.png" alt="Main Window" class="w-full rounded-xl">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_main.png" alt="Main Window" class="w-full rounded-xl">
         </div>
 
         <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
-          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Profile_manager.png" alt="Profile Manager" class="w-full rounded-xl">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_profile_manager.png" alt="Profile Manager" class="w-full rounded-xl">
         </div>
 
         <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
-          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/Watcher_manager.png" alt="Watcher Manager" class="w-full rounded-xl">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_watcher_manager.png" alt="Watcher Manager" class="w-full rounded-xl">
+        </div>
+
+        <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_rule_editor.png" alt="Rule Editor" class="w-full rounded-xl">
+        </div>
+
+        <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_rule_manager.png" alt="Rule Manager" class="w-full rounded-xl">
+        </div>
+
+        <div class="rounded-2xl overflow-hidden bg-[var(--ff-panel)] shadow border border-[var(--ff-border)] p-2">
+          <img src="https://raw.githubusercontent.com/Trihedron1240/FolderFresh/main/screenshots/2.0.0_category_manager.png" alt="Category Manager" class="w-full rounded-xl">
         </div>
 
       </div>
@@ -198,8 +209,8 @@
   <!-- CTA -->
   <section class="py-16 bg-[var(--ff-bg)]">
     <div class="max-w-4xl mx-auto px-6 text-center">
-      <h3 class="text-2xl font-bold text-white">Ready to organise your folders?</h3>
-      <p class="mt-3 text-[var(--ff-muted)]">Download FolderFresh 1.4.0 or browse the source code on GitHub.</p>
+      <h3 class="text-2xl font-bold text-white">Ready to automate your file workflows?</h3>
+      <p class="mt-3 text-[var(--ff-muted)]">Download FolderFresh 2.0.0 or browse the source code on GitHub.</p>
 
       <div class="mt-6 flex justify-center gap-4">
         <a href="https://github.com/Trihedron1240/FolderFresh/releases/latest" class="px-6 py-3 bg-[var(--ff-blue)] text-white rounded-lg font-semibold shadow hover:bg-[var(--ff-blue-light)] transition">Download</a>

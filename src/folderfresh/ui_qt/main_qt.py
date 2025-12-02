@@ -32,7 +32,7 @@ def setup_qt_app() -> QApplication:
 
     # Set application metadata
     app.setApplicationName("FolderFresh")
-    app.setApplicationVersion("1.5.0")
+    app.setApplicationVersion("2.0.0")
 
     # Configure application style
     try:

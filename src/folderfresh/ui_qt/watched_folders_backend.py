@@ -61,31 +61,58 @@ class WatchedFoldersBackend(QObject):
             log_error(f"Failed to load watched folders: {e}")
             show_error_dialog(None, "Load Watched Folders Failed", f"Failed to load watched folders:\n{e}")
 
+    def refresh_profiles(self) -> None:
+        """Reload profiles from disk (e.g., when profile names have changed)"""
+        try:
+            self.profiles_doc = self.profile_store.load()
+            log_info("Profiles refreshed")
+        except Exception as e:
+            log_error(f"Failed to refresh profiles: {e}")
+
     def get_watched_folders(self) -> List[str]:
         """Get list of watched folders"""
         return self.config_data.get("watched_folders", [])
 
     def get_folder_profile(self, folder_path: str) -> str:
         """
-        Get profile name for folder
+        Get profile ID for folder
 
         Args:
             folder_path: Folder path
 
         Returns:
-            Profile name
+            Profile ID
         """
         # Normalize path for consistent lookup (case-insensitive on Windows)
         normalized_path = str(Path(folder_path).resolve()).lower()
         folder_profile_map = self.config_data.get("folder_profile_map", {})
 
         # Search for profile by normalizing all stored paths
-        for stored_path, profile_name in folder_profile_map.items():
+        for stored_path, profile_value in folder_profile_map.items():
             stored_normalized = str(Path(stored_path).resolve()).lower()
             if stored_normalized == normalized_path:
-                return profile_name
+                # Handle backward compatibility: if stored as name, convert to ID
+                if isinstance(profile_value, str):
+                    profiles = self.profiles_doc.get("profiles", [])
+                    # Try to find by ID first (new format)
+                    for p in profiles:
+                        if p.get("id") == profile_value:
+                            return profile_value
+                    # Try to find by name (old format) and return its ID
+                    for p in profiles:
+                        if p.get("name") == profile_value:
+                            return p.get("id", profile_value)
+                return profile_value
 
-        return "Default"
+        # No mapping found - return active profile ID
+        active_profile_id = self.profiles_doc.get("active_profile_id")
+        if active_profile_id:
+            return active_profile_id
+        # Fallback to first profile if no active profile set
+        profiles = self.profiles_doc.get("profiles", [])
+        if profiles:
+            return profiles[0].get("id", "")
+        return ""
 
     def get_available_profiles(self) -> List[str]:
         """Get list of available profile names"""
@@ -109,14 +136,12 @@ class WatchedFoldersBackend(QObject):
         Returns:
             List of (folder_path, profile_id, is_active) tuples
         """
-        folder_profile_map = self.config_data.get("folder_profile_map", {})
         folder_watch_status = self.config_data.get("folder_watch_status", {})
         watched_list = []
 
         for folder_path in self.get_watched_folders():
-            # Get profile ID (need to map from profile_name to profile_id)
-            profile_name = folder_profile_map.get(folder_path, "Default")
-            profile_id = self._get_profile_id_by_name(profile_name)
+            # Get profile ID using get_folder_profile which handles backward compatibility
+            profile_id = self.get_folder_profile(folder_path)
 
             # Get per-folder watch status (default to True if not set)
             # Check both normalized and original path keys for compatibility
@@ -222,10 +247,20 @@ class WatchedFoldersBackend(QObject):
                         break
 
                 if active_profile_name:
+                    # Store profile ID instead of name
                     folder_profile_map = self.config_data.get("folder_profile_map", {})
-                    folder_profile_map[folder_path] = active_profile_name
-                    self.config_data["folder_profile_map"] = folder_profile_map
-                    log_info(f"Assigned profile '{active_profile_name}' to watched folder: {folder_path}")
+                    profiles = self.profiles_doc.get("profiles", [])
+                    active_profile_id = None
+                    for profile in profiles:
+                        if profile.get("name") == active_profile_name:
+                            active_profile_id = profile.get("id")
+                            break
+                    if active_profile_id:
+                        folder_profile_map[folder_path] = active_profile_id
+                        self.config_data["folder_profile_map"] = folder_profile_map
+                        log_info(f"Assigned profile '{active_profile_name}' to watched folder: {folder_path}")
+                    else:
+                        log_warning(f"Could not find profile ID for active profile: {folder_path}")
                 else:
                     log_warning(f"Could not find active profile for folder: {folder_path}")
             except Exception as e:
@@ -343,15 +378,15 @@ class WatchedFoldersBackend(QObject):
                 show_error_dialog(None, "Not Watching", f"Not watching: {folder_path}")
                 return False
 
-            # Convert profile ID to profile name
+            # Verify profile exists
             profile_name = self._get_profile_name_by_id(profile_id)
             if not profile_name:
                 show_error_dialog(None, "Profile Not Found", f"Profile not found: {profile_id}")
                 return False
 
-            # Update mapping
+            # Update mapping with profile ID (not name)
             folder_profile_map = self.config_data.get("folder_profile_map", {})
-            folder_profile_map[folder_path] = profile_name
+            folder_profile_map[folder_path] = profile_id
             self.config_data["folder_profile_map"] = folder_profile_map
 
             # Save config
@@ -388,13 +423,13 @@ class WatchedFoldersBackend(QObject):
                 return
 
             # Get the profile assigned to this folder (or use default)
-            profile_name = self.get_folder_profile(str(folder_path))
+            profile_id = self.get_folder_profile(str(folder_path))
             profiles_doc = self.profile_store.load()
 
-            # Find profile by name
+            # Find profile by ID
             target_profile = None
             for profile in profiles_doc.get("profiles", []):
-                if profile.get("name") == profile_name or profile.get("id") == profile_name:
+                if profile.get("id") == profile_id:
                     target_profile = profile
                     break
 

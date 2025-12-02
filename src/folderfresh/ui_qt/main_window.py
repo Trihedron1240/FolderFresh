@@ -420,7 +420,7 @@ class MainWindow(QMainWindow):
         footer_frame.add_stretch()
 
         version_label = StyledLabel(
-            "v1.5.0",
+            "v2.0.0",
             font_size=Fonts.SIZE_SMALL,
         )
         footer_frame.add_widget(version_label)

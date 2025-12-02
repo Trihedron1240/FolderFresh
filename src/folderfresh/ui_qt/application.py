@@ -456,6 +456,7 @@ class FolderFreshApplication:
         log_info("[OPTIONS_CHANGED] Signal fired!")
         from folderfresh.config import save_config
         from .tray import create_tray, hide_tray, update_tray_menu
+        from folderfresh.utils import enable_startup, disable_startup
 
         if not hasattr(self, '_config_data') or self._config_data is None:
             log_info("[OPTIONS_CHANGED] No _config_data, returning")
@@ -477,6 +478,27 @@ class FolderFreshApplication:
         }
         self._config_data.update(config_updates)
         save_config(self._config_data)
+
+        # Handle startup registry changes
+        if "startup" in options:
+            startup_enabled = options["startup"]
+            try:
+                if startup_enabled:
+                    # Get the executable path for Windows startup registry
+                    # Use Python executable since we run via: python -m src.main_qt_app
+                    exe_path = sys.executable
+                    enable_startup("FolderFresh", exe_path)
+                    log_info(f"[STARTUP] Enabled Windows startup with: {exe_path}")
+                else:
+                    disable_startup("FolderFresh")
+                    log_info("[STARTUP] Disabled Windows startup")
+            except Exception as e:
+                log_error(f"[STARTUP] Failed to modify startup registry: {e}")
+                show_error_dialog(
+                    self.main_window,
+                    "Startup Registry Error",
+                    f"Failed to modify startup settings: {str(e)}\n\nThe setting has been saved locally but may not work at system startup.",
+                )
 
         # Also update truly active profile's settings with safe_mode, include_sub, skip_hidden, smart_mode
         # Main window buttons should save to the truly active profile, not just the selected one
@@ -1088,6 +1110,8 @@ class FolderFreshApplication:
 
             # Load initial data from backend
             if self.watched_folders_backend:
+                # Refresh profiles to get latest names (in case they were changed)
+                self.watched_folders_backend.refresh_profiles()
                 folders = self.watched_folders_backend.get_watched_folders_with_status()
                 profiles = self.watched_folders_backend.get_profiles_dict()
                 watched_window.refresh_folders(folders, profiles)

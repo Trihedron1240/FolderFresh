@@ -46,30 +46,37 @@ class AutoTidyHandler(FileSystemEventHandler):
         normalized_root = str(self.root.resolve()).lower()
 
         # Search for profile by normalizing all stored paths
-        profile_name = None
+        profile_id = None
         for stored_path, mapped_profile in folder_map.items():
             stored_normalized = str(Path(stored_path).resolve()).lower()
             if stored_normalized == normalized_root:
-                profile_name = mapped_profile
+                profile_id = mapped_profile
                 break
 
         # No mapping → use the *current* active config_data
-        if not profile_name:
+        if not profile_id:
             return self.app.config_data
 
         # Load profile storage file
         doc = self.app.profile_store.load()
 
-        # Search for profile by name
+        # Backward compatibility: convert profile name to ID if needed
         profile_obj = None
         for p in doc["profiles"]:
-            if p["name"].lower() == profile_name.lower():
+            if p["id"] == profile_id:
                 profile_obj = p
                 break
 
+        # If not found by ID, try to find by name (old format)
+        if profile_obj is None:
+            for p in doc["profiles"]:
+                if p.get("name") == profile_id:
+                    profile_obj = p
+                    break
+
         # Missing profile → fall back
         if profile_obj is None:
-            print(f"[Watcher] WARNING: No such profile '{profile_name}'. Using active profile.")
+            print(f"[Watcher] WARNING: No profile with ID '{profile_id}'. Using active profile.")
             return self.app.config_data
 
         # Load global baseline config
@@ -83,7 +90,7 @@ class AutoTidyHandler(FileSystemEventHandler):
 
         # Safety: merge should produce a dict
         if not isinstance(merged_cfg, dict):
-            print(f"[Watcher] ERROR: merge_profile_into_config returned invalid data for {profile_name}")
+            print(f"[Watcher] ERROR: merge_profile_into_config returned invalid data for {profile_id}")
             return self.app.config_data
 
         return merged_cfg
@@ -102,27 +109,32 @@ class AutoTidyHandler(FileSystemEventHandler):
         normalized_root = str(self.root.resolve()).lower()
 
         # Search for profile by normalizing all stored paths
-        profile_name = None
+        profile_id = None
         for stored_path, mapped_profile in folder_map.items():
             stored_normalized = str(Path(stored_path).resolve()).lower()
             if stored_normalized == normalized_root:
-                profile_name = mapped_profile
+                profile_id = mapped_profile
                 break
 
         # Load profile storage file
         doc = self.app.profile_store.load()
 
         # No mapping → use active profile
-        if not profile_name:
+        if not profile_id:
             return self.app.profile_store.get_active_profile(doc)
 
-        # Search for profile by name
+        # Backward compatibility: search for profile by ID first, then by name
         for p in doc["profiles"]:
-            if p["name"].lower() == profile_name.lower():
+            if p["id"] == profile_id:
+                return p
+
+        # If not found by ID, try to find by name (old format)
+        for p in doc["profiles"]:
+            if p.get("name") == profile_id:
                 return p
 
         # Missing profile → fall back to active
-        print(f"[Watcher] WARNING: No such profile '{profile_name}'. Using active profile.")
+        print(f"[Watcher] WARNING: No profile with ID '{profile_id}'. Using active profile.")
         return self.app.profile_store.get_active_profile(doc)
 
     def should_ignore(self, p: Path, cfg) -> bool:
