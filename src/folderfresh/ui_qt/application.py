@@ -569,7 +569,6 @@ class FolderFreshApplication:
         # Save the advanced section visibility state
         self._config_data["advanced_visible"] = is_visible
         save_config(self._config_data)
-        log_info(f"Advanced section visibility saved: {is_visible}")
 
     def _on_profile_update_silent_requested(self, profile_id: str, updates_dict: dict) -> None:
         """

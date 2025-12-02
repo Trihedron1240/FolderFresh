@@ -20,10 +20,11 @@ def load_config() -> dict:
             "include_sub": True,
             "skip_hidden": True,
             "safe_mode": True,
-            "watch_mode": False,
+            "auto_tidy": True,
             "age_filter_days": 0,
             "ignore_exts": "",
             "smart_mode": False,
+            "advanced_visible": False,           # UI state persistence
             "custom_category_names": {},
             "custom_categories": {},
             "category_enabled": {},
@@ -55,6 +56,9 @@ def load_config() -> dict:
     cfg.setdefault("stabilization_attempts", 10)
     cfg.setdefault("stabilization_interval", 0.5)
     cfg.setdefault("stabilization_min_age", 1.0)
+
+    # --- Ensure UI state persistence keys exist ---
+    cfg.setdefault("advanced_visible", False)
 
     return cfg
 
