@@ -21,7 +21,6 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon, QCloseEvent
 
 from .sidebar import SidebarWidget
-from .status_bar import StatusBar
 from .tooltip import ToolTip
 from .styles import Colors, Fonts
 from .base_widgets import (
@@ -57,6 +56,7 @@ class MainWindow(QMainWindow):
     watched_folders_requested = Signal()
     help_requested = Signal()
     options_changed = Signal()
+    advanced_toggled = Signal(bool)  # Advanced section expanded/collapsed state
     profile_update_silent_requested = Signal(str, dict)  # (profile_id, updates_dict)
 
     def __init__(self):
@@ -131,10 +131,6 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(splitter, 1)
 
-        # Status bar at bottom
-        self.status_bar_widget = StatusBar()
-        main_layout.addWidget(self.status_bar_widget)
-
     def _create_header_section(self, parent_layout) -> None:
         """Create header with title and folder selection."""
         header_frame = CardFrame()
@@ -188,7 +184,6 @@ class MainWindow(QMainWindow):
         self.safe_mode_check.setChecked(disk.get("safe_mode", True))
         self.smart_mode_check.setChecked(disk.get("smart_mode", False))
         self.rule_fallback_check.setChecked(disk.get("rule_fallback_to_sort", False))
-        self.watch_mode_check.setChecked(disk.get("auto_tidy", False))
         self.startup_check.setChecked(disk.get("startup", False))
         self.tray_mode_check.setChecked(disk.get("tray_mode", False))
 
@@ -312,10 +307,6 @@ class MainWindow(QMainWindow):
             "When enabled: Files not matched by any rule fall back to category sorting.\n"
             "When disabled: Unmatched files stay in place."
         )
-
-        self.watch_mode_check = StyledCheckBox("Auto-tidy", checked=False)
-        self.watch_mode_check.stateChanged.connect(lambda: self.options_changed.emit())
-        options_frame.add_widget(self.watch_mode_check)
 
         options_frame.add_stretch()
 
@@ -448,6 +439,21 @@ class MainWindow(QMainWindow):
             # If no folder selected, open the dialog to choose one
             self.folder_chosen.emit(None)
 
+    def _set_advanced_visible(self, visible: bool) -> None:
+        """
+        Set advanced section visibility without emitting signal.
+        Used for restoring state from config.
+
+        Args:
+            visible: Whether to show the advanced section
+        """
+        self.advanced_visible = visible
+        self.advanced_content.setVisible(visible)
+
+        # Update button text
+        arrow = "▲" if visible else "▼"
+        self.advanced_btn.setText(f"Advanced Options {arrow}")
+
     def _toggle_advanced(self) -> None:
         """Toggle advanced options visibility."""
         self.advanced_visible = not self.advanced_visible
@@ -456,6 +462,9 @@ class MainWindow(QMainWindow):
         # Update button text
         arrow = "▲" if self.advanced_visible else "▼"
         self.advanced_btn.setText(f"Advanced Options {arrow}")
+
+        # Emit signal to save state to config
+        self.advanced_toggled.emit(self.advanced_visible)
 
     def closeEvent(self, event: QCloseEvent) -> None:
         """
@@ -501,34 +510,6 @@ class MainWindow(QMainWindow):
         """
         self.preview_box.setPlainText(text)
 
-    def set_status(self, text: str) -> None:
-        """
-        Update status bar message.
-
-        Args:
-            text: Status message
-        """
-        self.status_bar_widget.set_status(text)
-
-    def set_progress(self, value: float) -> None:
-        """
-        Update progress bar (0.0-1.0).
-
-        Args:
-            value: Progress value from 0.0 to 1.0
-        """
-        self.status_bar_widget.set_progress(value)
-
-    def set_progress_label(self, current: int, total: int) -> None:
-        """
-        Update progress label (e.g., "5/50").
-
-        Args:
-            current: Current count
-            total: Total count
-        """
-        self.status_bar_widget.set_progress_label(current, total)
-
     def enable_action_buttons(self, enable: bool) -> None:
         """
         Enable/disable main action buttons based on folder selection.
@@ -553,9 +534,10 @@ class MainWindow(QMainWindow):
             "safe_mode": self.safe_mode_check.isChecked(),
             "smart_sorting": self.smart_mode_check.isChecked(),
             "rule_fallback_to_sort": self.rule_fallback_check.isChecked(),
-            "auto_tidy": self.watch_mode_check.isChecked(),
+            "auto_tidy": True,
             "startup": self.startup_check.isChecked(),
             "tray_mode": self.tray_mode_check.isChecked(),
+            "advanced_visible": self.advanced_visible,
         }
 
     def set_options(self, options: dict) -> None:
@@ -575,7 +557,6 @@ class MainWindow(QMainWindow):
             self.safe_mode_check.blockSignals(True)
             self.smart_mode_check.blockSignals(True)
             self.rule_fallback_check.blockSignals(True)
-            self.watch_mode_check.blockSignals(True)
             self.startup_check.blockSignals(True)
             self.tray_mode_check.blockSignals(True)
 
@@ -589,12 +570,16 @@ class MainWindow(QMainWindow):
                 self.smart_mode_check.setChecked(options["smart_sorting"])
             if "rule_fallback_to_sort" in options:
                 self.rule_fallback_check.setChecked(options["rule_fallback_to_sort"])
-            if "auto_tidy" in options:
-                self.watch_mode_check.setChecked(options["auto_tidy"])
             if "startup" in options:
                 self.startup_check.setChecked(options["startup"])
             if "tray_mode" in options:
                 self.tray_mode_check.setChecked(options["tray_mode"])
+
+            # Handle advanced section visibility
+            if "advanced_visible" in options:
+                should_be_visible = options["advanced_visible"]
+                if should_be_visible != self.advanced_visible:
+                    self._set_advanced_visible(should_be_visible)
         finally:
             # Re-enable all signals
             self.include_sub_check.blockSignals(False)
@@ -602,7 +587,6 @@ class MainWindow(QMainWindow):
             self.safe_mode_check.blockSignals(False)
             self.smart_mode_check.blockSignals(False)
             self.rule_fallback_check.blockSignals(False)
-            self.watch_mode_check.blockSignals(False)
             self.startup_check.blockSignals(False)
             self.tray_mode_check.blockSignals(False)
             self._block_include_sub_signals = False

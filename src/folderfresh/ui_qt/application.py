@@ -128,6 +128,7 @@ class FolderFreshApplication:
                         "auto_tidy": settings.get("auto_tidy", False),
                         "startup": settings.get("startup", False),
                         "tray_mode": settings.get("tray_mode", False),
+                        "advanced_visible": self._config_data.get("advanced_visible", False),
                     }
                     self.main_window.set_options(options)
             except Exception as e:
@@ -154,6 +155,7 @@ class FolderFreshApplication:
 
         # Options/settings changes
         self.main_window.options_changed.connect(self._on_options_changed)
+        self.main_window.advanced_toggled.connect(self._on_advanced_toggled)
         self.main_window.profile_update_silent_requested.connect(self._on_profile_update_silent_requested)
         print("[APP_INIT] profile_update_silent_requested signal connected!")
 
@@ -552,6 +554,22 @@ class FolderFreshApplication:
                 log_info(f"[TRAY_UPDATE] Menu updated successfully")
             except Exception as e:
                 log_error(f"[TRAY_UPDATE] Failed to update menu: {e}")
+
+    def _on_advanced_toggled(self, is_visible: bool) -> None:
+        """
+        Handle advanced section toggle.
+        Save the advanced visibility state to config.
+
+        Args:
+            is_visible: Whether the advanced section is now visible
+        """
+        if not hasattr(self, '_config_data') or self._config_data is None:
+            return
+
+        # Save the advanced section visibility state
+        self._config_data["advanced_visible"] = is_visible
+        save_config(self._config_data)
+        log_info(f"Advanced section visibility saved: {is_visible}")
 
     def _on_profile_update_silent_requested(self, profile_id: str, updates_dict: dict) -> None:
         """
