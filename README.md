@@ -117,25 +117,25 @@ Desktop
 ## Screenshots
 
 ### Main Window  
-![Main Window](screenshots\2.0.0_main.png)
+![Main Window](screenshots/2.0.0_main.png)
 
 ### Profile Manager  
-![Profile Manager](screenshots\2.0.0_profile_manager.png)
+![Profile Manager](screenshots/2.0.0_profile_manager.png)
 
 ### Watcher Manager 
-![Watcher Manager](screenshots\2.0.0_watcher_manager.png)
+![Watcher Manager](screenshots/2.0.0_watcher_manager.png)
 
 ### Rule Editor
-![Rule Editor](screenshots\2.0.0_rule_editor.png)
+![Rule Editor](screenshots/2.0.0_rule_editor.png)
 
 ### Rule Manager
-![Rule Manager](screenshots\2.0.0_rule_manager.png)
+![Rule Manager](screenshots/2.0.0_rule_manager.png)
 
 ### Category Manager
-![Category Manager](screenshots\2.0.0_category_manager.png)
+![Category Manager](screenshots/2.0.0_category_manager.png)
 
 ### Example
-![Example](screenshots\Example.png)
+![Example](screenshots/Example.png)
 
 
 ---
