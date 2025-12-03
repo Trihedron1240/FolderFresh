@@ -1,13 +1,3 @@
-"""
-profile_store.py — CLEAN REWRITE (v1.4.0)
-Reliable profile storage with:
- - atomic writes
- - automatic backups
- - no recursion
- - simple schema with defaults
- - fully compatible with FolderFresh 1.3.0+
-"""
-
 from __future__ import annotations
 
 import json
@@ -16,7 +6,8 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
-
+from folderfresh.rule_engine.rule_store import rule_to_dict, dict_to_rule
+from folderfresh.rule_engine import Rule
 from .config import load_config, save_config
 
 PROFILES_FILE = Path.home() / ".folderfresh_profiles.json"
@@ -76,12 +67,14 @@ def default_profiles_doc() -> Dict[str, Any]:
                     "skip_hidden": True,
                     "ignore_exts": "",
                     "age_filter_days": 0,
+                    "rule_fallback_to_sort": True,
                 },
                 "category_overrides": {},
                 "custom_categories": {},
                 "category_enabled": {},
                 "ignore_patterns": [],
                 "dont_move_list": [],
+                "rules": []
             }
         ],
     }
@@ -180,12 +173,27 @@ class ProfileStore:
             "skip_hidden",
             "ignore_exts",
             "age_filter_days",
+            "rule_fallback_to_sort",
+            "auto_tidy",
         ):
             if k in settings:
                 cfg[k] = settings[k]
 
         cfg["custom_categories"] = profile.get("custom_categories", {})
-        cfg["custom_category_names"] = profile.get("category_overrides", {})
+
+        # Transform category_overrides to custom_category_names format
+        # Profile format: {"cat_name": {"name": "Display Name", "extensions": [...]}}
+        # Config format: {"cat_name": "Display Name"}
+        category_overrides = profile.get("category_overrides", {})
+        custom_category_names = {}
+        for cat_name, override_data in category_overrides.items():
+            if isinstance(override_data, dict) and "name" in override_data:
+                custom_category_names[cat_name] = override_data["name"]
+            elif isinstance(override_data, str):
+                # Handle old-style string overrides for backward compatibility
+                custom_category_names[cat_name] = override_data
+
+        cfg["custom_category_names"] = custom_category_names
         cfg["category_enabled"] = profile.get("category_enabled", {})
         cfg["ignore_patterns"] = profile.get("ignore_patterns", [])
         cfg["dont_move_list"] = profile.get("dont_move_list", [])
@@ -194,3 +202,66 @@ class ProfileStore:
             cfg[k] = global_cfg.get(k, cfg.get(k))
 
         return cfg
+    # ========================================================
+    # RULE ENGINE INTEGRATION
+    # ========================================================
+
+    def get_rules(self, profile: Dict[str, Any]) -> list[Rule]:
+        """
+        Convert the stored 'rules' list (JSON) into Rule objects.
+        Returns an empty list if profile has no rules yet.
+        """
+        entries = profile.get("rules", [])
+        return [dict_to_rule(entry) for entry in entries]
+
+    def get_rules_for_profile_id(self, profile_id: str) -> list[Dict[str, Any]]:
+        """
+        Get raw rules (as dicts) for a specific profile by ID.
+        Returns an empty list if profile not found or has no rules.
+        """
+        doc = self.load()
+        for p in doc["profiles"]:
+            if p["id"] == profile_id:
+                return p.get("rules", [])
+        return []
+
+    def set_rules(self, rules: list[Rule], profile_id: str = None):
+        """
+        Convert a list of Rule objects into JSON-serializable dicts
+        and store them inside a profile. Then save the entire
+        profiles.json file to persist changes.
+
+        Args:
+            rules: List of Rule objects to store (or raw dicts if coming from UI)
+            profile_id: Optional specific profile ID to update. If not provided, updates active profile.
+        """
+        # Load the full document to ensure we save the correct state
+        doc = self.load()
+
+        # Determine which profile to update
+        if profile_id:
+            # Update specific profile by ID
+            target_id = profile_id
+        else:
+            # Fall back to active profile for backward compatibility
+            target_id = doc.get("active_profile_id")
+
+        # Convert rules to dicts - handle both Rule objects and raw dicts
+        rules_as_dicts = []
+        for rule in rules:
+            if isinstance(rule, dict):
+                # Already a dict (from UI), just use as-is
+                rules_as_dicts.append(rule)
+            else:
+                # Rule object, convert to dict
+                rules_as_dicts.append(rule_to_dict(rule))
+
+        # Find and update the target profile
+        for p in doc["profiles"]:
+            if p["id"] == target_id:
+                p["rules"] = rules_as_dicts
+                p["updated_at"] = now_iso()
+                break
+
+        # Save the updated document
+        self.save(doc)

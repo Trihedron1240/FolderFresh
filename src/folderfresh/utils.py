@@ -4,11 +4,12 @@ import time
 import hashlib
 import json
 import winreg
+import re
 from pathlib import Path
 from datetime import datetime, timedelta
 import ctypes
 from ctypes import wintypes
-from .constants import LOG_FILENAME, DEFAULT_CATEGORIES
+from .constants import LOG_FILENAME, ALL_CATEGORIES
 
 # OneDrive Cloud Reparse Tag
 IO_REPARSE_TAG_CLOUD = 0x9000001A
@@ -99,6 +100,112 @@ def is_hidden_win(path: Path) -> bool:
         return False
 
 
+def is_placeholder_file(path: Path) -> bool:
+    """
+    Detect default/placeholder filenames created by Windows, Office, and creative tools.
+
+    Returns True if the file appears to be an auto-generated placeholder that the user
+    has not renamed yet. These should be skipped during watcher processing and manual sorting.
+
+    Detects patterns like:
+    - "New Text Document.txt"
+    - "New Text Document (2).txt"
+    - "Untitled.txt", "Untitled-1.png"
+    - "Document1.docx", "Document123.xlsx"
+    - "Presentation1.pptx", "Presentation (1).pptx"
+    - "Book1.xlsx"
+    - Any file starting with "New "
+
+    Args:
+        path: Path object to the file
+
+    Returns:
+        True if file matches placeholder patterns, False otherwise
+    """
+    if not path.is_file():
+        return False
+
+    filename = path.name
+    name_without_ext = path.stem  # filename without extension
+
+    # Normalize for case-insensitive matching
+    name_lower = name_without_ext.lower()
+
+    # === PATTERN 1: "New *" files (Windows/Explorer default) ===
+    # Matches: "New Text Document.txt", "New Folder.lnk", "New File.txt"
+    # But NOT: "New Year Party Photos.zip" (has meaningful words after the type)
+    if name_lower.startswith("new "):
+        # Allow ONLY if it's "New [generic type]" without additional meaningful words
+        # Generic patterns: "New Text Document", "New Folder", "New File", "New Bitmap", etc.
+        remainder = name_lower[4:].strip()  # Skip "new "
+
+        # These are the generic Windows defaults - single words or two-word templates
+        generic_new_patterns = [
+            r'^text\s+document$',
+            r'^bitmap\s+image$',
+            r'^document$',
+            r'^folder$',
+            r'^file$',
+            r'^shortcut$',
+            r'^compressed\s+\(zipped\)\s+folder$',
+        ]
+
+        for pattern in generic_new_patterns:
+            if re.match(pattern, remainder):
+                return True
+
+        # If it doesn't match a known Windows generic, it's probably user-meaningful
+        # e.g., "New Year Party Photos" is intentional naming
+
+    # === PATTERN 2: "Untitled" variants ===
+    # Matches: "Untitled.txt", "Untitled-1.psd", "Untitled (1).png"
+    # But NOT: "Untitled Love Story.docx" (has text after number/variant)
+    if name_lower.startswith("untitled"):
+        # Allow ONLY pure "Untitled" or "Untitled-N" or "Untitled (N)" or "Untitled N"
+        remainder = name_lower[len("untitled"):].strip()
+
+        # Pure "Untitled" with no suffix
+        if not remainder:
+            return True
+
+        # "Untitled" followed by number variant: "-1", "(1)", or " 1"
+        if re.match(r'^[\s\-\(]?\d+[\)]?$', remainder):
+            return True
+
+    # === PATTERN 3: Office "DocumentN", "PresentationN", "BookN" ===
+    # Matches: "Document1.docx", "Presentation2.pptx", "Book1.xlsx"
+    # These are generic Office defaults with incremental numbers
+    office_generics = [
+        (r'^document\d+$', 'Document'),  # Document1, Document123
+        (r'^presentation\d+$', 'Presentation'),  # Presentation1
+        (r'^book\d+$', 'Book'),  # Book1
+        (r'^sheet\d+$', 'Sheet'),  # Sheet1
+        (r'^workbook\d+$', 'Workbook'),  # Workbook1
+    ]
+
+    for pattern, label in office_generics:
+        if re.match(pattern, name_lower):
+            return True
+
+    # === PATTERN 4: "Word, Powerpoint, Excel" auto-recovery names ===
+    # Matches: "AutoRecovery save of Document1.asd"
+    if re.match(r'^autorecovery\s+save\s+of\s+', name_lower):
+        return True
+
+    # === PATTERN 5: Numbered variants with parentheses ===
+    # Matches: "Document (1).docx", "Presentation (2).pptx"
+    # But only if the base name is a generic Office template
+    if re.search(r'\s\(\d+\)$', name_without_ext):
+        base_without_number = re.sub(r'\s\(\d+\)$', '', name_without_ext).lower()
+
+        # Check if base is a generic Office name
+        if base_without_number in ['document', 'presentation', 'book', 'sheet', 'workbook', 'untitled']:
+            return True
+
+    # Not a placeholder
+    return False
+
+
 # ------------------------------- AGE CHECK ------------------------------------
 
 def file_is_old_enough(path: Path, min_days: int):
@@ -133,6 +240,9 @@ def scan_dir(
     ignore_set: set[str],
     skip_categories: bool
 ):
+    from folderfresh.logger_qt import log_info
+    log_info(f"[scan_dir] skip_categories={skip_categories}, include_sub={include_sub}, ALL_CATEGORIES={ALL_CATEGORIES}")
+
     files = []
     iterator = root.rglob("*") if include_sub else root.glob("*")
 
@@ -150,13 +260,17 @@ def scan_dir(
 
             rel = p.relative_to(root)
 
+            # Debug: log files found
+            if skip_categories == False and len(rel.parts) >= 2:
+                log_info(f"[scan_dir] File in subfolder: {rel}, parts={rel.parts}")
+
             if skip_hidden and (
                 any(part.startswith(".") for part in rel.parts) or is_hidden_win(p)
             ):
                 continue
 
             if skip_categories:
-                if len(rel.parts) >= 2 and rel.parts[0] in DEFAULT_CATEGORIES:
+                if len(rel.parts) >= 2 and rel.parts[0] in ALL_CATEGORIES:
                     continue
 
             files.append(p)

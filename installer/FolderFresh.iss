@@ -1,7 +1,7 @@
 #define MyAppName      "FolderFresh"
-#define MyAppVersion "1.4.0"
+#define MyAppVersion "2.0.0"
 #define MyAppPublisher "Tristan Jay Neale"
-#define MyAppURL       "https://github.com/Trihedron1240/FolderFresh"
+#define MyAppURL       "https://trihedron1240.github.io/FolderFresh/"
 #define MyAppExeName   "FolderFresh.exe"
 
 [Setup]
