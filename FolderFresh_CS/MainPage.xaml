@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="FolderFreshLite.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFreshLite"
+    xmlns:components="using:FolderFreshLite.Components"
+    RequestedTheme="Dark"
+    Background="#111214">
+
+    <NavigationView
+        x:Name="NavView"
+        PaneDisplayMode="Left"
+        IsPaneToggleButtonVisible="False"
+        IsBackButtonVisible="Collapsed"
+        OpenPaneLength="200"
+        Background="#111214"
+        IsSettingsVisible="False"
+        SelectionChanged="NavView_SelectionChanged">
+
+        <NavigationView.PaneCustomContent>
+            <Grid Background="#17181A"/>
+        </NavigationView.PaneCustomContent>
+
+        <NavigationView.Resources>
+            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#111214"/>
+            <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="#17181A"/>
+            <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="#17181A"/>
+        </NavigationView.Resources>
+
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Home" Tag="home" IsSelected="True">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE80F;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Folders" Tag="folders">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE8B7;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Rules" Tag="rules">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE945;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Categories" Tag="categories">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE8EC;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem Content="Profiles" Tag="profiles">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE77B;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.MenuItems>
+
+        <NavigationView.FooterMenuItems>
+            <NavigationViewItem Content="Settings" Tag="settings">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE713;"/>
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+        </NavigationView.FooterMenuItems>
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="48"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Top Bar -->
+            <Grid Grid.Row="0" Background="#1E1F22" Padding="16,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- App Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                    <FontIcon Glyph="&#xE8B5;" FontSize="16" Foreground="#5865F2"/>
+                    <TextBlock Text="FolderFresh Lite" 
+                               FontSize="14" 
+                               FontWeight="SemiBold" 
+                               Foreground="White"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Folder Selector -->
+                <Button Grid.Column="2"
+                        Background="#232428"
+                        BorderBrush="Transparent"
+                        CornerRadius="8"
+                        Padding="12,6"
+                        VerticalAlignment="Center"
+                        Click="FolderSelector_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE8B7;" FontSize="14" Foreground="#B5BAC1"/>
+                        <TextBlock x:Name="FolderPathText"
+                                   Text="Select Folder..."
+                                   FontSize="12"
+                                   Foreground="#B5BAC1"
+                                   VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xE70D;" FontSize="10" Foreground="#949BA4"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Main Content - Frame for page navigation -->
+            <Frame x:Name="ContentFrame" Grid.Row="1" Visibility="Collapsed"/>
+
+            <!-- Home Content (default view) -->
+            <Grid x:Name="HomeContent" Grid.Row="1" Padding="40">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Panel - Current -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="CURRENT"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="#949BA4"
+                               CharacterSpacing="50"
+                               Margin="0,0,0,8"/>
+
+                    <Border Grid.Row="1"
+                            Background="#1E1F22"
+                            BorderBrush="#2B2D31"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            MinHeight="380">
+
+                        <Grid>
+                            <!-- Empty State -->
+                            <StackPanel x:Name="CurrentEmptyState"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        Spacing="12">
+                                <FontIcon Glyph="&#xE838;"
+                                          FontSize="48"
+                                          Foreground="#3F4147"
+                                          HorizontalAlignment="Center"/>
+                                <TextBlock Text="Select a folder to preview"
+                                           FontSize="14"
+                                           Foreground="#6D6F78"/>
+                            </StackPanel>
+
+                            <!-- File Explorer Panel -->
+                            <components:FileExplorerPanel x:Name="CurrentFilesPanel"
+                                                          Visibility="Collapsed"
+                                                          FolderOpened="CurrentFilesPanel_FolderOpened"
+                                                          FileOpened="CurrentFilesPanel_FileOpened"
+                                                          SelectionChanged="CurrentFilesPanel_SelectionChanged"
+                                                          Background="Transparent"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Center Arrow -->
+                <TextBlock Grid.Column="1"
+                           Text="→"
+                           FontSize="24"
+                           Foreground="#5865F2"
+                           VerticalAlignment="Center"
+                           Margin="16,0"/>
+
+                <!-- Right Panel - After -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="AFTER"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="#949BA4"
+                               CharacterSpacing="50"
+                               Margin="0,0,0,8"/>
+
+                    <Border Grid.Row="1"
+                            Background="#1E1F22"
+                            BorderBrush="#2B2D31"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            MinHeight="380">
+
+                        <Grid>
+                            <!-- Empty State -->
+                            <StackPanel x:Name="AfterEmptyState"
+                                        VerticalAlignment="Center"
+                                        HorizontalAlignment="Center"
+                                        Spacing="12">
+                                <FontIcon Glyph="&#xE734;"
+                                          FontSize="48"
+                                          Foreground="#3F4147"
+                                          HorizontalAlignment="Center"/>
+                                <TextBlock Text="Organized preview"
+                                           FontSize="14"
+                                           Foreground="#6D6F78"/>
+                            </StackPanel>
+
+                            <!-- File Explorer Panel for After Preview -->
+                            <components:FileExplorerPanel x:Name="AfterFilesPanel"
+                                                          Visibility="Collapsed"
+                                                          FolderOpened="AfterFilesPanel_FolderOpened"
+                                                          EmptyStateText="No files to organize"
+                                                          Background="Transparent"/>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- Bottom Action -->
+            <StackPanel Grid.Row="2" 
+                        HorizontalAlignment="Center" 
+                        Margin="0,0,0,32"
+                        Spacing="12">
+                
+                <Button x:Name="OrganizeButton"
+                        Content="Organize Now"
+                        Width="200"
+                        Height="44"
+                        Background="#5865F2"
+                        Foreground="White"
+                        FontSize="14"
+                        FontWeight="Bold"
+                        CornerRadius="10"
+                        Click="OrganizeButton_Click">
+                    <Button.Shadow>
+                        <ThemeShadow/>
+                    </Button.Shadow>
+                </Button>
+
+                <HyperlinkButton x:Name="UndoButton"
+                                 Content="Undo"
+                                 FontSize="11"
+                                 Foreground="#949BA4"
+                                 HorizontalAlignment="Center"
+                                 Visibility="Collapsed"
+                                 Click="UndoButton_Click"/>
+            </StackPanel>
+        </Grid>
+    </NavigationView>
+</Page>

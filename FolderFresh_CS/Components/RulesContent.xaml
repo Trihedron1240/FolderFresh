@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FolderFreshLite.Components.RulesContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFreshLite.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Loaded="UserControl_Loaded">
+
+    <Grid Background="#1C1C1C">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header Row -->
+        <Grid Grid.Row="0" Padding="24,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Title -->
+            <TextBlock Grid.Column="0"
+                       Text="Rules"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Foreground="White"
+                       VerticalAlignment="Center"/>
+
+            <!-- Right side controls -->
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        Spacing="16">
+
+                <!-- Fallback to Categories Toggle -->
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="Fallback to Categories"
+                               FontSize="13"
+                               Foreground="#999999"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <ToggleSwitch x:Name="FallbackToggle"
+                                  OnContent=""
+                                  OffContent=""
+                                  MinWidth="40"
+                                  IsOn="True"
+                                  Toggled="FallbackToggle_Toggled"/>
+                </StackPanel>
+
+                <!-- New Rule Button -->
+                <Button x:Name="NewRuleButton"
+                        Click="NewRuleButton_Click"
+                        Background="#60CDFF"
+                        Foreground="White"
+                        Padding="16,8"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="&#xE710;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="New Rule"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Info Banner -->
+        <Border Grid.Row="1"
+                x:Name="InfoBanner"
+                Background="#2D2D2D"
+                CornerRadius="8"
+                Padding="12"
+                Margin="24,0,24,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Info Icon -->
+                <TextBlock Grid.Column="0"
+                           Text="&#xE946;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="16"
+                           Foreground="#60CDFF"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0"/>
+
+                <!-- Info Text -->
+                <TextBlock Grid.Column="1"
+                           Text="Rules are checked in order from top to bottom. The first matching rule wins. Drag rules to reorder priority."
+                           FontSize="13"
+                           Foreground="#999999"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+
+                <!-- Dismiss Button -->
+                <Button Grid.Column="2"
+                        x:Name="DismissBannerButton"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="8"
+                        Click="DismissBannerButton_Click">
+                    <TextBlock Text="&#xE711;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="12"
+                               Foreground="#666666"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Rules List / Empty State -->
+        <Grid Grid.Row="2">
+            <!-- Empty State -->
+            <StackPanel x:Name="EmptyState"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Visibility="Collapsed">
+                <TextBlock Text="&#xE8FD;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="48"
+                           Foreground="#404040"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,16"/>
+                <TextBlock Text="No rules yet"
+                           FontSize="18"
+                           Foreground="#999999"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,8"/>
+                <TextBlock Text="Rules let you automatically organize specific files based on conditions"
+                           FontSize="14"
+                           Foreground="#666666"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           MaxWidth="300"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,24"/>
+                <Button x:Name="CreateRuleButton"
+                        Click="NewRuleButton_Click"
+                        Background="#60CDFF"
+                        Foreground="White"
+                        Padding="20,10"
+                        CornerRadius="6"
+                        HorizontalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="&#xE710;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Text="Create Rule"
+                                   FontSize="14"
+                                   FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <!-- Rules List -->
+            <ScrollViewer x:Name="RulesScrollViewer"
+                          Visibility="Visible">
+                <StackPanel x:Name="RulesListPanel"
+                            Padding="24,0,24,24"
+                            Spacing="8"
+                            AllowDrop="True"
+                            DragOver="RulesListPanel_DragOver"
+                            Drop="RulesListPanel_Drop">
+                    <!-- Rule cards will be added here dynamically -->
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Drop Indicator Line -->
+            <Border x:Name="DropIndicator"
+                    Height="2"
+                    Background="#60CDFF"
+                    HorizontalAlignment="Stretch"
+                    Margin="24,0"
+                    Visibility="Collapsed"
+                    IsHitTestVisible="False"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FolderFreshLite.Components.CategoriesContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFreshLite.Components"
+    xmlns:models="using:FolderFreshLite.Models">
+
+    <Grid Background="Transparent">
+        <!-- Main Content -->
+        <Grid x:Name="MainContent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header Row -->
+            <Grid Grid.Row="0" Padding="24,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Title -->
+                <TextBlock Grid.Column="0"
+                           Text="Categories"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="#FFFFFF"
+                           VerticalAlignment="Center"/>
+
+                <!-- New Category Button -->
+                <Button Grid.Column="1"
+                        x:Name="NewCategoryButton"
+                        Background="#60CDFF"
+                        Foreground="White"
+                        CornerRadius="10"
+                        Height="36"
+                        Padding="16,0"
+                        Click="NewCategoryButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="12"/>
+                        <TextBlock Text="New Category" FontSize="13" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Category List -->
+            <ScrollViewer Grid.Row="1"
+                          VerticalScrollBarVisibility="Auto"
+                          VerticalScrollMode="Enabled"
+                          HorizontalScrollMode="Disabled"
+                          IsVerticalRailEnabled="True"
+                          Padding="24,0,24,24">
+                <StackPanel Spacing="12">
+                    <!-- Default Categories Section -->
+                    <TextBlock Text="DEFAULT CATEGORIES"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="#666666"
+                               CharacterSpacing="50"
+                               Margin="0,0,0,4"/>
+
+                    <ItemsControl x:Name="DefaultCategoriesList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="12"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:Category">
+                                <local:CategoryCard Category="{x:Bind}"
+                                                    EditClicked="CategoryCard_EditClicked"
+                                                    DeleteClicked="CategoryCard_DeleteClicked"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Separator -->
+                    <Border Height="1"
+                            Background="#333333"
+                            Margin="0,12"
+                            Visibility="{x:Bind HasCustomCategories, Mode=OneWay}"/>
+
+                    <!-- Custom Categories Section -->
+                    <TextBlock x:Name="CustomCategoriesLabel"
+                               Text="CUSTOM CATEGORIES"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Foreground="#666666"
+                               CharacterSpacing="50"
+                               Margin="0,0,0,4"
+                               Visibility="{x:Bind HasCustomCategories, Mode=OneWay}"/>
+
+                    <ItemsControl x:Name="CustomCategoriesList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="12"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:Category">
+                                <local:CategoryCard Category="{x:Bind}"
+                                                    EditClicked="CategoryCard_EditClicked"
+                                                    DeleteClicked="CategoryCard_DeleteClicked"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Empty State for Custom Categories -->
+                    <TextBlock x:Name="EmptyStateText"
+                               Text="Create custom categories for your specific needs"
+                               FontSize="13"
+                               Foreground="#666666"
+                               HorizontalAlignment="Center"
+                               Margin="0,24,0,0"
+                               Visibility="{x:Bind ShowEmptyState, Mode=OneWay}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Form Panel Overlay -->
+        <local:CategoryFormPanel x:Name="FormPanel"
+                                 Visibility="Collapsed"
+                                 SaveClicked="FormPanel_SaveClicked"
+                                 CancelClicked="FormPanel_CancelClicked"/>
+    </Grid>
+</UserControl>

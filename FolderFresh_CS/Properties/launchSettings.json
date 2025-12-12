@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "FolderFreshLite (Windows)": {
+      "commandName": "Project",
+      "nativeDebugging": false,
+      "environmentVariables": {
+        "ENABLE_XAML_DIAGNOSTICS_SOURCE_INFO": "1"
+      }
+    }
+  }
+}

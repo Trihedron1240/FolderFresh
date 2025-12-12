@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FolderFreshLite.Components.ConditionRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFreshLite.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    PointerEntered="UserControl_PointerEntered"
+    PointerExited="UserControl_PointerExited">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="160"/>
+            <ColumnDefinition Width="8"/>
+            <ColumnDefinition Width="140"/>
+            <ColumnDefinition Width="8"/>
+            <ColumnDefinition Width="*" MinWidth="120"/>
+            <ColumnDefinition Width="8"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Attribute Dropdown -->
+        <ComboBox Grid.Column="0"
+                  x:Name="AttributeComboBox"
+                  Height="36"
+                  Background="#2D2D2D"
+                  BorderBrush="#333333"
+                  CornerRadius="6"
+                  SelectionChanged="AttributeComboBox_SelectionChanged">
+            <ComboBoxItem Content="Name" Tag="Name"/>
+            <ComboBoxItem Content="Extension" Tag="Extension"/>
+            <ComboBoxItem Content="Full Name" Tag="FullName"/>
+            <ComboBoxItem Content="Kind" Tag="Kind"/>
+            <ComboBoxItem Content="Size" Tag="Size"/>
+            <ComboBoxItem Content="Date Created" Tag="DateCreated"/>
+            <ComboBoxItem Content="Date Modified" Tag="DateModified"/>
+            <ComboBoxItem Content="Date Accessed" Tag="DateAccessed"/>
+        </ComboBox>
+
+        <!-- Operator Dropdown -->
+        <ComboBox Grid.Column="2"
+                  x:Name="OperatorComboBox"
+                  Height="36"
+                  Background="#2D2D2D"
+                  BorderBrush="#333333"
+                  CornerRadius="6"
+                  SelectionChanged="OperatorComboBox_SelectionChanged">
+            <!-- Items populated dynamically based on attribute -->
+        </ComboBox>
+
+        <!-- Value Input Container - switches based on attribute/operator -->
+        <Grid Grid.Column="4" x:Name="ValueContainer">
+            <!-- Text Input (for Name, Extension, Pattern) -->
+            <TextBox x:Name="TextValueInput"
+                     Height="36"
+                     Background="#2D2D2D"
+                     BorderBrush="#333333"
+                     CornerRadius="6"
+                     PlaceholderText="Enter value..."
+                     TextChanged="TextValueInput_TextChanged"
+                     Visibility="Visible"/>
+
+            <!-- Kind Dropdown -->
+            <ComboBox x:Name="KindValueComboBox"
+                      Height="36"
+                      Background="#2D2D2D"
+                      BorderBrush="#333333"
+                      CornerRadius="6"
+                      SelectionChanged="KindValueComboBox_SelectionChanged"
+                      Visibility="Collapsed">
+                <ComboBoxItem Content="Document" Tag="Document"/>
+                <ComboBoxItem Content="Image" Tag="Image"/>
+                <ComboBoxItem Content="Audio" Tag="Audio"/>
+                <ComboBoxItem Content="Video" Tag="Video"/>
+                <ComboBoxItem Content="Archive" Tag="Archive"/>
+                <ComboBoxItem Content="PDF" Tag="PDF"/>
+                <ComboBoxItem Content="Executable" Tag="Executable"/>
+                <ComboBoxItem Content="Code" Tag="Code"/>
+                <ComboBoxItem Content="Text" Tag="Text"/>
+                <ComboBoxItem Content="Spreadsheet" Tag="Spreadsheet"/>
+                <ComboBoxItem Content="Presentation" Tag="Presentation"/>
+                <ComboBoxItem Content="Other" Tag="Other"/>
+            </ComboBox>
+
+            <!-- Size Input (number + unit) -->
+            <Grid x:Name="SizeValueGrid" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="80"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
+                         x:Name="SizeValueInput"
+                         Height="36"
+                         Background="#2D2D2D"
+                         BorderBrush="#333333"
+                         CornerRadius="6"
+                         PlaceholderText="100"
+                         InputScope="Number"
+                         TextChanged="SizeValueInput_TextChanged"/>
+                <ComboBox Grid.Column="2"
+                          x:Name="SizeUnitComboBox"
+                          Height="36"
+                          Background="#2D2D2D"
+                          BorderBrush="#333333"
+                          CornerRadius="6"
+                          SelectedIndex="1"
+                          SelectionChanged="SizeUnitComboBox_SelectionChanged">
+                    <ComboBoxItem Content="B" Tag="B"/>
+                    <ComboBoxItem Content="KB" Tag="KB"/>
+                    <ComboBoxItem Content="MB" Tag="MB"/>
+                    <ComboBoxItem Content="GB" Tag="GB"/>
+                </ComboBox>
+            </Grid>
+
+            <!-- Date Picker -->
+            <CalendarDatePicker x:Name="DateValuePicker"
+                                Height="36"
+                                Background="#2D2D2D"
+                                BorderBrush="#333333"
+                                CornerRadius="6"
+                                PlaceholderText="Select date"
+                                DateChanged="DateValuePicker_DateChanged"
+                                Visibility="Collapsed"/>
+
+            <!-- Relative Date Input (number + unit for "is in the last") -->
+            <Grid x:Name="RelativeDateGrid" Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
+                         x:Name="RelativeDateValueInput"
+                         Height="36"
+                         Background="#2D2D2D"
+                         BorderBrush="#333333"
+                         CornerRadius="6"
+                         PlaceholderText="7"
+                         InputScope="Number"
+                         TextChanged="RelativeDateValueInput_TextChanged"/>
+                <ComboBox Grid.Column="2"
+                          x:Name="RelativeDateUnitComboBox"
+                          Height="36"
+                          Background="#2D2D2D"
+                          BorderBrush="#333333"
+                          CornerRadius="6"
+                          SelectedIndex="0"
+                          SelectionChanged="RelativeDateUnitComboBox_SelectionChanged">
+                    <ComboBoxItem Content="days" Tag="days"/>
+                    <ComboBoxItem Content="weeks" Tag="weeks"/>
+                    <ComboBoxItem Content="months" Tag="months"/>
+                    <ComboBoxItem Content="years" Tag="years"/>
+                </ComboBox>
+            </Grid>
+        </Grid>
+
+        <!-- Delete Button -->
+        <Button Grid.Column="6"
+                x:Name="DeleteButton"
+                Background="Transparent"
+                BorderThickness="0"
+                Padding="8"
+                Width="36"
+                Height="36"
+                Click="DeleteButton_Click"
+                Opacity="0"
+                PointerEntered="DeleteButton_PointerEntered"
+                PointerExited="DeleteButton_PointerExited">
+            <TextBlock Text="&#xE711;"
+                       FontFamily="Segoe MDL2 Assets"
+                       FontSize="12"
+                       Foreground="#666666"
+                       x:Name="DeleteIcon"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Button>
+    </Grid>
+</UserControl>

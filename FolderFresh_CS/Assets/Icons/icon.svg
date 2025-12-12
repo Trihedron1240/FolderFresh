@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect x="0" y="0" width="456" height="456" fill="#5865F2" rx="64"/>
+
+  <!-- Folder icon -->
+  <g transform="translate(78, 98)">
+    <!-- Folder back -->
+    <path d="M0 60 L0 220 Q0 240 20 240 L280 240 Q300 240 300 220 L300 60 Q300 40 280 40 L140 40 L120 20 Q110 10 95 10 L20 10 Q0 10 0 30 Z" fill="#FFFFFF" opacity="0.9"/>
+
+    <!-- Folder front -->
+    <path d="M10 80 L10 210 Q10 225 25 225 L275 225 Q290 225 290 210 L290 80 Q290 65 275 65 L25 65 Q10 65 10 80 Z" fill="#FFFFFF"/>
+
+    <!-- Sparkle/Fresh indicator -->
+    <circle cx="245" cy="35" r="25" fill="#22C55E"/>
+    <path d="M245 20 L245 50 M230 35 L260 35" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"/>
+  </g>
+</svg>
