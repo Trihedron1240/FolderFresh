@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FolderFreshLite.Models;
 
@@ -13,9 +14,31 @@ public class FileOrganizeResult
     public string SourcePath { get; set; } = string.Empty;
 
     /// <summary>
-    /// Destination path after organizing (null if no match)
+    /// Primary destination path after organizing (null if no match).
+    /// For backward compatibility - returns first destination from AllDestinations.
     /// </summary>
-    public string? DestinationPath { get; set; }
+    public string? DestinationPath
+    {
+        get => AllDestinations.FirstOrDefault().Path;
+        set
+        {
+            // For backward compatibility - set as the only destination
+            if (value != null)
+            {
+                AllDestinations = new List<(string Path, ActionType ActionType)> { (value, ActionType.MoveToFolder) };
+            }
+            else
+            {
+                AllDestinations.Clear();
+            }
+        }
+    }
+
+    /// <summary>
+    /// All destinations for this file (includes copies).
+    /// Each tuple contains the destination path and the action type (Move, Copy, etc.)
+    /// </summary>
+    public List<(string Path, ActionType ActionType)> AllDestinations { get; set; } = new();
 
     /// <summary>
     /// How this file was matched
@@ -31,6 +54,11 @@ public class FileOrganizeResult
     /// ID of the matched rule (if MatchedBy == Rule)
     /// </summary>
     public string? MatchedRuleId { get; set; }
+
+    /// <summary>
+    /// All matched rules when using Continue action (in priority order)
+    /// </summary>
+    public List<Rule> MatchedRules { get; set; } = new();
 
     /// <summary>
     /// Name of the matched category (if MatchedBy == Category)
@@ -65,5 +93,5 @@ public class FileOrganizeResult
     /// <summary>
     /// Whether this file will be organized
     /// </summary>
-    public bool WillBeOrganized => MatchedBy != OrganizeMatchType.None && !string.IsNullOrEmpty(DestinationPath);
+    public bool WillBeOrganized => MatchedBy != OrganizeMatchType.None && AllDestinations.Count > 0;
 }

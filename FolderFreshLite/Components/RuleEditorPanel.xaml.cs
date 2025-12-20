@@ -172,11 +172,12 @@ public sealed partial class RuleEditorPanel : UserControl
     {
         var row = new ActionRow
         {
-            Action = action,
             OrderNumber = orderNumber
         };
 
+        // Set categories BEFORE setting Action, so dropdown is populated when LoadAction runs
         row.SetCategories(_categories);
+        row.Action = action;
         row.ActionChanged += ActionRow_ActionChanged;
         row.DeleteRequested += ActionRow_DeleteRequested;
 

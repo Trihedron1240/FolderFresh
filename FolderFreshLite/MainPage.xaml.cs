@@ -474,36 +474,78 @@ public sealed partial class MainPage : Page
         // Step 1: Try rules first (if enabled)
         if (settings.UseRulesFirst && rules.Any(r => r.IsEnabled))
         {
-            var matchingRule = _ruleService.GetMatchingRule(fileInfo, rules);
-            if (matchingRule != null)
+            var matchingRules = _ruleService.GetMatchingRulesWithContinue(fileInfo, rules);
+            if (matchingRules.Count > 0)
             {
-                // Check if this rule has an Ignore action - if so, file stays in place
-                var hasIgnore = matchingRule.Actions.Any(a => a.Type == ActionType.Ignore);
+                // Collect all actions from all matching rules
+                var allActions = new List<RuleAction>();
+                foreach (var rule in matchingRules)
+                {
+                    allActions.AddRange(rule.Actions);
+                }
+
+                // Check if any rule has an Ignore action - if so, file stays in place
+                var hasIgnore = allActions.Any(a => a.Type == ActionType.Ignore);
                 if (hasIgnore)
                 {
                     // File is ignored by rule - show it staying in its current location
                     result.MatchedBy = OrganizeMatchType.Rule;
-                    result.MatchedRuleName = matchingRule.Name;
-                    result.MatchedRuleId = matchingRule.Id;
+                    result.MatchedRuleName = string.Join(" → ", matchingRules.Select(r => r.Name));
+                    result.MatchedRuleId = matchingRules.First().Id;
+                    result.MatchedRules = matchingRules;
                     result.DestinationPath = null;
-                    result.Actions = matchingRule.Actions.ToList();
+                    result.Actions = allActions;
                     _organizePreview!.Results.Add(result);
                     AddUnmatchedToLegacyPreview(fileInfo, sourceSubfolder);
                     return;
                 }
 
-                result.MatchedBy = OrganizeMatchType.Rule;
-                result.MatchedRuleName = matchingRule.Name;
-                result.MatchedRuleId = matchingRule.Id;
-                result.DestinationPath = _ruleService.CalculateDestinationPath(matchingRule, fileInfo, baseFolderPath, _categoryService);
-                result.Actions = matchingRule.Actions.ToList();
+                // Calculate all destinations from all matching rules
+                var allDestinations = new List<string>();
+                foreach (var rule in matchingRules)
+                {
+                    var ruleDestinations = _ruleService.CalculateAllDestinationPaths(rule, fileInfo, baseFolderPath, _categoryService);
+                    allDestinations.AddRange(ruleDestinations);
+                }
 
-                // Check if this rule has a Continue action - if so, still check categories
-                var hasContinue = matchingRule.Actions.Any(a => a.Type == ActionType.Continue);
-                if (!hasContinue)
+                result.MatchedBy = OrganizeMatchType.Rule;
+                result.MatchedRuleName = string.Join(" → ", matchingRules.Select(r => r.Name));
+                result.MatchedRuleId = matchingRules.First().Id;
+                result.MatchedRules = matchingRules;
+                result.Actions = allActions;
+                result.DestinationPath = allDestinations.Count > 0 ? allDestinations[0] : null;
+
+                // Check if the last rule has a Continue action - if so, still check categories as fallback
+                var lastRuleHasContinue = matchingRules.Last().Actions.Any(a => a.Type == ActionType.Continue);
+                if (!lastRuleHasContinue || allDestinations.Count > 0)
                 {
                     _organizePreview!.Results.Add(result);
-                    AddToLegacyPreview(result, fileInfo);
+
+                    // Add preview entry for primary destination
+                    if (allDestinations.Count > 0)
+                    {
+                        AddToLegacyPreview(result, fileInfo);
+
+                        // Add preview entries for any additional destinations (copies)
+                        for (int i = 1; i < allDestinations.Count; i++)
+                        {
+                            var copyResult = new FileOrganizeResult
+                            {
+                                SourcePath = fileInfo.FullName,
+                                FileSize = fileInfo.Length,
+                                MatchedBy = OrganizeMatchType.Rule,
+                                MatchedRuleName = result.MatchedRuleName + " (copy)",
+                                MatchedRuleId = result.MatchedRuleId,
+                                DestinationPath = allDestinations[i],
+                                Actions = allActions
+                            };
+                            AddToLegacyPreview(copyResult, fileInfo);
+                        }
+                    }
+                    else
+                    {
+                        AddUnmatchedToLegacyPreview(fileInfo, sourceSubfolder);
+                    }
                     return;
                 }
             }
@@ -734,6 +776,7 @@ public sealed partial class MainPage : Page
             groupName = "Recycle Bin";
             groupIcon = "\U0001F5D1"; // 🗑️
             groupColor = "#EF4444"; // Red
+            AddFileToGroup(groupKey, groupName, groupIcon, groupColor, "", result, fileInfo);
         }
         else if (isRootLevel)
         {
@@ -742,6 +785,7 @@ public sealed partial class MainPage : Page
             groupName = "Root";
             groupIcon = "\U0001F4C1"; // 📁
             groupColor = "#6B7280"; // Gray
+            AddFileToGroup(groupKey, groupName, groupIcon, groupColor, "", result, fileInfo);
         }
         else if (matchingCategory != null)
         {
@@ -750,16 +794,33 @@ public sealed partial class MainPage : Page
             groupName = matchingCategory.Name;
             groupIcon = matchingCategory.Icon;
             groupColor = matchingCategory.Color;
+            AddFileToGroup(groupKey, groupName, groupIcon, groupColor, relativeDest, result, fileInfo);
         }
         else
         {
-            // Custom destination folder (from rule)
-            groupKey = $"folder_{relativeDest}";
-            groupName = relativeDest;
-            groupIcon = "\U0001F4C2"; // 📂
-            groupColor = "#60CDFF"; // Accent blue
-        }
+            // Custom destination folder (from rule) - handle nested paths
+            // Split path into segments for hierarchical display
+            var pathSegments = relativeDest.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
 
+            if (pathSegments.Length > 1)
+            {
+                // Nested path - create hierarchical structure
+                AddFileToNestedFolder(pathSegments, relativeDest, result, fileInfo);
+            }
+            else
+            {
+                // Single-level folder
+                groupKey = $"folder_{relativeDest}";
+                groupName = relativeDest;
+                groupIcon = "\U0001F4C2"; // 📂
+                groupColor = "#60CDFF"; // Accent blue
+                AddFileToGroup(groupKey, groupName, groupIcon, groupColor, relativeDest, result, fileInfo);
+            }
+        }
+    }
+
+    private void AddFileToGroup(string groupKey, string groupName, string groupIcon, string groupColor, string destination, FileOrganizeResult result, FileInfo fileInfo)
+    {
         if (!_organizedPreview!.TryGetValue(groupKey, out var group))
         {
             group = new OrganizedFolder
@@ -768,16 +829,16 @@ public sealed partial class MainPage : Page
                 Name = groupName,
                 Icon = groupIcon,
                 Color = groupColor,
-                Destination = relativeDest,
+                Destination = destination,
                 FileCount = 0,
                 Files = new List<PreviewFile>(),
-                IsRuleGroup = false // No longer grouping by rule
+                IsRuleGroup = false
             };
             _organizedPreview[groupKey] = group;
         }
 
         // Use the final filename (may be renamed by rule)
-        var finalName = Path.GetFileName(result.DestinationPath);
+        var finalName = Path.GetFileName(result.DestinationPath!);
 
         group.Files.Add(new PreviewFile
         {
@@ -791,6 +852,86 @@ public sealed partial class MainPage : Page
             RuleName = result.MatchedRuleName
         });
         group.FileCount++;
+    }
+
+    private void AddFileToNestedFolder(string[] pathSegments, string fullRelativePath, FileOrganizeResult result, FileInfo fileInfo)
+    {
+        // Create the top-level folder if it doesn't exist
+        var topFolderName = pathSegments[0];
+        var topFolderKey = $"folder_{topFolderName}";
+
+        if (!_organizedPreview!.TryGetValue(topFolderKey, out var topFolder))
+        {
+            topFolder = new OrganizedFolder
+            {
+                CategoryId = topFolderKey,
+                Name = topFolderName,
+                Icon = "\U0001F4C2", // 📂
+                Color = "#60CDFF", // Accent blue
+                Destination = topFolderName,
+                FileCount = 0,
+                Files = new List<PreviewFile>(),
+                IsRuleGroup = false,
+                ParentFolderKey = null
+            };
+            _organizedPreview[topFolderKey] = topFolder;
+        }
+
+        // Navigate/create the nested folder structure
+        var currentFolder = topFolder;
+        var currentPath = topFolderName;
+
+        for (int i = 1; i < pathSegments.Length; i++)
+        {
+            var segmentName = pathSegments[i];
+            var segmentPath = Path.Combine(currentPath, segmentName);
+            var segmentKey = $"folder_{segmentPath}";
+
+            if (!currentFolder.ChildFolders.TryGetValue(segmentKey, out var childFolder))
+            {
+                childFolder = new OrganizedFolder
+                {
+                    CategoryId = segmentKey,
+                    Name = segmentName,
+                    Icon = "\U0001F4C2", // 📂
+                    Color = "#60CDFF", // Accent blue
+                    Destination = segmentPath,
+                    FileCount = 0,
+                    Files = new List<PreviewFile>(),
+                    IsRuleGroup = false,
+                    ParentFolderKey = currentFolder.CategoryId
+                };
+                currentFolder.ChildFolders[segmentKey] = childFolder;
+                // Also add to the main dictionary for easy lookup
+                _organizedPreview[segmentKey] = childFolder;
+            }
+
+            currentFolder = childFolder;
+            currentPath = segmentPath;
+        }
+
+        // Add the file to the innermost folder
+        var finalName = Path.GetFileName(result.DestinationPath!);
+        currentFolder.Files.Add(new PreviewFile
+        {
+            Name = finalName,
+            OriginalPath = result.SourcePath,
+            Extension = Path.GetExtension(finalName),
+            Size = (ulong)fileInfo.Length,
+            DateModified = fileInfo.LastWriteTime,
+            IsAlreadyOrganized = false,
+            MatchedByRule = result.MatchedBy == OrganizeMatchType.Rule,
+            RuleName = result.MatchedRuleName
+        });
+        currentFolder.FileCount++;
+
+        // Increment file count for all parent folders
+        var parentKey = currentFolder.ParentFolderKey;
+        while (parentKey != null && _organizedPreview.TryGetValue(parentKey, out var parentFolder))
+        {
+            parentFolder.FileCount++;
+            parentKey = parentFolder.ParentFolderKey;
+        }
     }
 
     private void AddUnmatchedToLegacyPreview(FileInfo fileInfo, string? sourceSubfolder)
@@ -920,8 +1061,9 @@ public sealed partial class MainPage : Page
         }
 
         // Sort destination folders by file count (most files first)
+        // Only show top-level folders (no parent) to avoid showing nested folders at root
         var folders = _organizedPreview!.Values
-            .Where(g => g.FileCount > 0 && g.CategoryId != "_root_")
+            .Where(g => g.FileCount > 0 && g.CategoryId != "_root_" && g.ParentFolderKey == null)
             .OrderByDescending(g => g.FileCount)
             .ToList();
 
@@ -951,14 +1093,33 @@ public sealed partial class MainPage : Page
 
         if (_organizedPreview!.TryGetValue(categoryId, out var folder))
         {
-            // Add a ".." entry to go back to root
+            // Add a ".." entry to go back to parent (or root)
             AfterFiles.Add(new FileItem
             {
                 Name = "..",
-                Path = "__PARENT__",
+                Path = folder.ParentFolderKey ?? "__ROOT__",
                 IsFolder = true,
                 DateModified = DateTime.Now
             });
+
+            // Add child folders first (sorted by file count)
+            var childFolders = folder.ChildFolders.Values
+                .Where(cf => cf.FileCount > 0)
+                .OrderByDescending(cf => cf.FileCount)
+                .ToList();
+
+            foreach (var childFolder in childFolders)
+            {
+                AfterFiles.Add(new FileItem
+                {
+                    Name = $"{childFolder.Icon} {childFolder.Name}",
+                    Path = childFolder.CategoryId,
+                    IsFolder = true,
+                    DateModified = DateTime.Now,
+                    IsRuleMatch = false,
+                    DisplayColor = childFolder.Color
+                });
+            }
 
             // Add files in this group
             foreach (var file in folder.Files.OrderBy(f => f.Name))
@@ -981,9 +1142,14 @@ public sealed partial class MainPage : Page
 
     private void AfterFilesPanel_FolderOpened(object? sender, FileItem folder)
     {
-        if (folder.Path == "__PARENT__")
+        if (folder.Path == "__ROOT__")
         {
             // Go back to root
+            _afterCurrentPath = null;
+        }
+        else if (folder.Path == "__PARENT__")
+        {
+            // Legacy: Go back to root (for backwards compatibility)
             _afterCurrentPath = null;
         }
         else
@@ -1152,6 +1318,31 @@ public sealed partial class MainPage : Page
 
     private async Task ExecuteRuleActionsAsync(FileOrganizeResult result, FileInfo fileInfo, string baseFolderPath, List<MoveOperation> moveOps)
     {
+        // Track the ORIGINAL file location for undo (before any actions)
+        var originalFilePath = fileInfo.FullName;
+        var originalFileName = fileInfo.Name;
+        var originalDirectory = fileInfo.DirectoryName!;
+
+        // Track the current file path as actions modify it
+        var currentFilePath = fileInfo.FullName;
+        var currentFileName = fileInfo.Name;
+        var currentDirectory = fileInfo.DirectoryName!;
+
+        // Keep original fileInfo for pattern expansion (uses original dates/attributes)
+        var originalFileInfo = fileInfo;
+
+        // Track all folders created during this file's processing
+        var allCreatedFolders = new List<string>();
+
+        // Track all files created by copy operations
+        var allCopiedFiles = new List<string>();
+
+        // Track deleted files (staging path -> original path)
+        var allDeletedFiles = new Dictionary<string, string>();
+
+        // Track if file was deleted
+        var fileWasDeleted = false;
+
         foreach (var action in result.Actions)
         {
             switch (action.Type)
@@ -1163,23 +1354,20 @@ public sealed partial class MainPage : Page
                         {
                             destFolder = Path.Combine(baseFolderPath, destFolder);
                         }
-                        var targetPath = Path.Combine(destFolder, fileInfo.Name);
+                        var targetPath = Path.Combine(destFolder, currentFileName);
 
                         // Skip if already in destination
-                        if (fileInfo.FullName.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
+                        if (currentFilePath.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
                             break;
 
                         Directory.CreateDirectory(destFolder);
-                        var destPath = GetUniqueFilePath(targetPath, fileInfo.FullName);
-                        File.Move(fileInfo.FullName, destPath);
+                        var destPath = GetUniqueFilePath(targetPath, currentFilePath);
+                        File.Move(currentFilePath, destPath);
 
-                        moveOps.Add(new MoveOperation
-                        {
-                            OriginalFolderPath = fileInfo.DirectoryName!,
-                            OriginalFileName = fileInfo.Name,
-                            NewFolderPath = destFolder,
-                            NewFileName = Path.GetFileName(destPath)
-                        });
+                        // Update current file location
+                        currentFilePath = destPath;
+                        currentFileName = Path.GetFileName(destPath);
+                        currentDirectory = destFolder;
                     }
                     break;
 
@@ -1190,16 +1378,19 @@ public sealed partial class MainPage : Page
                         {
                             destFolder = Path.Combine(baseFolderPath, destFolder);
                         }
-                        var targetPath = Path.Combine(destFolder, fileInfo.Name);
+                        var targetPath = Path.Combine(destFolder, currentFileName);
 
                         // Skip if source and destination are the same
-                        if (fileInfo.FullName.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
+                        if (currentFilePath.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
                             break;
 
                         Directory.CreateDirectory(destFolder);
-                        var destPath = GetUniqueFilePath(targetPath, fileInfo.FullName);
-                        File.Copy(fileInfo.FullName, destPath);
-                        // Note: Copy doesn't need undo tracking as original remains
+                        var destPath = GetUniqueFilePath(targetPath, currentFilePath);
+                        File.Copy(currentFilePath, destPath);
+
+                        // Track the copied file for undo (will be deleted on undo)
+                        allCopiedFiles.Add(destPath);
+                        // Note: Copy doesn't change currentFilePath - original file stays where it is
                     }
                     break;
 
@@ -1212,96 +1403,122 @@ public sealed partial class MainPage : Page
                             var destFolder = Path.IsPathRooted(category.Destination)
                                 ? category.Destination
                                 : Path.Combine(baseFolderPath, category.Destination);
-                            var targetPath = Path.Combine(destFolder, fileInfo.Name);
+                            var targetPath = Path.Combine(destFolder, currentFileName);
 
                             // Skip if already in destination
-                            if (fileInfo.FullName.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
+                            if (currentFilePath.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
                                 break;
 
                             Directory.CreateDirectory(destFolder);
-                            var destPath = GetUniqueFilePath(targetPath, fileInfo.FullName);
-                            File.Move(fileInfo.FullName, destPath);
+                            var destPath = GetUniqueFilePath(targetPath, currentFilePath);
+                            File.Move(currentFilePath, destPath);
 
-                            moveOps.Add(new MoveOperation
-                            {
-                                OriginalFolderPath = fileInfo.DirectoryName!,
-                                OriginalFileName = fileInfo.Name,
-                                NewFolderPath = destFolder,
-                                NewFileName = Path.GetFileName(destPath)
-                            });
+                            // Update current file location
+                            currentFilePath = destPath;
+                            currentFileName = Path.GetFileName(destPath);
+                            currentDirectory = destFolder;
                         }
                     }
                     break;
 
                 case ActionType.SortIntoSubfolder:
                     {
-                        var subfolderName = RuleService.ExpandPattern(action.Value, fileInfo);
+                        var subfolderName = RuleService.ExpandPattern(action.Value, originalFileInfo);
+                        // Normalize path separators (user might use / in pattern)
+                        subfolderName = subfolderName.Replace('/', Path.DirectorySeparatorChar);
                         var destFolder = Path.Combine(baseFolderPath, subfolderName);
-                        var targetPath = Path.Combine(destFolder, fileInfo.Name);
+                        var targetPath = Path.Combine(destFolder, currentFileName);
 
                         // Skip if already in destination
-                        if (fileInfo.FullName.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
+                        if (currentFilePath.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
                             break;
 
-                        Directory.CreateDirectory(destFolder);
-                        var destPath = GetUniqueFilePath(targetPath, fileInfo.FullName);
-                        File.Move(fileInfo.FullName, destPath);
+                        // Track which folders we create for undo
+                        var createdFolders = CreateDirectoryAndTrack(destFolder, baseFolderPath);
+                        allCreatedFolders.AddRange(createdFolders);
 
-                        moveOps.Add(new MoveOperation
-                        {
-                            OriginalFolderPath = fileInfo.DirectoryName!,
-                            OriginalFileName = fileInfo.Name,
-                            NewFolderPath = destFolder,
-                            NewFileName = Path.GetFileName(destPath)
-                        });
+                        var destPath = GetUniqueFilePath(targetPath, currentFilePath);
+                        File.Move(currentFilePath, destPath);
+
+                        // Update current file location
+                        currentFilePath = destPath;
+                        currentFileName = Path.GetFileName(destPath);
+                        currentDirectory = destFolder;
                     }
                     break;
 
                 case ActionType.Rename:
                     {
-                        var newName = RuleService.ExpandPattern(action.Value, fileInfo);
-                        var targetPath = Path.Combine(fileInfo.DirectoryName!, newName);
+                        var newName = RuleService.ExpandPattern(action.Value, originalFileInfo);
+                        var targetPath = Path.Combine(currentDirectory, newName);
 
-                        // Skip if the name is already the same
-                        if (fileInfo.FullName.Equals(targetPath, StringComparison.OrdinalIgnoreCase))
+                        // Skip if the name is exactly the same (case-sensitive)
+                        if (currentFilePath.Equals(targetPath, StringComparison.Ordinal))
                             break;
 
-                        var destPath = GetUniqueFilePath(targetPath, fileInfo.FullName);
-                        var originalName = fileInfo.Name;
-                        File.Move(fileInfo.FullName, destPath);
+                        // Check if this is a case-only rename (same name, different case)
+                        var isCaseOnlyRename = currentFilePath.Equals(targetPath, StringComparison.OrdinalIgnoreCase);
 
-                        moveOps.Add(new MoveOperation
+                        if (isCaseOnlyRename)
                         {
-                            OriginalFolderPath = fileInfo.DirectoryName!,
-                            OriginalFileName = originalName,
-                            NewFolderPath = fileInfo.DirectoryName!,
-                            NewFileName = Path.GetFileName(destPath)
-                        });
+                            // Windows requires two-step rename for case changes
+                            var tempPath = currentFilePath + ".tmp_rename";
+                            File.Move(currentFilePath, tempPath);
+                            File.Move(tempPath, targetPath);
+                            currentFilePath = targetPath;
+                            currentFileName = Path.GetFileName(targetPath);
+                        }
+                        else
+                        {
+                            var destPath = GetUniqueFilePath(targetPath, currentFilePath);
+                            File.Move(currentFilePath, destPath);
+
+                            // Update current file location
+                            currentFilePath = destPath;
+                            currentFileName = Path.GetFileName(destPath);
+                        }
                     }
                     break;
 
                 case ActionType.Delete:
                     {
-                        var settings = _settingsService.GetSettings();
-                        if (settings.MoveToTrashInsteadOfDelete)
-                        {
-                            // Move to recycle bin using Shell API
-                            await MoveToRecycleBinAsync(fileInfo.FullName);
-                        }
-                        else
-                        {
-                            // Permanent delete
-                            File.Delete(fileInfo.FullName);
-                        }
-                        // Note: Delete operations can't be undone via our simple undo system
+                        // Send to Recycle Bin for user safety
+                        await MoveToRecycleBinAsync(currentFilePath);
+
+                        // Track the original path for reference (cannot be auto-restored, user must restore from Recycle Bin)
+                        allDeletedFiles[currentFilePath] = currentFilePath;
+                        fileWasDeleted = true;
+                        break;
                     }
-                    break;
 
                 case ActionType.Ignore:
                 case ActionType.Continue:
                     // These don't perform file operations
                     break;
             }
+        }
+
+        // After all actions are complete, add ONE MoveOperation for undo
+        // This captures the full transformation from original to final location
+        // Only add undo operation if the file was moved/renamed, copies were made, or files were deleted
+        if (!originalFilePath.Equals(currentFilePath, StringComparison.OrdinalIgnoreCase) || allCopiedFiles.Count > 0 || allDeletedFiles.Count > 0)
+        {
+            System.Diagnostics.Debug.WriteLine($"Recording undo: {originalFileName} -> {currentFileName}");
+            System.Diagnostics.Debug.WriteLine($"  From: {originalDirectory}");
+            System.Diagnostics.Debug.WriteLine($"  To: {currentDirectory}");
+            System.Diagnostics.Debug.WriteLine($"  Copied files: {allCopiedFiles.Count}");
+            System.Diagnostics.Debug.WriteLine($"  Deleted files: {allDeletedFiles.Count}");
+
+            moveOps.Add(new MoveOperation
+            {
+                OriginalFolderPath = originalDirectory,
+                OriginalFileName = originalFileName,
+                NewFolderPath = fileWasDeleted ? "" : currentDirectory, // Empty if file was deleted
+                NewFileName = fileWasDeleted ? "" : currentFileName,    // Empty if file was deleted
+                CreatedFolders = allCreatedFolders,
+                CopiedFiles = allCopiedFiles,
+                DeletedFiles = allDeletedFiles
+            });
         }
     }
 
@@ -1336,6 +1553,56 @@ public sealed partial class MainPage : Page
         return newPath;
     }
 
+    /// <summary>
+    /// Creates a directory path and tracks which folders were actually created (didn't exist before).
+    /// Returns list of created folders from innermost to outermost for proper undo cleanup.
+    /// </summary>
+    private static List<string> CreateDirectoryAndTrack(string targetPath, string basePath)
+    {
+        var createdFolders = new List<string>();
+
+        // Normalize paths
+        targetPath = Path.GetFullPath(targetPath);
+        basePath = Path.GetFullPath(basePath);
+
+        // Build list of directories to check (from target up to base)
+        var directoriesToCreate = new List<string>();
+        var currentDir = targetPath;
+
+        while (!string.IsNullOrEmpty(currentDir) &&
+               !currentDir.Equals(basePath, StringComparison.OrdinalIgnoreCase) &&
+               currentDir.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+        {
+            if (!Directory.Exists(currentDir))
+            {
+                directoriesToCreate.Add(currentDir);
+            }
+            currentDir = Path.GetDirectoryName(currentDir);
+        }
+
+        // Create directories from outermost to innermost
+        directoriesToCreate.Reverse();
+        foreach (var dir in directoriesToCreate)
+        {
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+                // Store in reverse order (innermost first) for deletion during undo
+                createdFolders.Insert(0, dir);
+            }
+        }
+
+        return createdFolders;
+    }
+
+    /// <summary>
+    /// Checks if a directory is empty (no files or subdirectories).
+    /// </summary>
+    private static bool IsDirectoryEmpty(string path)
+    {
+        return !Directory.EnumerateFileSystemEntries(path).Any();
+    }
+
     private static Task MoveToRecycleBinAsync(string filePath)
     {
         return Task.Run(() =>
@@ -1364,7 +1631,11 @@ public sealed partial class MainPage : Page
 
         var restoredCount = 0;
         var errorCount = 0;
+        var deletedFileCount = 0;
         var totalFiles = _lastMoveOperations.Count;
+
+        // Collect all created folders for cleanup (innermost first)
+        var allCreatedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         try
         {
@@ -1372,6 +1643,52 @@ public sealed partial class MainPage : Page
             for (int i = _lastMoveOperations.Count - 1; i >= 0; i--)
             {
                 var op = _lastMoveOperations[i];
+
+                // Collect folders that were created by this operation
+                foreach (var createdFolder in op.CreatedFolders)
+                {
+                    allCreatedFolders.Add(createdFolder);
+                }
+
+                // Delete any files that were created by copy operations
+                foreach (var copiedFile in op.CopiedFiles)
+                {
+                    try
+                    {
+                        if (File.Exists(copiedFile))
+                        {
+                            File.Delete(copiedFile);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors deleting copied files
+                    }
+                }
+
+                // Note: Deleted files were sent to Recycle Bin - they cannot be auto-restored
+                // The user will need to manually restore them from the Recycle Bin
+                if (op.DeletedFiles.Count > 0)
+                {
+                    deletedFileCount += op.DeletedFiles.Count;
+                    System.Diagnostics.Debug.WriteLine($"Note: {op.DeletedFiles.Count} file(s) were sent to Recycle Bin and need manual restoration");
+                }
+
+                // Only try to restore if the file was actually moved (not just copied or deleted)
+                // Files that were deleted have empty NewFolderPath/NewFileName
+                if (string.IsNullOrEmpty(op.NewFolderPath) && string.IsNullOrEmpty(op.NewFileName))
+                {
+                    // File was deleted - restoration handled above
+                    restoredCount++;
+                    continue;
+                }
+
+                if (op.OriginalFolderPath == op.NewFolderPath && op.OriginalFileName == op.NewFileName)
+                {
+                    // File wasn't moved, only copied - nothing to restore
+                    restoredCount++;
+                    continue;
+                }
 
                 try
                 {
@@ -1393,14 +1710,54 @@ public sealed partial class MainPage : Page
                         UndoButton.Content = $"Undoing... {restoredCount}/{totalFiles}";
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    // Log error details for debugging
+                    System.Diagnostics.Debug.WriteLine($"Undo failed for {op.NewFileName}: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"  From: {op.NewFolderPath}\\{op.NewFileName}");
+                    System.Diagnostics.Debug.WriteLine($"  To: {op.OriginalFolderPath}\\{op.OriginalFileName}");
+
+                    // Show debug info to user
+                    try
+                    {
+                        var debugDialog = new ContentDialog
+                        {
+                            Title = "Undo Debug Info",
+                            Content = $"Failed to restore: {op.NewFileName}\n\nError: {ex.Message}\n\nFrom: {op.NewFolderPath}\\{op.NewFileName}\nTo: {op.OriginalFolderPath}\\{op.OriginalFileName}",
+                            CloseButtonText = "OK",
+                            XamlRoot = this.XamlRoot
+                        };
+                        _ = debugDialog.ShowAsync();
+                    }
+                    catch { }
+
                     // Skip files that can't be restored
                     errorCount++;
                 }
             }
 
-            // Clean up empty folders that were created during organize
+            // Clean up folders that were created by SortIntoSubfolder actions
+            // Sort by path length descending to delete innermost folders first
+            var sortedFolders = allCreatedFolders
+                .OrderByDescending(f => f.Length)
+                .ToList();
+
+            foreach (var folderPath in sortedFolders)
+            {
+                try
+                {
+                    if (Directory.Exists(folderPath) && IsDirectoryEmpty(folderPath))
+                    {
+                        Directory.Delete(folderPath);
+                    }
+                }
+                catch
+                {
+                    // Ignore errors when cleaning up folders
+                }
+            }
+
+            // Do general cleanup for empty folders
             if (_selectedFolder != null)
             {
                 await CleanupEmptyFoldersAsync(_selectedFolder);
@@ -1467,7 +1824,10 @@ public sealed partial class MainPage : Page
             {
                 try
                 {
-                    // Check if folder is empty (no files and no subfolders)
+                    // First, recursively clean up any empty subfolders within this folder
+                    await CleanupEmptyFoldersAsync(folder);
+
+                    // Now check if this folder is empty (no files and no subfolders remaining)
                     var items = await folder.GetItemsAsync();
                     if (items.Count == 0)
                     {
@@ -1576,6 +1936,14 @@ public class OrganizedFolder
     public int FileCount { get; set; }
     public List<PreviewFile> Files { get; set; } = new();
     public bool IsRuleGroup { get; set; }
+    /// <summary>
+    /// Child folders for hierarchical display (used by SortIntoSubfolder with nested paths)
+    /// </summary>
+    public Dictionary<string, OrganizedFolder> ChildFolders { get; set; } = new();
+    /// <summary>
+    /// Parent folder key (for navigation)
+    /// </summary>
+    public string? ParentFolderKey { get; set; }
 }
 
 public class PreviewFile
@@ -1599,4 +1967,19 @@ public class MoveOperation
     public string OriginalFileName { get; set; } = "";
     public string NewFolderPath { get; set; } = "";
     public string NewFileName { get; set; } = "";
+    /// <summary>
+    /// List of folder paths that were created for this operation (from innermost to outermost).
+    /// Used by undo to clean up created folders in reverse order.
+    /// </summary>
+    public List<string> CreatedFolders { get; set; } = new();
+    /// <summary>
+    /// List of file paths that were created by copy operations.
+    /// These files will be deleted on undo.
+    /// </summary>
+    public List<string> CopiedFiles { get; set; } = new();
+    /// <summary>
+    /// Files that were "deleted" (moved to undo staging folder).
+    /// Key = staging path, Value = original path
+    /// </summary>
+    public Dictionary<string, string> DeletedFiles { get; set; } = new();
 }

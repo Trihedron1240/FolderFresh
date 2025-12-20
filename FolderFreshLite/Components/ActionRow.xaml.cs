@@ -54,6 +54,26 @@ public sealed partial class ActionRow : UserControl
     {
         _categories = categories;
         PopulateCategoryDropdown();
+
+        // If action is already set, re-apply the category selection
+        if (_action?.Type == ActionType.MoveToCategory && !string.IsNullOrEmpty(_action.Value))
+        {
+            SelectCategoryInDropdown(_action.Value);
+        }
+    }
+
+    private void SelectCategoryInDropdown(string categoryId)
+    {
+        for (int i = 0; i < CategoryComboBox.Items.Count; i++)
+        {
+            if (CategoryComboBox.Items[i] is ComboBoxItem item &&
+                item.Tag?.ToString() == categoryId)
+            {
+                CategoryComboBox.SelectedIndex = i;
+                UpdateCategoryDestinationHelper();
+                break;
+            }
+        }
     }
 
     private void PopulateCategoryDropdown()
@@ -111,16 +131,7 @@ public sealed partial class ActionRow : UserControl
                 break;
 
             case ActionType.MoveToCategory:
-                for (int i = 0; i < CategoryComboBox.Items.Count; i++)
-                {
-                    if (CategoryComboBox.Items[i] is ComboBoxItem item &&
-                        item.Tag?.ToString() == _action.Value)
-                    {
-                        CategoryComboBox.SelectedIndex = i;
-                        break;
-                    }
-                }
-                UpdateCategoryDestinationHelper();
+                SelectCategoryInDropdown(_action.Value);
                 break;
 
             case ActionType.SortIntoSubfolder:

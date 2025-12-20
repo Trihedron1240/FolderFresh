@@ -253,23 +253,94 @@ public class RuleService
     }
 
     /// <summary>
+    /// Gets all matching rules for a file, respecting the Continue action.
+    /// Returns rules in priority order, stopping when a rule without Continue is found.
+    /// </summary>
+    public List<Rule> GetMatchingRulesWithContinue(FileInfo file, List<Rule> rules)
+    {
+        var matchingRules = new List<Rule>();
+        var orderedRules = rules
+            .Where(r => r.IsEnabled)
+            .OrderBy(r => r.Priority)
+            .ToList();
+
+        foreach (var rule in orderedRules)
+        {
+            if (EvaluateConditionGroup(rule.Conditions, file))
+            {
+                matchingRules.Add(rule);
+
+                // Check if this rule has a Continue action
+                var hasContinue = rule.Actions.Any(a => a.Type == ActionType.Continue);
+                if (!hasContinue)
+                {
+                    // Stop processing more rules
+                    break;
+                }
+            }
+        }
+
+        return matchingRules;
+    }
+
+    /// <summary>
     /// Calculates the destination path for a file based on rule actions.
-    /// Returns the primary destination path or null if no move/copy action.
+    /// Simulates all actions in sequence and returns the final destination path.
+    /// For backward compatibility, returns the primary destination (move/rename location).
     /// </summary>
     public string? CalculateDestinationPath(Rule rule, FileInfo file, string baseFolderPath, CategoryService? categoryService = null)
     {
+        var destinations = CalculateAllDestinationPaths(rule, file, baseFolderPath, categoryService);
+        // Return the primary destination (first one, which is the move/rename result)
+        return destinations.Count > 0 ? destinations[0] : null;
+    }
+
+    /// <summary>
+    /// Calculates ALL destination paths for a file based on rule actions.
+    /// Returns a list of destinations: the primary move/rename destination first,
+    /// followed by any copy destinations.
+    /// </summary>
+    public List<string> CalculateAllDestinationPaths(Rule rule, FileInfo file, string baseFolderPath, CategoryService? categoryService = null)
+    {
+        var allDestinations = new List<string>();
+
+        // Track current file name and directory as we simulate actions
+        var currentFileName = file.Name;
+        var currentDirectory = file.DirectoryName ?? baseFolderPath;
+        string? primaryDestination = null;
+
         foreach (var action in rule.Actions)
         {
             switch (action.Type)
             {
+                case ActionType.Rename:
+                    // Simulate rename - update the current file name
+                    currentFileName = ExpandPattern(action.Value, file);
+                    // If no move action follows, the file stays in current directory with new name
+                    primaryDestination = Path.Combine(currentDirectory, currentFileName);
+                    break;
+
                 case ActionType.MoveToFolder:
-                case ActionType.CopyToFolder:
-                    var destFolder = action.Value;
-                    if (!Path.IsPathRooted(destFolder))
+                    var moveDestFolder = action.Value;
+                    if (!Path.IsPathRooted(moveDestFolder))
                     {
-                        destFolder = Path.Combine(baseFolderPath, destFolder);
+                        moveDestFolder = Path.Combine(baseFolderPath, moveDestFolder);
                     }
-                    return Path.Combine(destFolder, file.Name);
+                    currentDirectory = moveDestFolder;
+                    primaryDestination = Path.Combine(moveDestFolder, currentFileName);
+                    break;
+
+                case ActionType.CopyToFolder:
+                    // Copy creates a copy at destination - add to destinations list
+                    var copyDestFolder = action.Value;
+                    if (!Path.IsPathRooted(copyDestFolder))
+                    {
+                        copyDestFolder = Path.Combine(baseFolderPath, copyDestFolder);
+                    }
+                    // Use current filename (may have been renamed)
+                    var copyDestPath = Path.Combine(copyDestFolder, currentFileName);
+                    allDestinations.Add(copyDestPath);
+                    break;
 
                 case ActionType.MoveToCategory:
                     if (categoryService != null && !string.IsNullOrEmpty(action.Value))
@@ -281,28 +352,43 @@ public class RuleService
                             var categoryPath = Path.IsPathRooted(category.Destination)
                                 ? category.Destination
                                 : Path.Combine(baseFolderPath, category.Destination);
-                            return Path.Combine(categoryPath, file.Name);
+                            currentDirectory = categoryPath;
+                            primaryDestination = Path.Combine(categoryPath, currentFileName);
                         }
                     }
                     break;
 
                 case ActionType.SortIntoSubfolder:
                     var subfolderName = ExpandPattern(action.Value, file);
-                    return Path.Combine(baseFolderPath, subfolderName, file.Name);
-
-                case ActionType.Rename:
-                    var newName = ExpandPattern(action.Value, file);
-                    return Path.Combine(file.DirectoryName ?? baseFolderPath, newName);
+                    // Normalize path separators (user might use / in pattern)
+                    subfolderName = subfolderName.Replace('/', Path.DirectorySeparatorChar);
+                    var subfolderPath = Path.Combine(baseFolderPath, subfolderName);
+                    currentDirectory = subfolderPath;
+                    primaryDestination = Path.Combine(subfolderPath, currentFileName);
+                    break;
 
                 case ActionType.Delete:
-                    return "[RECYCLE BIN]";
+                    // Delete is a terminal action
+                    return new List<string> { "[RECYCLE BIN]" };
 
                 case ActionType.Ignore:
-                    return null;
+                    return new List<string>();
+
+                case ActionType.Continue:
+                    // Continue doesn't affect destination
+                    break;
             }
         }
 
-        return null;
+        // Build final list: primary destination first, then copies
+        var result = new List<string>();
+        if (primaryDestination != null)
+        {
+            result.Add(primaryDestination);
+        }
+        result.AddRange(allDestinations);
+
+        return result;
     }
 
     /// <summary>
@@ -311,6 +397,99 @@ public class RuleService
     public ActionType? GetPrimaryActionType(Rule rule)
     {
         return rule.Actions.FirstOrDefault()?.Type;
+    }
+
+    /// <summary>
+    /// Calculates all destination paths for a file based on rule actions.
+    /// Returns a list of (destination path, action type) tuples representing
+    /// every location where a file or copy will end up.
+    /// </summary>
+    public List<(string Path, ActionType ActionType)> CalculateAllDestinations(Rule rule, FileInfo file, string baseFolderPath, CategoryService? categoryService = null)
+    {
+        var destinations = new List<(string Path, ActionType ActionType)>();
+
+        // Track current file name and directory as we simulate actions
+        var currentFileName = file.Name;
+        var currentDirectory = file.DirectoryName ?? baseFolderPath;
+        string? currentFilePath = null; // Where the original file currently is
+
+        foreach (var action in rule.Actions)
+        {
+            switch (action.Type)
+            {
+                case ActionType.Rename:
+                    // Simulate rename - update the current file name
+                    currentFileName = ExpandPattern(action.Value, file);
+                    currentFilePath = Path.Combine(currentDirectory, currentFileName);
+                    break;
+
+                case ActionType.MoveToFolder:
+                    var moveDestFolder = action.Value;
+                    if (!Path.IsPathRooted(moveDestFolder))
+                    {
+                        moveDestFolder = Path.Combine(baseFolderPath, moveDestFolder);
+                    }
+                    currentDirectory = moveDestFolder;
+                    currentFilePath = Path.Combine(moveDestFolder, currentFileName);
+                    // Don't add yet - we add the final location of the original at the end
+                    break;
+
+                case ActionType.CopyToFolder:
+                    var copyDestFolder = action.Value;
+                    if (!Path.IsPathRooted(copyDestFolder))
+                    {
+                        copyDestFolder = Path.Combine(baseFolderPath, copyDestFolder);
+                    }
+                    // Copy creates a new file - add it immediately
+                    destinations.Add((Path.Combine(copyDestFolder, currentFileName), ActionType.CopyToFolder));
+                    break;
+
+                case ActionType.MoveToCategory:
+                    if (categoryService != null && !string.IsNullOrEmpty(action.Value))
+                    {
+                        var categories = categoryService.GetCategories();
+                        var category = categories.FirstOrDefault(c => c.Id == action.Value);
+                        if (category != null)
+                        {
+                            var categoryPath = Path.IsPathRooted(category.Destination)
+                                ? category.Destination
+                                : Path.Combine(baseFolderPath, category.Destination);
+                            currentDirectory = categoryPath;
+                            currentFilePath = Path.Combine(categoryPath, currentFileName);
+                        }
+                    }
+                    break;
+
+                case ActionType.SortIntoSubfolder:
+                    var subfolderName = ExpandPattern(action.Value, file);
+                    var subfolderPath = Path.Combine(baseFolderPath, subfolderName);
+                    currentDirectory = subfolderPath;
+                    currentFilePath = Path.Combine(subfolderPath, currentFileName);
+                    break;
+
+                case ActionType.Delete:
+                    // File is deleted - add recycle bin as destination
+                    destinations.Add(("[RECYCLE BIN]", ActionType.Delete));
+                    return destinations; // No further destinations after delete
+
+                case ActionType.Ignore:
+                    // File is ignored - no destinations
+                    return destinations;
+
+                case ActionType.Continue:
+                    // Continue doesn't affect destination
+                    break;
+            }
+        }
+
+        // Add the final location of the original file (from move/rename operations)
+        if (currentFilePath != null)
+        {
+            // Insert at beginning so the original file's location comes first
+            destinations.Insert(0, (currentFilePath, ActionType.MoveToFolder));
+        }
+
+        return destinations;
     }
 
     /// <summary>
@@ -555,6 +734,9 @@ public class RuleService
         var result = new RuleExecutionResult { RuleId = rule.Id, RuleName = rule.Name };
         var shouldContinue = false;
 
+        // Track current file path - actions may rename/move the file
+        var currentFile = file;
+
         foreach (var action in rule.Actions)
         {
             try
@@ -562,30 +744,37 @@ public class RuleService
                 switch (action.Type)
                 {
                     case ActionType.MoveToFolder:
-                        await MoveFileAsync(file, action.Value, action.Options);
+                        currentFile = await MoveFileAsync(currentFile, action.Value, action.Options);
                         result.ActionsTaken.Add($"Moved to {action.Value}");
                         break;
 
                     case ActionType.CopyToFolder:
-                        await CopyFileAsync(file, action.Value, action.Options);
-                        result.ActionsTaken.Add($"Copied to {action.Value}");
+                        if (!string.IsNullOrEmpty(action.Value))
+                        {
+                            await CopyFileAsync(currentFile, action.Value, action.Options);
+                            result.ActionsTaken.Add($"Copied to {action.Value}");
+                        }
+                        else
+                        {
+                            result.Errors.Add("CopyToFolder: No destination folder specified");
+                        }
                         break;
 
                     case ActionType.SortIntoSubfolder:
-                        var subfolderName = ExpandPattern(action.Value, file);
+                        var subfolderName = ExpandPattern(action.Value, currentFile);
                         var subfolderPath = Path.Combine(baseOutputPath, subfolderName);
-                        await MoveFileAsync(file, subfolderPath, action.Options);
+                        currentFile = await MoveFileAsync(currentFile, subfolderPath, action.Options);
                         result.ActionsTaken.Add($"Sorted into {subfolderName}");
                         break;
 
                     case ActionType.Rename:
-                        var newName = ExpandPattern(action.Value, file);
-                        await RenameFileAsync(file, newName);
+                        var newName = ExpandPattern(action.Value, currentFile);
+                        currentFile = await RenameFileAsync(currentFile, newName);
                         result.ActionsTaken.Add($"Renamed to {newName}");
                         break;
 
                     case ActionType.Delete:
-                        DeleteFileToRecycleBin(file);
+                        DeleteFileToRecycleBin(currentFile);
                         result.ActionsTaken.Add("Moved to Recycle Bin");
                         result.ShouldDelete = true;
                         break;
@@ -603,7 +792,7 @@ public class RuleService
                     case ActionType.MoveToCategory:
                         if (_categoryService != null && !string.IsNullOrEmpty(action.Value))
                         {
-                            var destPath = await MoveToCategoryAsync(file, action.Value, baseOutputPath, action.Options);
+                            currentFile = await MoveToCategoryAsync(currentFile, action.Value, baseOutputPath, action.Options);
                             result.ActionsTaken.Add($"Moved to category: {action.Value}");
                         }
                         else
@@ -625,7 +814,7 @@ public class RuleService
         return result;
     }
 
-    private async Task MoveFileAsync(FileInfo file, string destinationFolder, Dictionary<string, string> options)
+    private async Task<FileInfo> MoveFileAsync(FileInfo file, string destinationFolder, Dictionary<string, string> options)
     {
         if (!Directory.Exists(destinationFolder))
         {
@@ -651,6 +840,7 @@ public class RuleService
         }
 
         await Task.Run(() => file.MoveTo(destPath));
+        return new FileInfo(destPath);
     }
 
     private async Task CopyFileAsync(FileInfo file, string destinationFolder, Dictionary<string, string> options)
@@ -658,6 +848,14 @@ public class RuleService
         if (!Directory.Exists(destinationFolder))
         {
             Directory.CreateDirectory(destinationFolder);
+        }
+
+        // Refresh file info to ensure we have current state after previous actions
+        file.Refresh();
+
+        if (!file.Exists)
+        {
+            throw new FileNotFoundException($"Source file not found: {file.FullName}");
         }
 
         var destPath = Path.Combine(destinationFolder, file.Name);
@@ -676,15 +874,33 @@ public class RuleService
         await Task.Run(() => file.CopyTo(destPath, overwrite: true));
     }
 
-    private async Task RenameFileAsync(FileInfo file, string newName)
+    private async Task<FileInfo> RenameFileAsync(FileInfo file, string newName)
     {
         var newPath = Path.Combine(file.DirectoryName ?? "", newName);
+
+        // Check if this is a case-only rename (same name, different case)
+        var isCaseOnlyRename = file.FullName.Equals(newPath, StringComparison.OrdinalIgnoreCase) &&
+                               !file.FullName.Equals(newPath, StringComparison.Ordinal);
+
+        if (isCaseOnlyRename)
+        {
+            // Windows requires two-step rename for case changes
+            var tempPath = file.FullName + ".tmp_rename";
+            await Task.Run(() =>
+            {
+                file.MoveTo(tempPath);
+                File.Move(tempPath, newPath);
+            });
+            return new FileInfo(newPath);
+        }
+
         if (File.Exists(newPath))
         {
             newPath = GetUniqueFileName(newPath);
         }
 
         await Task.Run(() => file.MoveTo(newPath));
+        return new FileInfo(newPath);
     }
 
     private static string GetUniqueFileName(string path)
@@ -706,7 +922,7 @@ public class RuleService
     /// <summary>
     /// Moves a file to a category destination folder.
     /// </summary>
-    private async Task<string> MoveToCategoryAsync(FileInfo file, string categoryId, string baseOutputPath, Dictionary<string, string>? options)
+    private async Task<FileInfo> MoveToCategoryAsync(FileInfo file, string categoryId, string baseOutputPath, Dictionary<string, string>? options)
     {
         if (_categoryService == null)
             throw new InvalidOperationException("CategoryService not available");
@@ -721,8 +937,7 @@ public class RuleService
             ? category.Destination
             : Path.Combine(baseOutputPath, category.Destination);
 
-        await MoveFileAsync(file, categoryPath, options ?? new Dictionary<string, string>());
-        return Path.Combine(categoryPath, file.Name);
+        return await MoveFileAsync(file, categoryPath, options ?? new Dictionary<string, string>());
     }
 
     /// <summary>
