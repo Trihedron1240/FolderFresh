@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows10.0.22621</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Reference source files directly from main project to avoid Uno SDK dependency -->
+  <ItemGroup>
+    <Compile Include="..\FolderFreshLite\Models\Condition.cs" Link="Models\Condition.cs" />
+    <Compile Include="..\FolderFreshLite\Models\ConditionGroup.cs" Link="Models\ConditionGroup.cs" />
+    <Compile Include="..\FolderFreshLite\Models\Rule.cs" Link="Models\Rule.cs" />
+    <Compile Include="..\FolderFreshLite\Models\RuleAction.cs" Link="Models\RuleAction.cs" />
+    <Compile Include="..\FolderFreshLite\Models\FileOrganizeResult.cs" Link="Models\FileOrganizeResult.cs" />
+    <Compile Include="..\FolderFreshLite\Models\OrganizePreview.cs" Link="Models\OrganizePreview.cs" />
+    <Compile Include="..\FolderFreshLite\Models\Category.cs" Link="Models\Category.cs" />
+    <Compile Include="..\FolderFreshLite\Models\AppSettings.cs" Link="Models\AppSettings.cs" />
+    <Compile Include="..\FolderFreshLite\Services\RuleService.cs" Link="Services\RuleService.cs" />
+    <Compile Include="..\FolderFreshLite\Services\CategoryService.cs" Link="Services\CategoryService.cs" />
+    <Compile Include="..\FolderFreshLite\Services\SettingsService.cs" Link="Services\SettingsService.cs" />
+  </ItemGroup>
+
+</Project>

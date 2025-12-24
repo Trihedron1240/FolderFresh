@@ -1,4 +1,4 @@
-# FolderFresh — Intelligent File Automation Engine for Windows
+# FolderFresh 3.0 Beta — Intelligent File Automation Engine for Windows
 
 ## License
 FolderFresh is licensed under **GPL-3.0**.
@@ -11,48 +11,56 @@ It's a full-featured automation tool for power users, developers, and anyone who
 
 ---
 
-## What's New in v2.0.0
+## What's New in v3.0.0 Beta
 
-Version 2.0.0 transforms FolderFresh from a folder cleaner into a **complete file automation platform**.
+Version 3.0.0 is a **complete rewrite** of FolderFresh, rebuilt from the ground up using modern Windows technologies for superior performance, reliability, and native integration.
 
-### Major New/Enhanced Features
-#### **Complete architectural transition from customtkinter to PySide6 = Major graphical overhaul**
+> **Note:** This is a beta release. Some features may be incomplete or subject to change. Please report any bugs or issues on the [GitHub Issues](https://github.com/Trihedron1240/FolderFresh/issues) page.
 
-#### **Advanced Rule Engine** 
-- Create powerful, reusable automation rules for complete file control
-- **Multi-condition matching**: file name, size, date, path, metadata, etc
-- **Flexible actions**: move, copy, rename, delete, archive
-- **Priority-based execution**: rules run in order.
-- **Test rules before applying**: preview impact on your files
-- **Per-profile rules**: different automation for different folders
+### Major Changes
 
-#### **Profile System with Per-Folder Mapping**
-- Create multiple automation profiles (e.g., "Downloads", "Photography", "Development")
-- Assign a **specific profile to each watched folder**
-- Each folder gets its own rules, categories, and behaviors
-- Switch profiles without stopping auto-sync
-- Example:
-  - `C:\Downloads` → "General" profile (rules for downloads)
-  - `C:\Desktop` → "Work" profile (rules for work files)
-  - `C:\Pictures` → "Photos" profile (rules for media)
+#### **Complete Platform Modernization**
+- **Rebuilt in C# / .NET 9** — Native Windows performance replacing Python
+- **WinUI 3 Interface** — Modern Fluent Design UI with smooth animations
+- **Native Windows Integration** — Toast notifications, system tray, registry startup
+- **Async Architecture** — Non-blocking operations throughout for a responsive experience
 
-#### **Real-Time Auto-Sync**
-- Watches multiple folders simultaneously
-- Each folder respects its assigned profile
-- Waits for files to finish writing before processing
-- Pause/resume without losing state
+#### **Enhanced Rule Engine**
+- **Advanced Pattern Matching** — Full regex support with case sensitivity options
+- **Date Range Conditions** — Match files by creation/modification date ranges
+- **File Content Matching** — Search within text files for specific content
+- **Multiple Actions Per Rule** — Execute several actions when a rule matches
+- **Dynamic Placeholders** — Use `{date:format}`, `{extension}`, `{counter}`, `{name}` in destinations
 
-#### **Smart Category Sorting** (Fallback)
-- When rules don't match, files sort into smart categories
-- Auto-detects: screenshots, camera roll, messaging media, assignments, invoices, backups, edited media, project assets
-- Fully customizable category names and file extensions
+#### **Profile System Overhaul**
+- **Complete Configuration Snapshots** — Each profile stores rules, categories, and settings
+- **Instant Profile Switching** — Change entire automation setups with one click
+- **Profile-Folder Linking** — Assign specific profiles to watched folders
+- **Import/Export Ready** — JSON-based storage for easy backup and sharing
 
-### Recent Improvements
-- **Path normalization**: Fixed folder watching on Windows with case variations
-- **Profile lookup**: Watcher now correctly uses assigned profile (not active profile)
-- **Safe deletion**: Rules can delete files with explicit confirmation
-- **Better logging**:Detailed activity log for debugging automation (WIP)
-- **Stability**: Improved file state detection and race condition handling
+#### **Real-Time Watched Folders**
+- **Intelligent Debouncing** — Waits for file writes to complete before processing
+- **Loop Prevention** — Tracks recently organized files to prevent infinite loops
+- **Per-Folder Status** — See watching/organizing/error state for each folder
+- **Independent Profiles** — Each watched folder can use a different profile
+- **Subfolder Support** — Optionally monitor subdirectories
+
+#### **Windows Toast Notifications**
+- **Native Notifications** — Proper Windows 10/11 toast notifications
+- **Organization Alerts** — Get notified when files are automatically organized
+- **Error Notifications** — Know immediately when a watcher encounters issues
+- **Works in Tray Mode** — Notifications appear even when minimized to tray
+
+#### **System Tray Integration**
+- **Minimize to Tray** — Keep FolderFresh running without taskbar clutter
+- **Close to Tray** — X button minimizes instead of closing
+- **Start Minimized** — Launch silently on Windows startup
+- **Quick Controls** — Pause/resume all watchers from tray context menu
+
+#### **Modern Dark Theme**
+- **Discord-Inspired Design** — Familiar dark purple aesthetic
+- **Consistent Styling** — Unified look across all components
+- **High Contrast Text** — Excellent readability in all conditions
 
 ---
 
@@ -60,130 +68,177 @@ Version 2.0.0 transforms FolderFresh from a folder cleaner into a **complete fil
 
 ### Rule-Based Automation Engine
 - **Create custom rules** with flexible conditions and actions
-- **Match by**: filename patterns, file size, creation/modification date, path, metadata, checksums
-- **Act with**: move, copy, rename, delete (with confirmation), archive, tag
+- **Match by**: filename patterns (regex/glob), file size, creation/modification date, path depth, file content, extension
+- **Operators**: contains, starts with, ends with, equals, regex, greater/less than, date ranges, and more
+- **Act with**: move, copy, rename, delete, sort into subfolders
+- **Condition Groups**: nest conditions with AND/OR/NONE logic for complex matching
 - **Priority execution**: rules run in order; first match wins
 - **Test mode**: preview rule effects before applying to real files
 - **Profile-specific rules**: different automation for different workflows
 
 ### Smart Category Sorting (Fallback)
 - Auto-organises files when rules don't match (can be disabled)
-- **Detects**: screenshots, camera roll, messaging media, assignments, invoices, backups, edited media, project assets
-- Fully customizable category names and file extensions
-- Sorts into: Documents, Images, Videos, Audio, Archives, Code, and more
+- **Default categories**: Documents, Images, Audio, Video, Archives, Other
+- **Visual icons**: Each category has a distinctive emoji
+- **Customizable**: Change names, colors, extensions, and destination folders
+- Sorts by file type with intelligent extension mapping
 
 ### Real-Time File Watching
-- **Auto-sort** files as they're created or modified
+- **Auto-organize** files as they're created or modified
 - **Multiple folders** with independent automation profiles
-- **Safe writing**: waits for files to finish writing before processing
-- **Cloud-safe**: works with OneDrive, Google Drive, Dropbox
-- **Pause/Resume**: temporarily stop watching without losing configuration
+- **Safe writing**: 1-second debounce ensures files finish writing before processing
+- **Status indicators**: See if each folder is idle, watching, organizing, or has errors
+- **Pause/Resume**: Stop all watchers globally from system tray
+
+### Profiles
+- **Create multiple profiles** for different workflows (Downloads, Work, Photography, etc.)
+- **Complete snapshots**: Each profile saves its own rules, categories, and settings
+- **Quick switching**: Change your entire setup instantly
+- **Folder mapping**: Assign different profiles to different watched folders
 
 ### Safety & Control
-- **Preview Mode**: see planned moves before applying
-- **Undo History**: revert file operations within the same session (currently limited, will be enhanced in future)
-- **Safe Mode**: copy files instead of moving (for category sorting)
+- **Preview Mode**: See exactly what will happen before organizing
+- **Undo History**: Revert recent file operations
+- **Trash Support**: Optionally move deleted files to Recycle Bin instead of permanent delete
 
-### Additional Tools
-- **Duplicate Finder**: identify duplicate files using fast hashing
-- **Rule Simulator**: test rules on sample files before applying
-- **Activity Log**: detailed automation history for debugging
-- **Desktop Cleaner**: one-click cleanup of desktop
-- **System Tray Mode**: minimize while maintaining background automation
+### System Integration
+- **System Tray**: Minimize or close to tray, start minimized
+- **Windows Startup**: Optionally launch FolderFresh when Windows starts
+- **Toast Notifications**: Native Windows notifications for organize events
+- **Modern UI**: WinUI 3 with Fluent Design principles
 
 ---
 
 ## Example Folder Structure
 
+```
 Desktop
-
-├─ Documents
-
-├─ Images
-
-├─ Videos
-
-├─ Audio
-
-├─ Archives
-
-├─ Code
-
-└─ Other
-
+├── Documents
+├── Images
+├── Videos
+├── Audio
+├── Archives
+└── Other
+```
 
 ---
 
 ## Screenshots
 
-### Main Window  
-![Main Window](screenshots/2.0.0_main.png)
-
-### Profile Manager  
-![Profile Manager](screenshots/2.0.0_profile_manager.png)
-
-### Watcher Manager 
-![Watcher Manager](screenshots/2.0.0_watcher_manager.png)
-
-### Rule Editor
-![Rule Editor](screenshots/2.0.0_rule_editor.png)
-
-### Rule Manager
-![Rule Manager](screenshots/2.0.0_rule_manager.png)
-
-### Category Manager
-![Category Manager](screenshots/2.0.0_category_manager.png)
-
-### Example
-![Example](screenshots/Example.png)
-
-
+### Home
+![Home](screenshots/Home_3.0.png)
+### Watched Folders
+![Folders](screenshots/Folders_3.0.png)
+### Rules
+![Rules](screenshots/Rules_3.0.png)
+### Categories
+![Categories](screenshots/Categories_3.0.png)
+### Profiles
+![Profiles](screenshots/Profiles_3.0.png)
+### Settings
+![Settings](screenshots/Settings_3.0.png)
 ---
 
 ## Requirements
-- Windows 10 or 11
-- Python 3.11+
-- pip
 
-*(If using the installer, Python is not required.)*
+- **Windows 10** (version 1809 or later) or **Windows 11**
+- **x64 processor**
+- .NET 9.0 Runtime (included in installer)
+
+---
 
 ## Installation
+
+### From Installer (Recommended)
+Download the latest installer from the [Releases](https://github.com/Trihedron1240/FolderFresh/releases) page.
 
 ### From Source
 ```bash
 git clone https://github.com/Trihedron1240/FolderFresh.git
-cd FolderFresh
-pip install -r requirements.txt
-python -m src.main_qt_app
+cd FolderFresh/FolderFreshLite
+dotnet restore
+dotnet build
+dotnet run
 ```
 
-### Dependencies
-- **PySide6** (Qt framework for UI)
-- **watchdog** (file system monitoring)
-- **pystray** (system tray integration)
-- **Pillow** (image processing)
+### Dependencies (Handled by NuGet)
+- **Microsoft.WindowsAppSDK** — WinUI 3 framework
+- **Microsoft.Windows.SDK.BuildTools** — Windows SDK integration
+- **System.Text.Json** — JSON serialization
 
 ---
 
 ## Building From Source
 
-1. Update the version number in `installer/FolderFresh.iss` and in `build.ps1`
-2. Run `build.ps1` in PowerShell  
-3. Open the updated `.iss` file in Inno Setup Compiler  
-4. Build the installer
+### Prerequisites
+- Visual Studio 2022 (17.8+) with ".NET Desktop Development" workload
+- Windows App SDK extension
+- .NET 9.0 SDK
+
+### Build Steps
+1. Open `FolderFreshLite.sln` in Visual Studio
+2. Select `Release` configuration and `x64` platform
+3. Build → Build Solution (Ctrl+Shift+B)
+4. Output will be in `bin/Release/net9.0-windows10.0.22621/`
+
+### Creating Installer
+1. Build in Release mode
+2. Run the Inno Setup script in the `installer/` folder
+3. Installer will be created in the output directory
 
 ---
 
+## Configuration
+
+All settings are stored in `%APPDATA%\FolderFresh\`:
+
+
+---
+
+## Migration from v2.0
+
+Version 3.0 is a complete rewrite and does not automatically migrate settings from v2.0. You will need to:
+1. Note your existing rules and categories in v2.0
+2. Recreate them in v3.0 using the new rule editor
+3. Set up your watched folders and profiles
+
+
+---
+
+
 ## Contributions
 
-Pull requests, issues, and suggestions are welcome.  
+Pull requests, issues, and suggestions are welcome.
 FolderFresh is an open project made to help users stay organised effortlessly.
 
 ---
 
 ## AI Assistance Disclosure
 
-Some UI and backend improvements were refined using AI-assisted development tools (Claude Code, Chatgpt).  
-All logic has been manually reviewed, tested, and verified.  
+Some UI and backend improvements were refined using AI-assisted development tools (Claude Code, ChatGPT).
+All logic has been manually reviewed, tested, and verified.
 No proprietary or third-party code is used.
 
+---
+
+## Version History
+
+### v3.0.0 Beta (2025)
+- Complete rewrite in C# / .NET 9 with WinUI 3
+- Profile system with complete configuration snapshots
+- Native Windows toast notifications
+- System tray integration with minimize/close to tray
+- Modern Fluent Design dark theme
+- Significant performance improvements and fixes
+
+### v2.0.0
+- Transition from customtkinter to PySide6
+- Advanced rule engine with multi-condition matching
+- Profile system with per-folder mapping
+- Real-time auto-sync with multiple folders
+- Smart category sorting with auto-detection
+
+### v1.x
+- Initial releases with basic file organization
+- Category-based sorting
+- Simple UI with customtkinter

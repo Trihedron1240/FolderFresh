@@ -1,0 +1,382 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FolderFresh.Components.SettingsContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFresh.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="#111214" Padding="32">
+        <ScrollViewer>
+            <StackPanel MaxWidth="600" HorizontalAlignment="Left" Spacing="24">
+
+                <!-- Header -->
+                <TextBlock Text="Settings"
+                           FontSize="28"
+                           FontWeight="SemiBold"
+                           Foreground="White"/>
+
+                <!-- Organization Mode Section -->
+                <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="ORGANIZATION MODE"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#949BA4"
+                                       CharacterSpacing="50"/>
+                            <TextBlock Text="Choose how files are matched for organization"
+                                       FontSize="13"
+                                       Foreground="#B5BAC1"/>
+                        </StackPanel>
+
+                        <!-- Radio Options -->
+                        <StackPanel Spacing="12">
+                            <RadioButton x:Name="RulesFirstRadio"
+                                         GroupName="OrganizeMode"
+                                         IsChecked="True"
+                                         Checked="OrganizeMode_Changed">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Rules first, then categories"
+                                               FontSize="14"
+                                               Foreground="White"/>
+                                    <TextBlock Text="Recommended - Rules are checked first, unmatched files use categories"
+                                               FontSize="12"
+                                               Foreground="#949BA4"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="CategoriesOnlyRadio"
+                                         GroupName="OrganizeMode"
+                                         Checked="OrganizeMode_Changed">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Categories only"
+                                               FontSize="14"
+                                               Foreground="White"/>
+                                    <TextBlock Text="Simple mode - Only use category-based organization"
+                                               FontSize="12"
+                                               Foreground="#949BA4"/>
+                                </StackPanel>
+                            </RadioButton>
+
+                            <RadioButton x:Name="RulesOnlyRadio"
+                                         GroupName="OrganizeMode"
+                                         Checked="OrganizeMode_Changed">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Rules only"
+                                               FontSize="14"
+                                               Foreground="White"/>
+                                    <TextBlock Text="Advanced - Only files matching rules are organized"
+                                               FontSize="12"
+                                               Foreground="#949BA4"/>
+                                </StackPanel>
+                            </RadioButton>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Notifications Section -->
+                <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="NOTIFICATIONS"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#949BA4"
+                                   CharacterSpacing="50"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Show notifications when organizing"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Display a notification when files are organized"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="NotificationsToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="True"
+                                          Toggled="NotificationsToggle_Toggled"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- File Scanning Section -->
+                <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="FILE SCANNING"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#949BA4"
+                                   CharacterSpacing="50"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Include subfolders"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Organize files inside subfolders, not just root"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="IncludeSubfoldersToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="True"
+                                          Toggled="IncludeSubfoldersToggle_Toggled"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Ignore hidden files"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Skip files and folders marked as hidden"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="IgnoreHiddenToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="True"
+                                          Toggled="IgnoreHiddenToggle_Toggled"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Ignore system files"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Skip files and folders marked as system"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="IgnoreSystemToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="True"
+                                          Toggled="IgnoreSystemToggle_Toggled"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- System Tray Section -->
+                <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="SYSTEM TRAY"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#949BA4"
+                                   CharacterSpacing="50"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Minimize to tray"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Minimize to system tray instead of taskbar"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="MinimizeToTrayToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="False"
+                                          Toggled="MinimizeToTrayToggle_Toggled"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Close to tray"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Keep running in tray when closing the window"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="CloseToTrayToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="False"
+                                          Toggled="CloseToTrayToggle_Toggled"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Start minimized"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Start the app minimized to tray"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="StartMinimizedToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="False"
+                                          Toggled="StartMinimizedToggle_Toggled"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Run on startup"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Automatically start FolderFresh when you log in"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="RunOnStartupToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="False"
+                                          Toggled="RunOnStartupToggle_Toggled"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Safety Section -->
+                <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="SAFETY"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#949BA4"
+                                   CharacterSpacing="50"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Move to Recycle Bin instead of permanent delete"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="When using Delete action, files go to Recycle Bin"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="RecycleBinToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="True"
+                                          Toggled="RecycleBinToggle_Toggled"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock Text="Confirm before organizing"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock Text="Show confirmation dialog before moving files"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="ConfirmToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="False"
+                                          Toggled="ConfirmToggle_Toggled"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- About Section -->
+                <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="ABOUT"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="#949BA4"
+                                   CharacterSpacing="50"/>
+
+                        <TextBlock Text="FolderFresh 3.0 Beta"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="Version 3.0.0-beta"
+                                   FontSize="13"
+                                   Foreground="#B5BAC1"/>
+
+                        <TextBlock Text="A powerful file organization tool with rules and categories"
+                                   FontSize="13"
+                                   Foreground="#949BA4"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

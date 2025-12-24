@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FolderFresh.Components.WatchedFoldersContent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFresh.Components"
+    xmlns:models="using:FolderFresh.Models"
+    Loaded="UserControl_Loaded">
+
+    <Grid Background="#1C1C1C">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header Row -->
+        <Grid Grid.Row="0" Padding="24,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Title -->
+            <StackPanel Grid.Column="0" Orientation="Vertical">
+                <TextBlock Text="Watched Folders"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           VerticalAlignment="Center"/>
+                <TextBlock Text="Automatically organize files when they change in these folders"
+                           FontSize="13"
+                           Foreground="#666666"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <!-- Action Buttons -->
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                <!-- Stop All Button -->
+                <Button x:Name="StopAllButton"
+                        Click="StopAllButton_Click"
+                        Background="#2D2D2D"
+                        Foreground="#B5BAC1"
+                        Padding="12,8"
+                        CornerRadius="6"
+                        Visibility="Collapsed"
+                        ToolTipService.ToolTip="Stop watching all folders">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE71A;" FontSize="14"/>
+                        <TextBlock Text="Stop All" FontSize="13"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Start All Button -->
+                <Button x:Name="StartAllButton"
+                        Click="StartAllButton_Click"
+                        Background="#2D2D2D"
+                        Foreground="#B5BAC1"
+                        Padding="12,8"
+                        CornerRadius="6"
+                        Visibility="Collapsed"
+                        ToolTipService.ToolTip="Start watching all enabled folders">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE768;" FontSize="14"/>
+                        <TextBlock Text="Start All" FontSize="13"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Add Folder Button -->
+                <Button x:Name="AddFolderButton"
+                        Click="AddFolderButton_Click"
+                        Background="#5865F2"
+                        Foreground="White"
+                        Padding="12,8"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE710;" FontSize="12"/>
+                        <TextBlock Text="Add Folder" FontSize="13" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Info Banner -->
+        <Border Grid.Row="1"
+                x:Name="InfoBanner"
+                Background="#2D2D2D"
+                CornerRadius="8"
+                Padding="12"
+                Margin="24,0,24,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Info Icon -->
+                <FontIcon Grid.Column="0"
+                          Glyph="&#xE946;"
+                          FontSize="16"
+                          Foreground="#5865F2"
+                          VerticalAlignment="Center"
+                          Margin="0,0,12,0"/>
+
+                <!-- Info Text -->
+                <TextBlock Grid.Column="1"
+                           Text="Watched folders are monitored for changes. When files are added or modified, they can be automatically organized using the selected profile's rules and categories."
+                           FontSize="13"
+                           Foreground="#999999"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+
+                <!-- Dismiss Button -->
+                <Button Grid.Column="2"
+                        x:Name="DismissBannerButton"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Padding="8"
+                        Click="DismissBannerButton_Click">
+                    <FontIcon Glyph="&#xE711;" FontSize="12" Foreground="#666666"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Loading Indicator -->
+        <ProgressRing Grid.Row="2"
+                      x:Name="LoadingIndicator"
+                      IsActive="False"
+                      Width="32"
+                      Height="32"
+                      Margin="24,16"
+                      HorizontalAlignment="Center"
+                      Visibility="Collapsed"/>
+
+        <!-- Watched Folders List -->
+        <ScrollViewer Grid.Row="3"
+                      x:Name="FoldersScrollViewer"
+                      VerticalScrollBarVisibility="Auto"
+                      Padding="24,0,24,24">
+            <StackPanel x:Name="FoldersListPanel" Spacing="12"/>
+        </ScrollViewer>
+
+        <!-- Empty State -->
+        <StackPanel Grid.Row="3"
+                    x:Name="EmptyState"
+                    Visibility="Collapsed"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="16">
+
+            <!-- Icon -->
+            <Grid Width="80" Height="80" HorizontalAlignment="Center">
+                <FontIcon Glyph="&#xE8B7;" FontSize="48" Foreground="#4D4D4D"/>
+                <FontIcon Glyph="&#xE7B3;" FontSize="20" Foreground="#5865F2"
+                          HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                          Margin="0,0,4,4"/>
+            </Grid>
+
+            <!-- Title -->
+            <TextBlock Text="No watched folders"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="White"
+                       HorizontalAlignment="Center"/>
+
+            <!-- Subtitle -->
+            <TextBlock Text="Add folders to automatically organize files when they change"
+                       FontSize="13"
+                       Foreground="#666666"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="300"
+                       TextAlignment="Center"/>
+
+            <!-- Add Button -->
+            <Button Click="AddFolderButton_Click"
+                    Background="#5865F2"
+                    Foreground="White"
+                    Padding="16,10"
+                    CornerRadius="6"
+                    HorizontalAlignment="Center"
+                    Margin="0,8,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE710;" FontSize="12"/>
+                    <TextBlock Text="Add Folder" FontSize="13" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>

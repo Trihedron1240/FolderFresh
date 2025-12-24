@@ -1,0 +1,10 @@
+{
+  "background_color": "#ffffff",
+  "description": "FolderFreshLite",
+  "display": "standalone",
+  "name": "FolderFreshLite",
+  "short_name": "FolderFreshLite",
+  "start_url": "/index.html",
+  "theme_color": "#ffffff",
+  "scope": "/"
+}

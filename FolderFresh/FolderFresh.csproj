@@ -1,0 +1,37 @@
+<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net9.0-windows10.0.22621</TargetFrameworks>
+    <OutputType>WinExe</OutputType>
+    <UnoSingleProject>true</UnoSingleProject>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>FolderFreshLite</RootNamespace>
+    <AssemblyName>FolderFresh</AssemblyName>
+    <ApplicationTitle>FolderFresh</ApplicationTitle>
+    <ApplicationId>com.folderfresh.lite</ApplicationId>
+    
+    <!-- Windows specific -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+
+    <!-- Force MSBuild XAML compiler -->
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>false</EnableMsixTooling>
+
+    <!-- Publish settings -->
+    <PublishReadyToRun>false</PublishReadyToRun>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
+
+  <!-- App Icon -->
+  <ItemGroup>
+    <UnoIcon Include="Assets\Icons\icon.png" ForegroundScale="1.0" />
+  </ItemGroup>
+
+</Project>

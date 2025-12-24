@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FolderFresh.Components.FileExplorerPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFresh.Components"
+    xmlns:models="using:FolderFresh.Models"
+    xmlns:helpers="using:FolderFresh.Helpers">
+
+    <UserControl.Resources>
+        <helpers:NullToCollapsedConverter x:Key="NullToCollapsedConverter"/>
+        <helpers:NullToVisibleConverter x:Key="NullToVisibleConverter"/>
+
+        <!-- Row Item Template -->
+        <DataTemplate x:Key="FileRowTemplate" x:DataType="models:FileItem">
+            <Grid Height="30"
+                  Background="Transparent"
+                  Padding="8,0"
+                  PointerEntered="Row_PointerEntered"
+                  PointerExited="Row_PointerExited">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MinWidth="150"/>
+                    <ColumnDefinition Width="160"/>
+                    <ColumnDefinition Width="120"/>
+                    <ColumnDefinition Width="80"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Name Column -->
+                <StackPanel Grid.Column="0"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalAlignment="Center">
+                    <FontIcon FontFamily="Segoe MDL2 Assets"
+                              FontSize="16"
+                              Glyph="{x:Bind IconGlyph, Mode=OneWay}"
+                              Foreground="{x:Bind IconColor, Mode=OneWay}"/>
+                    <TextBlock Text="{x:Bind Name, Mode=OneWay}"
+                               FontSize="13"
+                               Foreground="#E0E0E0"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"
+                               ToolTipService.ToolTip="{x:Bind Name, Mode=OneWay}"/>
+                </StackPanel>
+
+                <!-- Date Modified Column -->
+                <TextBlock Grid.Column="1"
+                           Text="{x:Bind DisplayDate, Mode=OneWay}"
+                           FontSize="12"
+                           Foreground="#999999"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           Margin="8,0,0,0"/>
+
+                <!-- Type Column -->
+                <TextBlock Grid.Column="2"
+                           Text="{x:Bind FileTypeDisplay, Mode=OneWay}"
+                           FontSize="12"
+                           Foreground="#999999"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+
+                <!-- Size Column -->
+                <TextBlock Grid.Column="3"
+                           Text="{x:Bind DisplaySize, Mode=OneWay}"
+                           FontSize="12"
+                           Foreground="#999999"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Margin="0,0,8,0"/>
+            </Grid>
+        </DataTemplate>
+
+        <!-- ListView Item Container Style -->
+        <Style x:Key="FileListItemStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- Empty State -->
+        <StackPanel x:Name="EmptyState"
+                    Visibility="Collapsed"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="12">
+            <FontIcon Glyph="&#xE838;"
+                      FontSize="48"
+                      Foreground="#3F4147"
+                      HorizontalAlignment="Center"/>
+            <TextBlock x:Name="EmptyStateTextBlock"
+                       Text="No files to display"
+                       FontSize="14"
+                       Foreground="#6D6F78"/>
+        </StackPanel>
+
+        <!-- Details View Container -->
+        <Grid x:Name="DetailsViewContainer" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Column Headers -->
+            <Border Grid.Row="0"
+                    Background="#1A1A1A"
+                    BorderBrush="#333333"
+                    BorderThickness="0,0,0,1"
+                    Padding="8,0">
+                <Grid Height="32">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" MinWidth="150"/>
+                        <ColumnDefinition Width="160"/>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="80"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Name Header -->
+                    <Button x:Name="NameHeader"
+                            Grid.Column="0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Padding="0,0,8,0"
+                            Click="ColumnHeader_Click"
+                            Tag="Name">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="Name"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#B0B0B0"/>
+                            <FontIcon x:Name="NameSortIcon"
+                                      FontFamily="Segoe MDL2 Assets"
+                                      Glyph="&#xE70D;"
+                                      FontSize="10"
+                                      Foreground="#808080"
+                                      Visibility="Visible"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Date Modified Header -->
+                    <Button x:Name="DateHeader"
+                            Grid.Column="1"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Padding="8,0"
+                            Click="ColumnHeader_Click"
+                            Tag="DateModified">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="Date Modified"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#B0B0B0"/>
+                            <FontIcon x:Name="DateSortIcon"
+                                      FontFamily="Segoe MDL2 Assets"
+                                      Glyph="&#xE70D;"
+                                      FontSize="10"
+                                      Foreground="#808080"
+                                      Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Type Header -->
+                    <Button x:Name="TypeHeader"
+                            Grid.Column="2"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Padding="0"
+                            Click="ColumnHeader_Click"
+                            Tag="Type">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="Type"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#B0B0B0"/>
+                            <FontIcon x:Name="TypeSortIcon"
+                                      FontFamily="Segoe MDL2 Assets"
+                                      Glyph="&#xE70D;"
+                                      FontSize="10"
+                                      Foreground="#808080"
+                                      Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Size Header -->
+                    <Button x:Name="SizeHeader"
+                            Grid.Column="3"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Right"
+                            Padding="0,0,8,0"
+                            Click="ColumnHeader_Click"
+                            Tag="Size">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="Size"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       Foreground="#B0B0B0"/>
+                            <FontIcon x:Name="SizeSortIcon"
+                                      FontFamily="Segoe MDL2 Assets"
+                                      Glyph="&#xE70D;"
+                                      FontSize="10"
+                                      Foreground="#808080"
+                                      Visibility="Collapsed"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- File List (virtualized for performance with large folders) -->
+            <ListView x:Name="FileListView"
+                      Grid.Row="1"
+                      ItemTemplate="{StaticResource FileRowTemplate}"
+                      ItemContainerStyle="{StaticResource FileListItemStyle}"
+                      SelectionMode="Extended"
+                      IsItemClickEnabled="True"
+                      ItemClick="FileListView_ItemClick"
+                      SelectionChanged="FileListView_SelectionChanged"
+                      DoubleTapped="FileListView_DoubleTapped"
+                      Background="Transparent"
+                      Padding="0"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                      ScrollViewer.VerticalScrollMode="Enabled"
+                      ScrollViewer.IsVerticalRailEnabled="True">
+                <ListView.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <ItemsStackPanel Orientation="Vertical" />
+                    </ItemsPanelTemplate>
+                </ListView.ItemsPanel>
+            </ListView>
+        </Grid>
+    </Grid>
+</UserControl>

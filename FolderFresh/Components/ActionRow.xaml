@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="FolderFresh.Components.ActionRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFresh.Components"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    PointerEntered="UserControl_PointerEntered"
+    PointerExited="UserControl_PointerExited">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Main Row -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Number Badge -->
+            <Border Grid.Column="0"
+                    Width="24"
+                    Height="24"
+                    Background="#383838"
+                    CornerRadius="12"
+                    VerticalAlignment="Center">
+                <TextBlock x:Name="NumberBadge"
+                           Text="1"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Foreground="White"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Border>
+
+            <!-- Action Type Dropdown -->
+            <ComboBox Grid.Column="2"
+                      x:Name="ActionTypeComboBox"
+                      Height="36"
+                      Background="#2D2D2D"
+                      BorderBrush="#333333"
+                      CornerRadius="6"
+                      SelectionChanged="ActionTypeComboBox_SelectionChanged">
+                <ComboBoxItem Content="Move to folder" Tag="MoveToFolder"/>
+                <ComboBoxItem Content="Copy to folder" Tag="CopyToFolder"/>
+                <ComboBoxItem Content="Move to category" Tag="MoveToCategory"/>
+                <ComboBoxItem Content="Sort into subfolder" Tag="SortIntoSubfolder"/>
+                <ComboBoxItem Content="Rename" Tag="Rename"/>
+                <ComboBoxItem Content="Delete" Tag="Delete"/>
+                <ComboBoxItem Content="Ignore" Tag="Ignore"/>
+                <ComboBoxItem Content="Continue matching" Tag="Continue"/>
+            </ComboBox>
+
+            <!-- Action Config Container -->
+            <Grid Grid.Column="4" x:Name="ConfigContainer">
+
+                <!-- Folder Path Input (Move/Copy to folder) -->
+                <Grid x:Name="FolderPathGrid" Visibility="Visible">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox Grid.Column="0"
+                             x:Name="FolderPathInput"
+                             Height="36"
+                             Background="#2D2D2D"
+                             BorderBrush="#333333"
+                             CornerRadius="6"
+                             PlaceholderText="Documents/Invoices"
+                             TextChanged="FolderPathInput_TextChanged"/>
+                    <Button Grid.Column="2"
+                            x:Name="BrowseFolderButton"
+                            Height="36"
+                            Background="#333333"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Padding="12,0"
+                            Click="BrowseFolderButton_Click">
+                        <TextBlock Text="&#xE8B7;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="14"
+                                   Foreground="#999999"/>
+                    </Button>
+                </Grid>
+
+                <!-- Category Dropdown (Move to category) -->
+                <ComboBox x:Name="CategoryComboBox"
+                          Height="36"
+                          Background="#2D2D2D"
+                          BorderBrush="#333333"
+                          CornerRadius="6"
+                          PlaceholderText="Select category..."
+                          SelectionChanged="CategoryComboBox_SelectionChanged"
+                          Visibility="Collapsed">
+                    <!-- Items populated dynamically -->
+                </ComboBox>
+
+                <!-- Pattern Input (Sort into subfolder / Rename) -->
+                <TextBox x:Name="PatternInput"
+                         Height="36"
+                         Background="#2D2D2D"
+                         BorderBrush="#333333"
+                         CornerRadius="6"
+                         PlaceholderText="{x:Null}"
+                         TextChanged="PatternInput_TextChanged"
+                         Visibility="Collapsed"/>
+
+                <!-- Delete Warning -->
+                <StackPanel x:Name="DeleteWarning"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            Visibility="Collapsed"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="&#xE7BA;"
+                               FontFamily="Segoe MDL2 Assets"
+                               FontSize="14"
+                               Foreground="#F59E0B"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Text="File will be moved to Recycle Bin"
+                               FontSize="13"
+                               Foreground="#F59E0B"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Ignore Info -->
+                <TextBlock x:Name="IgnoreInfo"
+                           Text="Stop processing - file won't be organized"
+                           FontSize="13"
+                           Foreground="#999999"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+
+                <!-- Continue Info -->
+                <TextBlock x:Name="ContinueInfo"
+                           Text="Keep matching more rules after this one"
+                           FontSize="13"
+                           Foreground="#999999"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed"/>
+            </Grid>
+
+            <!-- Delete Button -->
+            <Button Grid.Column="6"
+                    x:Name="DeleteButton"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="8"
+                    Width="36"
+                    Height="36"
+                    Click="DeleteButton_Click"
+                    Opacity="0"
+                    PointerEntered="DeleteButton_PointerEntered"
+                    PointerExited="DeleteButton_PointerExited">
+                <TextBlock Text="&#xE711;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="12"
+                           Foreground="#666666"
+                           x:Name="DeleteIcon"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"/>
+            </Button>
+        </Grid>
+
+        <!-- Helper Row -->
+        <StackPanel Grid.Row="1"
+                    x:Name="HelperPanel"
+                    Margin="32,4,0,0"
+                    Visibility="Collapsed">
+            <!-- Category destination helper -->
+            <TextBlock x:Name="CategoryDestinationHelper"
+                       FontSize="12"
+                       Foreground="#666666"
+                       Visibility="Collapsed"/>
+
+            <!-- Pattern tokens helper -->
+            <TextBlock x:Name="PatternTokensHelper"
+                       Text="Tokens: {Name}, {Extension}, {Year}, {Month}, {Day}, {Date}"
+                       FontSize="12"
+                       Foreground="#666666"
+                       Visibility="Collapsed"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

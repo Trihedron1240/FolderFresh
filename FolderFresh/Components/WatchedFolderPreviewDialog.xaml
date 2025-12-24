@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="FolderFresh.Components.WatchedFolderPreviewDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:FolderFresh.Components"
+    Title="Organization Preview"
+    PrimaryButtonText="Organize Now"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary"
+    PrimaryButtonClick="OrganizeButton_Click">
+
+    <Grid MinWidth="550" MaxWidth="650" MaxHeight="600">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header: Folder Info -->
+        <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+            <!-- Folder Name -->
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <FontIcon Glyph="&#xE8B7;" FontSize="24" Foreground="#60CDFF"/>
+                <TextBlock x:Name="FolderNameText"
+                           Text="Downloads"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Folder Path -->
+            <TextBlock x:Name="FolderPathText"
+                       Text="C:\Users\..."
+                       FontSize="12"
+                       Foreground="#666666"
+                       TextTrimming="CharacterEllipsis"
+                       Margin="34,0,0,0"/>
+
+            <!-- Profile -->
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="34,4,0,0">
+                <FontIcon Glyph="&#xE77B;" FontSize="12" Foreground="#888888"/>
+                <TextBlock x:Name="ProfileText"
+                           Text="Using profile: Default"
+                           FontSize="12"
+                           Foreground="#888888"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Summary Stats -->
+        <Border Grid.Row="1"
+                Background="#2D2D2D"
+                CornerRadius="8"
+                Padding="16"
+                Margin="0,0,0,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Total Scanned -->
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <TextBlock x:Name="TotalScannedText"
+                               Text="0"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Scanned"
+                               FontSize="11"
+                               Foreground="#888888"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- To Organize -->
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                    <TextBlock x:Name="ToOrganizeText"
+                               Text="0"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#10B981"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="To Organize"
+                               FontSize="11"
+                               Foreground="#888888"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Already Done -->
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                    <TextBlock x:Name="AlreadyDoneText"
+                               Text="0"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#6B7280"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Already Done"
+                               FontSize="11"
+                               Foreground="#888888"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Ignored -->
+                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                    <TextBlock x:Name="IgnoredText"
+                               Text="0"
+                               FontSize="24"
+                               FontWeight="Bold"
+                               Foreground="#F59E0B"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Ignored"
+                               FontSize="11"
+                               Foreground="#888888"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Warnings Section -->
+        <Border Grid.Row="2"
+                x:Name="WarningsPanel"
+                Background="#3D2D1D"
+                CornerRadius="8"
+                Padding="12"
+                Margin="0,0,0,16"
+                Visibility="Collapsed">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <FontIcon Glyph="&#xE7BA;" FontSize="16" Foreground="#F59E0B"/>
+                <TextBlock x:Name="WarningsText"
+                           Text=""
+                           FontSize="12"
+                           Foreground="#F59E0B"
+                           TextWrapping="Wrap"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Destination Groups -->
+        <ScrollViewer Grid.Row="3"
+                      VerticalScrollBarVisibility="Auto"
+                      Margin="0,0,0,16">
+            <StackPanel x:Name="DestinationGroupsPanel" Spacing="8"/>
+        </ScrollViewer>
+
+        <!-- Progress Overlay -->
+        <Grid Grid.Row="0" Grid.RowSpan="5"
+              x:Name="ProgressOverlay"
+              Background="#E0000000"
+              Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+                <ProgressRing x:Name="ProgressRing" IsActive="True" Width="48" Height="48"/>
+                <TextBlock x:Name="ProgressText"
+                           Text="Organizing files..."
+                           FontSize="14"
+                           Foreground="White"
+                           HorizontalAlignment="Center"/>
+                <TextBlock x:Name="ProgressDetailText"
+                           Text="0 of 0 files"
+                           FontSize="12"
+                           Foreground="#888888"
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</ContentDialog>
