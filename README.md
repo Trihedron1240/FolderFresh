@@ -28,7 +28,6 @@ Version 3.0.0 is a **complete rewrite** of FolderFresh, rebuilt from the ground 
 #### **Enhanced Rule Engine**
 - **Advanced Pattern Matching** — Full regex support with case sensitivity options
 - **Date Range Conditions** — Match files by creation/modification date ranges
-- **File Content Matching** — Search within text files for specific content
 - **Multiple Actions Per Rule** — Execute several actions when a rule matches
 - **Dynamic Placeholders** — Use `{date:format}`, `{extension}`, `{counter}`, `{name}` in destinations
 
