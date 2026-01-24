@@ -93,6 +93,30 @@ public sealed partial class ConditionRow : UserControl
                 (ConditionOperator.IsAfter, "is after"),
                 (ConditionOperator.IsInTheLast, "is in the last")
             }
+        },
+        {
+            ConditionAttribute.Folder, new()
+            {
+                (ConditionOperator.Is, "is"),
+                (ConditionOperator.IsNot, "is not"),
+                (ConditionOperator.Contains, "contains"),
+                (ConditionOperator.DoesNotContain, "does not contain"),
+                (ConditionOperator.StartsWith, "starts with"),
+                (ConditionOperator.EndsWith, "ends with"),
+                (ConditionOperator.MatchesPattern, "matches pattern")
+            }
+        },
+        {
+            ConditionAttribute.FolderPath, new()
+            {
+                (ConditionOperator.Is, "is"),
+                (ConditionOperator.IsNot, "is not"),
+                (ConditionOperator.Contains, "contains"),
+                (ConditionOperator.DoesNotContain, "does not contain"),
+                (ConditionOperator.StartsWith, "starts with"),
+                (ConditionOperator.EndsWith, "ends with"),
+                (ConditionOperator.MatchesPattern, "matches pattern")
+            }
         }
     };
 
@@ -165,6 +189,8 @@ public sealed partial class ConditionRow : UserControl
             case ConditionAttribute.Name:
             case ConditionAttribute.Extension:
             case ConditionAttribute.FullName:
+            case ConditionAttribute.Folder:
+            case ConditionAttribute.FolderPath:
                 TextValueInput.Text = _condition.Value;
                 break;
 
@@ -337,10 +363,16 @@ public sealed partial class ConditionRow : UserControl
             case ConditionAttribute.Name:
             case ConditionAttribute.Extension:
             case ConditionAttribute.FullName:
+            case ConditionAttribute.Folder:
+            case ConditionAttribute.FolderPath:
                 TextValueInput.Visibility = Visibility.Visible;
-                TextValueInput.PlaceholderText = attribute == ConditionAttribute.Extension
-                    ? ".pdf, .docx"
-                    : "Enter value...";
+                TextValueInput.PlaceholderText = attribute switch
+                {
+                    ConditionAttribute.Extension => ".pdf, .docx",
+                    ConditionAttribute.Folder => "Folder name...",
+                    ConditionAttribute.FolderPath => "Path to folder...",
+                    _ => "Enter value..."
+                };
                 break;
 
             case ConditionAttribute.Kind:

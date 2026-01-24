@@ -33,6 +33,8 @@
             <ComboBoxItem Content="Extension" Tag="Extension"/>
             <ComboBoxItem Content="Full Name" Tag="FullName"/>
             <ComboBoxItem Content="Kind" Tag="Kind"/>
+            <ComboBoxItem Content="Folder" Tag="Folder"/>
+            <ComboBoxItem Content="Folder Path" Tag="FolderPath"/>
             <ComboBoxItem Content="Size" Tag="Size"/>
             <ComboBoxItem Content="Date Created" Tag="DateCreated"/>
             <ComboBoxItem Content="Date Modified" Tag="DateModified"/>

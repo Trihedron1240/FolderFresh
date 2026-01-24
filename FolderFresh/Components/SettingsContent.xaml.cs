@@ -61,6 +61,15 @@ public sealed partial class SettingsContent : UserControl
             MinimizeToTrayToggle.IsOn = _settings.MinimizeToTray;
             CloseToTrayToggle.IsOn = _settings.CloseToTray;
             StartMinimizedToggle.IsOn = _settings.StartMinimized;
+
+            // Sync RunOnStartup with actual registry state (in case they got out of sync)
+            var actualRegistryState = StartupManager.IsRunOnStartupEnabled();
+            if (_settings.RunOnStartup != actualRegistryState)
+            {
+                // Registry state takes precedence - update settings to match
+                _settings.RunOnStartup = actualRegistryState;
+                _ = SaveSettingsAsync();
+            }
             RunOnStartupToggle.IsOn = _settings.RunOnStartup;
         }
         finally

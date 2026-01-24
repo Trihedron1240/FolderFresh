@@ -48,6 +48,8 @@ public class Condition
         ConditionAttribute.DateModified => "Date modified",
         ConditionAttribute.DateAccessed => "Date accessed",
         ConditionAttribute.Contents => "Contents",
+        ConditionAttribute.Folder => "Folder",
+        ConditionAttribute.FolderPath => "Folder path",
         _ => Attribute.ToString()
     };
 
@@ -131,7 +133,17 @@ public enum ConditionAttribute
     /// <summary>
     /// File contents (for text files, future feature)
     /// </summary>
-    Contents
+    Contents,
+
+    /// <summary>
+    /// Parent folder name (immediate containing folder)
+    /// </summary>
+    Folder,
+
+    /// <summary>
+    /// Full folder path (all parent directories)
+    /// </summary>
+    FolderPath
 }
 
 /// <summary>

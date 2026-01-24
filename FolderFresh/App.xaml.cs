@@ -35,6 +35,13 @@ public partial class App : Application
         _settingsService = new SettingsService();
         var settings = _settingsService.GetSettings();
 
+        // Validate/update startup registry if app is configured to run on startup
+        // This ensures the registry points to the current exe path if it was moved
+        if (settings.RunOnStartup)
+        {
+            StartupManager.ValidateAndUpdateStartupPath();
+        }
+
         // Check for --minimized command line argument
         var cmdArgs = Environment.GetCommandLineArgs();
         var startMinimized = settings.StartMinimized || Array.Exists(cmdArgs, arg => arg.Equals("--minimized", StringComparison.OrdinalIgnoreCase));
@@ -42,7 +49,7 @@ public partial class App : Application
         _mainPage = new MainPage();
         MainWindow = new Window
         {
-            Title = "FolderFresh 3.0 Beta",
+            Title = "FolderFresh 3.0.1 Beta",
             Content = _mainPage
         };
 

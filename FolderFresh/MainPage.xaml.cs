@@ -2094,7 +2094,7 @@ public sealed partial class MainPage : Page
 
                 case ActionType.SortIntoSubfolder:
                     {
-                        var subfolderName = RuleService.ExpandPattern(action.Value, originalFileInfo);
+                        var subfolderName = RuleService.ExpandPattern(action.Value, originalFileInfo, _categoryService);
                         // Normalize path separators (user might use / in pattern)
                         subfolderName = subfolderName.Replace('/', Path.DirectorySeparatorChar);
                         var destFolder = Path.Combine(baseFolderPath, subfolderName);
@@ -2120,7 +2120,7 @@ public sealed partial class MainPage : Page
 
                 case ActionType.Rename:
                     {
-                        var newName = RuleService.ExpandPattern(action.Value, originalFileInfo);
+                        var newName = RuleService.ExpandPattern(action.Value, originalFileInfo, _categoryService);
                         var targetPath = Path.Combine(currentDirectory, newName);
 
                         // Skip if the name is exactly the same (case-sensitive)

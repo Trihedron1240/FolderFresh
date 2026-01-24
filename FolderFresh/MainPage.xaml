@@ -109,7 +109,7 @@
                         FontSize="14"
                         FontWeight="SemiBold"
                         Foreground="White"
-                        Text="FolderFresh 3.0 Beta" />
+                        Text="FolderFresh 3.0.1 Beta" />
                 </StackPanel>
 
                 <!--  Folder Selector  -->

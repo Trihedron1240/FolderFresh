@@ -186,7 +186,7 @@
 
             <!-- Pattern tokens helper -->
             <TextBlock x:Name="PatternTokensHelper"
-                       Text="Tokens: {Name}, {Extension}, {Year}, {Month}, {Day}, {Date}"
+                       Text="Tokens: {Name}, {Extension}, {Category}, {Year}, {Month}, {Day}, {Date}"
                        FontSize="12"
                        Foreground="#666666"
                        Visibility="Collapsed"/>

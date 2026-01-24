@@ -315,7 +315,7 @@ public class RuleService
             {
                 case ActionType.Rename:
                     // Simulate rename - update the current file name
-                    currentFileName = ExpandPattern(action.Value, file);
+                    currentFileName = ExpandPattern(action.Value, file, categoryService);
                     // If no move action follows, the file stays in current directory with new name
                     primaryDestination = Path.Combine(currentDirectory, currentFileName);
                     break;
@@ -359,7 +359,7 @@ public class RuleService
                     break;
 
                 case ActionType.SortIntoSubfolder:
-                    var subfolderName = ExpandPattern(action.Value, file);
+                    var subfolderName = ExpandPattern(action.Value, file, categoryService);
                     // Normalize path separators (user might use / in pattern)
                     subfolderName = subfolderName.Replace('/', Path.DirectorySeparatorChar);
                     var subfolderPath = Path.Combine(baseFolderPath, subfolderName);
@@ -419,7 +419,7 @@ public class RuleService
             {
                 case ActionType.Rename:
                     // Simulate rename - update the current file name
-                    currentFileName = ExpandPattern(action.Value, file);
+                    currentFileName = ExpandPattern(action.Value, file, categoryService);
                     currentFilePath = Path.Combine(currentDirectory, currentFileName);
                     break;
 
@@ -461,10 +461,10 @@ public class RuleService
                     break;
 
                 case ActionType.SortIntoSubfolder:
-                    var subfolderName = ExpandPattern(action.Value, file);
-                    var subfolderPath = Path.Combine(baseFolderPath, subfolderName);
-                    currentDirectory = subfolderPath;
-                    currentFilePath = Path.Combine(subfolderPath, currentFileName);
+                    var subfolderName2 = ExpandPattern(action.Value, file, categoryService);
+                    var subfolderPath2 = Path.Combine(baseFolderPath, subfolderName2);
+                    currentDirectory = subfolderPath2;
+                    currentFilePath = Path.Combine(subfolderPath2, currentFileName);
                     break;
 
                 case ActionType.Delete:
@@ -547,6 +547,16 @@ public class RuleService
             ConditionAttribute.DateAccessed => EvaluateDateCondition(file.LastAccessTime, condition),
 
             ConditionAttribute.Contents => false, // Future: implement content search
+
+            ConditionAttribute.Folder => EvaluateStringCondition(
+                file.Directory?.Name ?? string.Empty,
+                condition.Operator,
+                condition.Value ?? string.Empty),
+
+            ConditionAttribute.FolderPath => EvaluateStringCondition(
+                file.DirectoryName ?? string.Empty,
+                condition.Operator,
+                condition.Value ?? string.Empty),
 
             _ => false
         };
@@ -767,14 +777,14 @@ public class RuleService
                         break;
 
                     case ActionType.SortIntoSubfolder:
-                        var subfolderName = ExpandPattern(action.Value, currentFile);
-                        var subfolderPath = Path.Combine(baseOutputPath, subfolderName);
-                        currentFile = await MoveFileAsync(currentFile, subfolderPath, action.Options);
-                        result.ActionsTaken.Add($"Sorted into {subfolderName}");
+                        var subfolderName3 = ExpandPattern(action.Value, currentFile, _categoryService);
+                        var subfolderPath3 = Path.Combine(baseOutputPath, subfolderName3);
+                        currentFile = await MoveFileAsync(currentFile, subfolderPath3, action.Options);
+                        result.ActionsTaken.Add($"Sorted into {subfolderName3}");
                         break;
 
                     case ActionType.Rename:
-                        var newName = ExpandPattern(action.Value, currentFile);
+                        var newName = ExpandPattern(action.Value, currentFile, _categoryService);
                         currentFile = await RenameFileAsync(currentFile, newName);
                         result.ActionsTaken.Add($"Renamed to {newName}");
                         break;
@@ -964,10 +974,20 @@ public class RuleService
 
     /// <summary>
     /// Expands pattern tokens in a string using file properties.
-    /// Supported tokens: {Name}, {Extension}, {Year}, {Month}, {Day}, {Date}, {Today}, {Kind},
+    /// Supported tokens: {Name}, {Extension}, {Category}, {Year}, {Month}, {Day}, {Date}, {Today}, {Kind},
     /// {CreatedYear}, {CreatedMonth}, {CreatedDay}, {date:format}, {created:format}, {today:format}
     /// </summary>
     public static string ExpandPattern(string pattern, FileInfo file)
+    {
+        return ExpandPattern(pattern, file, null);
+    }
+
+    /// <summary>
+    /// Expands pattern tokens in a string using file properties.
+    /// Supported tokens: {Name}, {Extension}, {Category}, {Year}, {Month}, {Day}, {Date}, {Today}, {Kind},
+    /// {CreatedYear}, {CreatedMonth}, {CreatedDay}, {date:format}, {created:format}, {today:format}
+    /// </summary>
+    public static string ExpandPattern(string pattern, FileInfo file, CategoryService? categoryService)
     {
         var result = pattern;
         var now = DateTime.Now;
@@ -1029,6 +1049,14 @@ public class RuleService
         // {Kind} / {kind} - file kind based on extension
         result = result.Replace("{Kind}", GetFileKind(file.Extension).ToString());
         result = result.Replace("{kind}", GetFileKind(file.Extension).ToString());
+
+        // {Category} / {category} - user-defined category name based on extension
+        if (categoryService != null && (result.Contains("{Category}") || result.Contains("{category}")))
+        {
+            var category = categoryService.GetCategoryForFile(file.Extension);
+            result = result.Replace("{Category}", category.Name);
+            result = result.Replace("{category}", category.Name);
+        }
 
         return result;
     }

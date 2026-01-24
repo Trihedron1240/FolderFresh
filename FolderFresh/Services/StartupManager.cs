@@ -67,4 +67,37 @@ public static class StartupManager
             return false;
         }
     }
+
+    /// <summary>
+    /// Validates and updates the startup registry entry if the executable path has changed.
+    /// Should be called on app startup to ensure the registry points to the current exe.
+    /// </summary>
+    public static void ValidateAndUpdateStartupPath()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RegistryRunPath, writable: true);
+            if (key == null) return;
+
+            var currentValue = key.GetValue(AppName) as string;
+            if (string.IsNullOrEmpty(currentValue)) return;
+
+            var currentExePath = Environment.ProcessPath;
+            if (string.IsNullOrEmpty(currentExePath)) return;
+
+            var expectedValue = $"\"{currentExePath}\" --minimized";
+
+            // Check if the registry value matches the current exe path
+            if (!currentValue.Equals(expectedValue, StringComparison.OrdinalIgnoreCase))
+            {
+                // Update the registry to point to the current exe
+                key.SetValue(AppName, expectedValue);
+                Debug.WriteLine($"[StartupManager] Updated startup path from '{currentValue}' to '{expectedValue}'");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[StartupManager] Error validating startup path: {ex.Message}");
+        }
+    }
 }

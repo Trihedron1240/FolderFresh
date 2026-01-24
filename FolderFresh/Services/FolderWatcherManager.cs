@@ -1161,7 +1161,7 @@ public class FolderWatcherManager : IDisposable
 
                 case ActionType.SortIntoSubfolder:
                     {
-                        var subfolderName = RuleService.ExpandPattern(action.Value, fileInfo);
+                        var subfolderName = RuleService.ExpandPattern(action.Value, fileInfo, _categoryService);
                         subfolderName = subfolderName.Replace('/', Path.DirectorySeparatorChar);
                         var destFolder = Path.Combine(basePath, subfolderName);
 
@@ -1182,7 +1182,7 @@ public class FolderWatcherManager : IDisposable
 
                 case ActionType.Rename:
                     {
-                        var newName = RuleService.ExpandPattern(action.Value, fileInfo);
+                        var newName = RuleService.ExpandPattern(action.Value, fileInfo, _categoryService);
                         var targetPath = Path.Combine(currentDirectory, newName);
 
                         if (currentFilePath.Equals(targetPath, StringComparison.Ordinal))
