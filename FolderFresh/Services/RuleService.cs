@@ -553,11 +553,46 @@ public class RuleService
                 condition.Operator,
                 condition.Value ?? string.Empty),
 
-            ConditionAttribute.FolderPath => EvaluateStringCondition(
+            ConditionAttribute.FolderPath => EvaluatePathCondition(
                 file.DirectoryName ?? string.Empty,
                 condition.Operator,
                 condition.Value ?? string.Empty),
 
+            _ => false
+        };
+    }
+
+    /// <summary>
+    /// Normalizes a path by trimming quotes and trailing slashes/backslashes.
+    /// </summary>
+    private static string NormalizePath(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return path;
+        // Trim surrounding quotes first, then trailing slashes
+        return path.Trim('"', '\'').TrimEnd('\\', '/');
+    }
+
+    /// <summary>
+    /// Evaluates path-based conditions with normalization for trailing slashes.
+    /// </summary>
+    private static bool EvaluatePathCondition(string actual, ConditionOperator op, string expected)
+    {
+        // Normalize paths to handle trailing slash differences
+        var normalizedActual = NormalizePath(actual);
+        var normalizedExpected = NormalizePath(expected);
+
+        return op switch
+        {
+            ConditionOperator.Is => normalizedActual.Equals(normalizedExpected, StringComparison.OrdinalIgnoreCase),
+            ConditionOperator.IsNot => !normalizedActual.Equals(normalizedExpected, StringComparison.OrdinalIgnoreCase),
+            ConditionOperator.Contains => normalizedActual.Contains(normalizedExpected, StringComparison.OrdinalIgnoreCase),
+            ConditionOperator.DoesNotContain => !normalizedActual.Contains(normalizedExpected, StringComparison.OrdinalIgnoreCase),
+            ConditionOperator.StartsWith => normalizedActual.StartsWith(normalizedExpected, StringComparison.OrdinalIgnoreCase),
+            ConditionOperator.EndsWith => normalizedActual.EndsWith(normalizedExpected, StringComparison.OrdinalIgnoreCase),
+            ConditionOperator.MatchesPattern => MatchesWildcard(normalizedActual, normalizedExpected),
+            ConditionOperator.IsBlank => string.IsNullOrWhiteSpace(actual),
+            ConditionOperator.IsNotBlank => !string.IsNullOrWhiteSpace(actual),
             _ => false
         };
     }

@@ -128,7 +128,8 @@
                                FontSize="14"
                                Foreground="#F59E0B"
                                VerticalAlignment="Center"/>
-                    <TextBlock Text="File will be moved to Recycle Bin"
+                    <TextBlock x:Name="DeleteWarningText"
+                               Text="File will be moved to Recycle Bin"
                                FontSize="13"
                                Foreground="#F59E0B"
                                VerticalAlignment="Center"/>

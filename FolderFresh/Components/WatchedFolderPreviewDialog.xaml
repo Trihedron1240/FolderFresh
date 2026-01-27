@@ -72,7 +72,8 @@
                                FontWeight="Bold"
                                Foreground="White"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="Scanned"
+                    <TextBlock x:Name="ScannedLabel"
+                               Text="Scanned"
                                FontSize="11"
                                Foreground="#888888"
                                HorizontalAlignment="Center"/>
@@ -86,7 +87,8 @@
                                FontWeight="Bold"
                                Foreground="#10B981"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="To Organize"
+                    <TextBlock x:Name="ToOrganizeLabel"
+                               Text="To Organize"
                                FontSize="11"
                                Foreground="#888888"
                                HorizontalAlignment="Center"/>
@@ -100,7 +102,8 @@
                                FontWeight="Bold"
                                Foreground="#6B7280"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="Already Done"
+                    <TextBlock x:Name="AlreadyDoneLabel"
+                               Text="Already Done"
                                FontSize="11"
                                Foreground="#888888"
                                HorizontalAlignment="Center"/>
@@ -114,7 +117,8 @@
                                FontWeight="Bold"
                                Foreground="#F59E0B"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="Ignored"
+                    <TextBlock x:Name="IgnoredLabel"
+                               Text="Ignored"
                                FontSize="11"
                                Foreground="#888888"
                                HorizontalAlignment="Center"/>

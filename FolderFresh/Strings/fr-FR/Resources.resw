@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Navigation (x:Uid bindings use .Content for NavigationViewItem) -->
+  <data name="Nav_Home.Content" xml:space="preserve">
+    <value>Accueil</value>
+  </data>
+  <data name="Nav_Folders.Content" xml:space="preserve">
+    <value>Dossiers</value>
+  </data>
+  <data name="Nav_Rules.Content" xml:space="preserve">
+    <value>Règles</value>
+  </data>
+  <data name="Nav_Categories.Content" xml:space="preserve">
+    <value>Catégories</value>
+  </data>
+  <data name="Nav_Profiles.Content" xml:space="preserve">
+    <value>Profils</value>
+  </data>
+  <data name="Nav_Snapshots.Content" xml:space="preserve">
+    <value>Instantanés</value>
+  </data>
+  <data name="Nav_Settings.Content" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+
+  <!-- Main Page (x:Uid bindings use .Text for TextBlock, .Content for Button) -->
+  <data name="AppTitle" xml:space="preserve">
+    <value>FolderFresh 3.0.2 Beta</value>
+  </data>
+  <data name="SelectFolder.Text" xml:space="preserve">
+    <value>Sélectionner un dossier...</value>
+  </data>
+  <data name="Current.Text" xml:space="preserve">
+    <value>ACTUEL</value>
+  </data>
+  <data name="After.Text" xml:space="preserve">
+    <value>APRÈS</value>
+  </data>
+  <data name="SelectFolderToPreview.Text" xml:space="preserve">
+    <value>Sélectionner un dossier pour l'aperçu</value>
+  </data>
+  <data name="OrganizedPreview.Text" xml:space="preserve">
+    <value>Aperçu organisé</value>
+  </data>
+  <data name="NoFilesToOrganize" xml:space="preserve">
+    <value>Aucun fichier à organiser</value>
+  </data>
+  <data name="OrganizeNow.Content" xml:space="preserve">
+    <value>Organiser maintenant</value>
+  </data>
+  <data name="Undo.Content" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+
+  <!-- Settings Page -->
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Paramètres</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>LANGUE</value>
+  </data>
+  <data name="Settings_LanguageDesc" xml:space="preserve">
+    <value>Choisissez votre langue préférée</value>
+  </data>
+  <data name="Settings_LanguageRestart" xml:space="preserve">
+    <value>Redémarrez l'application pour appliquer les modifications</value>
+  </data>
+  <data name="Settings_OrganizationMode" xml:space="preserve">
+    <value>MODE D'ORGANISATION</value>
+  </data>
+  <data name="Settings_OrganizationModeDesc" xml:space="preserve">
+    <value>Choisissez comment les fichiers sont associés pour l'organisation</value>
+  </data>
+  <data name="Settings_RulesFirst" xml:space="preserve">
+    <value>Règles d'abord, puis catégories</value>
+  </data>
+  <data name="Settings_RulesFirstDesc" xml:space="preserve">
+    <value>Recommandé - Les règles sont vérifiées d'abord, les fichiers non correspondants utilisent les catégories</value>
+  </data>
+  <data name="Settings_CategoriesOnly" xml:space="preserve">
+    <value>Catégories uniquement</value>
+  </data>
+  <data name="Settings_CategoriesOnlyDesc" xml:space="preserve">
+    <value>Mode simple - Utiliser uniquement l'organisation par catégories</value>
+  </data>
+  <data name="Settings_RulesOnly" xml:space="preserve">
+    <value>Règles uniquement</value>
+  </data>
+  <data name="Settings_RulesOnlyDesc" xml:space="preserve">
+    <value>Avancé - Seuls les fichiers correspondant aux règles sont organisés</value>
+  </data>
+  <data name="Settings_Notifications" xml:space="preserve">
+    <value>NOTIFICATIONS</value>
+  </data>
+  <data name="Settings_ShowNotifications" xml:space="preserve">
+    <value>Afficher les notifications lors de l'organisation</value>
+  </data>
+  <data name="Settings_ShowNotificationsDesc" xml:space="preserve">
+    <value>Afficher une notification lorsque les fichiers sont organisés</value>
+  </data>
+  <data name="Settings_FileScanning" xml:space="preserve">
+    <value>ANALYSE DES FICHIERS</value>
+  </data>
+  <data name="Settings_IncludeSubfolders" xml:space="preserve">
+    <value>Inclure les sous-dossiers</value>
+  </data>
+  <data name="Settings_IncludeSubfoldersDesc" xml:space="preserve">
+    <value>Organiser les fichiers dans les sous-dossiers, pas seulement à la racine</value>
+  </data>
+  <data name="Settings_IgnoreHidden" xml:space="preserve">
+    <value>Ignorer les fichiers cachés</value>
+  </data>
+  <data name="Settings_IgnoreHiddenDesc" xml:space="preserve">
+    <value>Ignorer les fichiers et dossiers marqués comme cachés</value>
+  </data>
+  <data name="Settings_IgnoreSystem" xml:space="preserve">
+    <value>Ignorer les fichiers système</value>
+  </data>
+  <data name="Settings_IgnoreSystemDesc" xml:space="preserve">
+    <value>Ignorer les fichiers et dossiers marqués comme système</value>
+  </data>
+  <data name="Settings_SystemTray" xml:space="preserve">
+    <value>ZONE DE NOTIFICATION</value>
+  </data>
+  <data name="Settings_MinimizeToTray" xml:space="preserve">
+    <value>Réduire dans la zone de notification</value>
+  </data>
+  <data name="Settings_MinimizeToTrayDesc" xml:space="preserve">
+    <value>Réduire dans la zone de notification au lieu de la barre des tâches</value>
+  </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Fermer dans la zone de notification</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Continuer à fonctionner dans la zone de notification lors de la fermeture</value>
+  </data>
+  <data name="Settings_StartMinimized" xml:space="preserve">
+    <value>Démarrer réduit</value>
+  </data>
+  <data name="Settings_StartMinimizedDesc" xml:space="preserve">
+    <value>Démarrer l'application réduite dans la zone de notification</value>
+  </data>
+  <data name="Settings_RunOnStartup" xml:space="preserve">
+    <value>Exécuter au démarrage</value>
+  </data>
+  <data name="Settings_RunOnStartupDesc" xml:space="preserve">
+    <value>Démarrer automatiquement FolderFresh lors de la connexion</value>
+  </data>
+  <data name="Settings_Safety" xml:space="preserve">
+    <value>SÉCURITÉ</value>
+  </data>
+  <data name="Settings_RecycleBin" xml:space="preserve">
+    <value>Déplacer vers la corbeille au lieu de supprimer définitivement</value>
+  </data>
+  <data name="Settings_RecycleBinDesc" xml:space="preserve">
+    <value>Lors de la suppression, les fichiers vont dans la corbeille</value>
+  </data>
+  <data name="Settings_Confirm" xml:space="preserve">
+    <value>Confirmer avant d'organiser</value>
+  </data>
+  <data name="Settings_ConfirmDesc" xml:space="preserve">
+    <value>Afficher une boîte de dialogue de confirmation avant de déplacer les fichiers</value>
+  </data>
+  <data name="Settings_About" xml:space="preserve">
+    <value>À PROPOS</value>
+  </data>
+  <data name="Settings_Version" xml:space="preserve">
+    <value>Version 3.0.2-beta</value>
+  </data>
+  <data name="Settings_Description" xml:space="preserve">
+    <value>Un puissant outil d'organisation de fichiers avec règles et catégories</value>
+  </data>
+
+  <!-- Rules Page -->
+  <data name="Rules_Title" xml:space="preserve">
+    <value>Règles</value>
+  </data>
+  <data name="Rules_NewRule" xml:space="preserve">
+    <value>Nouvelle règle</value>
+  </data>
+  <data name="Rules_CreateRule" xml:space="preserve">
+    <value>Créer une règle</value>
+  </data>
+  <data name="Rules_EmptyTitle" xml:space="preserve">
+    <value>Aucune règle pour l'instant</value>
+  </data>
+  <data name="Rules_EmptyDesc" xml:space="preserve">
+    <value>Créez des règles pour organiser les fichiers selon des conditions personnalisées</value>
+  </data>
+
+  <!-- Categories Page -->
+  <data name="Categories_Title" xml:space="preserve">
+    <value>Catégories</value>
+  </data>
+  <data name="Categories_NewCategory" xml:space="preserve">
+    <value>Nouvelle catégorie</value>
+  </data>
+  <data name="Categories_CreateCategory" xml:space="preserve">
+    <value>Créer une catégorie</value>
+  </data>
+  <data name="Categories_EmptyTitle" xml:space="preserve">
+    <value>Aucune catégorie pour l'instant</value>
+  </data>
+  <data name="Categories_EmptyDesc" xml:space="preserve">
+    <value>Créez des catégories pour organiser les fichiers par type</value>
+  </data>
+
+  <!-- Folders Page -->
+  <data name="Folders_Title" xml:space="preserve">
+    <value>Dossiers surveillés</value>
+  </data>
+  <data name="Folders_AddFolder" xml:space="preserve">
+    <value>Ajouter un dossier</value>
+  </data>
+  <data name="Folders_EmptyTitle" xml:space="preserve">
+    <value>Aucun dossier surveillé</value>
+  </data>
+  <data name="Folders_EmptyDesc" xml:space="preserve">
+    <value>Ajoutez des dossiers pour organiser automatiquement les fichiers lorsqu'ils sont ajoutés</value>
+  </data>
+
+  <!-- Profiles Page -->
+  <data name="Profiles_Title" xml:space="preserve">
+    <value>Profils</value>
+  </data>
+  <data name="Profiles_NewProfile" xml:space="preserve">
+    <value>Nouveau profil</value>
+  </data>
+  <data name="Profiles_EmptyTitle" xml:space="preserve">
+    <value>Aucun profil pour l'instant</value>
+  </data>
+  <data name="Profiles_EmptyDesc" xml:space="preserve">
+    <value>Créez des profils pour sauvegarder différentes configurations de règles et catégories</value>
+  </data>
+
+  <!-- Snapshots Page -->
+  <data name="Snapshots_Title" xml:space="preserve">
+    <value>Instantanés</value>
+  </data>
+  <data name="Snapshots_Subtitle" xml:space="preserve">
+    <value>Sauvegarder et restaurer l'état des dossiers</value>
+  </data>
+  <data name="Snapshots_NewSnapshot" xml:space="preserve">
+    <value>Nouvel instantané</value>
+  </data>
+  <data name="Snapshots_CreateSnapshot" xml:space="preserve">
+    <value>Créer un instantané</value>
+  </data>
+  <data name="Snapshots_EmptyTitle" xml:space="preserve">
+    <value>Aucun instantané pour l'instant</value>
+  </data>
+  <data name="Snapshots_EmptyDesc" xml:space="preserve">
+    <value>Créez un instantané pour sauvegarder l'état actuel d'un dossier</value>
+  </data>
+  <data name="Snapshots_Warning" xml:space="preserve">
+    <value>Les instantanés créent des copies complètes de vos fichiers et peuvent utiliser un espace disque important. Les fichiers sont stockés dans le dossier de données FolderFresh. Lors de la restauration, toutes les modifications apportées aux fichiers après l'instantané seront écrasées.</value>
+  </data>
+  <data name="Snapshots_StorageUsed" xml:space="preserve">
+    <value>Stockage utilisé :</value>
+  </data>
+  <data name="Snapshots_AcrossSnapshots" xml:space="preserve">
+    <value> dans {0} instantanés</value>
+  </data>
+  <data name="Snapshots_OpenFolder" xml:space="preserve">
+    <value>Ouvrir le dossier</value>
+  </data>
+  <data name="Snapshots_Restore" xml:space="preserve">
+    <value>Restaurer</value>
+  </data>
+  <data name="Snapshots_Rename" xml:space="preserve">
+    <value>Renommer</value>
+  </data>
+  <data name="Snapshots_Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Snapshots_RestoreWarningTitle" xml:space="preserve">
+    <value>Restaurer l'instantané ?</value>
+  </data>
+  <data name="Snapshots_RestoreWarning" xml:space="preserve">
+    <value>Cela restaurera tous les fichiers de cet instantané. Toutes les modifications apportées à ces fichiers après la création de l'instantané seront perdues. Cette action est irréversible.</value>
+  </data>
+
+  <!-- Common -->
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Supprimer</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Modifier</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Oui</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Non</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>fichiers</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>fichier</value>
+  </data>
+
+  <!-- Language Names -->
+  <data name="Lang_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Lang_German" xml:space="preserve">
+    <value>Deutsch</value>
+  </data>
+  <data name="Lang_Ukrainian" xml:space="preserve">
+    <value>Українська</value>
+  </data>
+  <data name="Lang_French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+</root>

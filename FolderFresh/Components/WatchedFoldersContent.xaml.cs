@@ -44,6 +44,21 @@ public sealed partial class WatchedFoldersContent : UserControl
     public WatchedFoldersContent()
     {
         this.InitializeComponent();
+        ApplyLocalization();
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        TitleText.Text = Loc.Get("Folders_Title");
+        SubtitleText.Text = Loc.Get("Folders_Subtitle");
+        AddFolderButtonText.Text = Loc.Get("Folders_AddFolder");
+        StopAllButtonText.Text = Loc.Get("Folders_StopAll");
+        StartAllButtonText.Text = Loc.Get("Folders_StartAll");
+        InfoBannerText.Text = Loc.Get("Folders_InfoBanner");
+        EmptyTitleText.Text = Loc.Get("Folders_EmptyTitle");
+        EmptyDescText.Text = Loc.Get("Folders_EmptyDesc");
+        EmptyAddButtonText.Text = Loc.Get("Folders_AddFolder");
     }
 
     /// <summary>
@@ -377,7 +392,7 @@ public sealed partial class WatchedFoldersContent : UserControl
             Tag = folder.Id,
             IsEnabled = folder.Status != WatchStatus.Error && folder.Status != WatchStatus.Organizing
         };
-        organizeButton.Content = new TextBlock { Text = "Organize", FontSize = 12 };
+        organizeButton.Content = new TextBlock { Text = Loc.Get("Folders_Organize"), FontSize = 12 };
         ToolTipService.SetToolTip(organizeButton, "Organize files now using the assigned profile");
         organizeButton.Click += OrganizeButton_Click;
         actionPanel.Children.Add(organizeButton);
@@ -394,7 +409,7 @@ public sealed partial class WatchedFoldersContent : UserControl
             Tag = folder.Id,
             IsEnabled = folder.Status != WatchStatus.Error
         };
-        previewButton.Content = new TextBlock { Text = "Preview", FontSize = 12 };
+        previewButton.Content = new TextBlock { Text = Loc.Get("Folders_Preview"), FontSize = 12 };
         ToolTipService.SetToolTip(previewButton, "Preview what files will be organized");
         previewButton.Click += PreviewButton_Click;
         actionPanel.Children.Add(previewButton);
@@ -413,15 +428,15 @@ public sealed partial class WatchedFoldersContent : UserControl
             FontSize = 16,
             Foreground = new SolidColorBrush(Color.FromArgb(255, 153, 153, 153))
         };
-        ToolTipService.SetToolTip(moreButton, "More options");
+        ToolTipService.SetToolTip(moreButton, Loc.Get("Folders_MoreOptions"));
 
         var menuFlyout = new MenuFlyout();
 
-        var configureItem = new MenuFlyoutItem { Text = "Configure", Tag = folder.Id };
+        var configureItem = new MenuFlyoutItem { Text = Loc.Get("Folders_Configure"), Tag = folder.Id };
         configureItem.Click += ConfigureMenuItem_Click;
         menuFlyout.Items.Add(configureItem);
 
-        var openFolderItem = new MenuFlyoutItem { Text = "Open Folder", Tag = folder.Id };
+        var openFolderItem = new MenuFlyoutItem { Text = Loc.Get("Folders_OpenFolder"), Tag = folder.Id };
         openFolderItem.Click += OpenFolderMenuItem_Click;
         menuFlyout.Items.Add(openFolderItem);
 
@@ -430,7 +445,7 @@ public sealed partial class WatchedFoldersContent : UserControl
         {
             var undoItem = new MenuFlyoutItem
             {
-                Text = "Undo Last Organize",
+                Text = Loc.Get("Folders_UndoLastOrganize"),
                 Tag = folder.Id,
                 Icon = new FontIcon { Glyph = "\uE7A7" }
             };
@@ -442,7 +457,7 @@ public sealed partial class WatchedFoldersContent : UserControl
 
         var removeItem = new MenuFlyoutItem
         {
-            Text = "Remove",
+            Text = Loc.Get("Folders_Remove"),
             Tag = folder.Id,
             Foreground = new SolidColorBrush(Color.FromArgb(255, 239, 68, 68))
         };
@@ -648,9 +663,9 @@ public sealed partial class WatchedFoldersContent : UserControl
 
         var dialog = new ContentDialog
         {
-            Title = isNew ? "Add Watched Folder" : "Configure Watched Folder",
-            PrimaryButtonText = isNew ? "Add" : "Save",
-            CloseButtonText = "Cancel",
+            Title = isNew ? Loc.Get("ConfigDialog_AddTitle") : Loc.Get("ConfigDialog_EditTitle"),
+            PrimaryButtonText = isNew ? Loc.Get("Add") : Loc.Get("Save"),
+            CloseButtonText = Loc.Get("Cancel"),
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = this.XamlRoot
         };
@@ -661,7 +676,7 @@ public sealed partial class WatchedFoldersContent : UserControl
         var pathPanel = new StackPanel { Spacing = 4 };
         pathPanel.Children.Add(new TextBlock
         {
-            Text = "Folder Path",
+            Text = Loc.Get("ConfigDialog_FolderPath"),
             FontSize = 12,
             Foreground = new SolidColorBrush(Color.FromArgb(255, 153, 153, 153))
         });
@@ -678,14 +693,14 @@ public sealed partial class WatchedFoldersContent : UserControl
         var namePanel = new StackPanel { Spacing = 4 };
         namePanel.Children.Add(new TextBlock
         {
-            Text = "Display Name",
+            Text = Loc.Get("ConfigDialog_DisplayName"),
             FontSize = 12,
             Foreground = new SolidColorBrush(Color.FromArgb(255, 153, 153, 153))
         });
         var nameTextBox = new TextBox
         {
             Text = folder.DisplayName,
-            PlaceholderText = "Enter a display name"
+            PlaceholderText = Loc.Get("ConfigDialog_DisplayNamePlaceholder")
         };
         namePanel.Children.Add(nameTextBox);
         panel.Children.Add(namePanel);
@@ -694,7 +709,7 @@ public sealed partial class WatchedFoldersContent : UserControl
         var profilePanel = new StackPanel { Spacing = 4 };
         profilePanel.Children.Add(new TextBlock
         {
-            Text = "Profile to Use",
+            Text = Loc.Get("ConfigDialog_ProfileToUse"),
             FontSize = 12,
             Foreground = new SolidColorBrush(Color.FromArgb(255, 153, 153, 153))
         });
@@ -702,7 +717,7 @@ public sealed partial class WatchedFoldersContent : UserControl
         var profileComboBox = new ComboBox
         {
             HorizontalAlignment = HorizontalAlignment.Stretch,
-            PlaceholderText = "Select a profile"
+            PlaceholderText = Loc.Get("ConfigDialog_SelectProfile")
         };
 
         var profiles = _profileService.GetProfiles();
@@ -732,7 +747,7 @@ public sealed partial class WatchedFoldersContent : UserControl
         var autoOrganizePanel = new StackPanel { Spacing = 4 };
         var autoOrganizeToggle = new ToggleSwitch
         {
-            Header = "Auto-organize on file changes",
+            Header = Loc.Get("ConfigDialog_AutoOrganize"),
             IsOn = folder.AutoOrganize,
             OnContent = "On",
             OffContent = "Off"
@@ -740,7 +755,7 @@ public sealed partial class WatchedFoldersContent : UserControl
         autoOrganizePanel.Children.Add(autoOrganizeToggle);
         autoOrganizePanel.Children.Add(new TextBlock
         {
-            Text = "When enabled, files will be organized automatically. When disabled, you'll only be notified of changes.",
+            Text = Loc.Get("ConfigDialog_AutoOrganizeDesc"),
             FontSize = 11,
             Foreground = new SolidColorBrush(Color.FromArgb(255, 102, 102, 102)),
             TextWrapping = TextWrapping.Wrap
@@ -1164,10 +1179,10 @@ public sealed partial class WatchedFoldersContent : UserControl
         if (folder == null) return;
 
         var result = await ShowConfirmDialogAsync(
-            "Remove Watched Folder",
-            $"Are you sure you want to stop watching \"{folder.DisplayName}\"?\n\nThis will not delete any files.",
-            "Remove",
-            "Cancel");
+            Loc.Get("Folders_RemoveDialog"),
+            Loc.Get("Folders_RemoveConfirm", folder.DisplayName),
+            Loc.Get("Folders_Remove"),
+            Loc.Get("Cancel"));
 
         if (result)
         {

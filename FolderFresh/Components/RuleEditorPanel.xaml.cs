@@ -25,6 +25,36 @@ public sealed partial class RuleEditorPanel : UserControl
     {
         this.InitializeComponent();
         _categoryService = new CategoryService();
+        ApplyLocalization();
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        RuleNameLabel.Text = Loc.Get("RuleEditor_RuleName");
+        RuleNameTextBox.PlaceholderText = Loc.Get("RuleEditor_RuleNamePlaceholder");
+        RuleEnabledLabel.Text = Loc.Get("RuleEditor_RuleEnabled");
+        IfLabel.Text = Loc.Get("RuleEditor_If");
+        MatchAllRadio.Content = Loc.Get("RuleEditor_MatchAll");
+        MatchAnyRadio.Content = Loc.Get("RuleEditor_MatchAny");
+        MatchNoneRadio.Content = Loc.Get("RuleEditor_MatchNone");
+        ConditionsMetLabel.Text = Loc.Get("RuleEditor_ConditionsMet");
+        AddConditionButtonText.Text = Loc.Get("RuleEditor_AddCondition");
+        ThenLabel.Text = Loc.Get("RuleEditor_Then");
+        PerformActionsLabel.Text = Loc.Get("RuleEditor_PerformActions");
+        AddActionButtonText.Text = Loc.Get("RuleEditor_AddAction");
+        CancelButton.Content = Loc.Get("Cancel");
+        SaveButton.Content = Loc.Get("RuleEditor_SaveRule");
+
+        // Update header title based on mode
+        if (_isNewRule)
+        {
+            HeaderTitle.Text = Loc.Get("RuleEditor_NewRule");
+        }
+        else if (_rule != null)
+        {
+            HeaderTitle.Text = Loc.Get("RuleEditor_EditRule");
+        }
     }
 
     /// <summary>
@@ -41,13 +71,13 @@ public sealed partial class RuleEditorPanel : UserControl
         {
             _rule = Rule.Create("New Rule");
             _isNewRule = true;
-            HeaderTitle.Text = "New Rule";
+            HeaderTitle.Text = Loc.Get("RuleEditor_NewRule");
         }
         else
         {
             _rule = rule;
             _isNewRule = false;
-            HeaderTitle.Text = "Edit Rule";
+            HeaderTitle.Text = Loc.Get("RuleEditor_EditRule");
         }
 
         LoadRuleData();

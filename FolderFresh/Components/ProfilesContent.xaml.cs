@@ -33,6 +33,20 @@ public sealed partial class ProfilesContent : UserControl
     public ProfilesContent()
     {
         this.InitializeComponent();
+        ApplyLocalization();
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        TitleText.Text = Loc.Get("Profiles_Title");
+        SubtitleText.Text = Loc.Get("Profiles_Subtitle");
+        ImportButtonText.Text = Loc.Get("Profiles_Import");
+        NewProfileButtonText.Text = Loc.Get("Profiles_NewProfile");
+        InfoBannerText.Text = Loc.Get("Profiles_InfoBanner");
+
+        // Refresh profile cards to update localized text
+        LoadProfiles();
     }
 
     /// <summary>
@@ -106,7 +120,7 @@ public sealed partial class ProfilesContent : UserControl
             };
             activeBadge.Child = new TextBlock
             {
-                Text = "Active",
+                Text = Loc.Get("Profiles_Active"),
                 FontSize = 11,
                 Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255))
             };
@@ -118,7 +132,7 @@ public sealed partial class ProfilesContent : UserControl
         // Date info
         var dateText = new TextBlock
         {
-            Text = $"Created {profile.CreatedAt:MMM d, yyyy}",
+            Text = Loc.Get("Profiles_Created", profile.CreatedAt.ToString("MMM d, yyyy")),
             FontSize = 12,
             Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 102, 102, 102))
         };
@@ -135,7 +149,7 @@ public sealed partial class ProfilesContent : UserControl
         {
             var activeButton = new Button
             {
-                Content = "Active",
+                Content = Loc.Get("Profiles_Active"),
                 Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 35, 36, 40)),
                 Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 102, 102, 102)),
                 Padding = new Thickness(16, 8, 16, 8),
@@ -148,7 +162,7 @@ public sealed partial class ProfilesContent : UserControl
         {
             var switchButton = new Button
             {
-                Content = "Switch",
+                Content = Loc.Get("Profiles_Switch"),
                 Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 88, 101, 242)),
                 Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255)),
                 Padding = new Thickness(16, 8, 16, 8),
@@ -177,15 +191,15 @@ public sealed partial class ProfilesContent : UserControl
         // Create flyout menu
         var menuFlyout = new MenuFlyout();
 
-        var renameItem = new MenuFlyoutItem { Text = "Rename", Tag = profile.Id };
+        var renameItem = new MenuFlyoutItem { Text = Loc.Get("Profiles_Rename"), Tag = profile.Id };
         renameItem.Click += RenameMenuItem_Click;
         menuFlyout.Items.Add(renameItem);
 
-        var duplicateItem = new MenuFlyoutItem { Text = "Duplicate", Tag = profile.Id };
+        var duplicateItem = new MenuFlyoutItem { Text = Loc.Get("Profiles_Duplicate"), Tag = profile.Id };
         duplicateItem.Click += DuplicateMenuItem_Click;
         menuFlyout.Items.Add(duplicateItem);
 
-        var exportItem = new MenuFlyoutItem { Text = "Export", Tag = profile.Id };
+        var exportItem = new MenuFlyoutItem { Text = Loc.Get("Profiles_Export"), Tag = profile.Id };
         exportItem.Click += ExportMenuItem_Click;
         menuFlyout.Items.Add(exportItem);
 
@@ -193,7 +207,7 @@ public sealed partial class ProfilesContent : UserControl
 
         var deleteItem = new MenuFlyoutItem
         {
-            Text = "Delete",
+            Text = Loc.Get("Profiles_Delete"),
             Tag = profile.Id,
             Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 237, 66, 69))
         };
@@ -214,7 +228,7 @@ public sealed partial class ProfilesContent : UserControl
     {
         if (_profileService == null) return;
 
-        var result = await ShowProfileNameDialogAsync("New Profile", "Create", "New Profile", null);
+        var result = await ShowProfileNameDialogAsync(Loc.Get("Profiles_NewProfileDialog"), Loc.Get("Profiles_Create"), Loc.Get("Profiles_NewProfile"), null);
         if (result != null)
         {
             await _profileService.CreateProfileAsync(result);
@@ -237,7 +251,7 @@ public sealed partial class ProfilesContent : UserControl
         {
             Title = title,
             PrimaryButtonText = primaryButtonText,
-            CloseButtonText = "Cancel",
+            CloseButtonText = Loc.Get("Cancel"),
             DefaultButton = ContentDialogButton.Primary,
             XamlRoot = this.XamlRoot
         };
@@ -246,7 +260,7 @@ public sealed partial class ProfilesContent : UserControl
 
         var textBox = new TextBox
         {
-            PlaceholderText = "Profile name",
+            PlaceholderText = Loc.Get("Profiles_NamePlaceholder"),
             Text = initialName
         };
 
@@ -309,7 +323,7 @@ public sealed partial class ProfilesContent : UserControl
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            return "Profile name cannot be empty.";
+            return Loc.Get("Profiles_NameEmpty");
         }
 
         if (_profileService == null) return null;
@@ -322,7 +336,7 @@ public sealed partial class ProfilesContent : UserControl
 
         if (duplicate != null)
         {
-            return "A profile with this name already exists.";
+            return Loc.Get("Profiles_NameExists");
         }
 
         return null;
@@ -357,7 +371,7 @@ public sealed partial class ProfilesContent : UserControl
                     : suggestedName;
 
                 // Show dialog with validation
-                var finalName = await ShowProfileNameDialogAsync("Import Profile", "Import", initialName, null);
+                var finalName = await ShowProfileNameDialogAsync(Loc.Get("Profiles_ImportDialog"), Loc.Get("Profiles_Import"), initialName, null);
                 if (finalName == null) return;
 
                 await _profileService.ImportProfileAsync(file.Path, finalName);
@@ -368,9 +382,9 @@ public sealed partial class ProfilesContent : UserControl
             {
                 var errorDialog = new ContentDialog
                 {
-                    Title = "Import Failed",
-                    Content = $"Failed to import profile: {ex.Message}",
-                    CloseButtonText = "OK",
+                    Title = Loc.Get("Profiles_ImportFailed"),
+                    Content = Loc.Get("Profiles_FailedMsg", Loc.Get("Profiles_Import").ToLower(), ex.Message),
+                    CloseButtonText = Loc.Get("OK"),
                     XamlRoot = this.XamlRoot
                 };
                 await errorDialog.ShowAsync();
@@ -401,7 +415,7 @@ public sealed partial class ProfilesContent : UserControl
         if (profile == null) return;
 
         // Pass profileId as excludeProfileId so renaming to the same name is allowed
-        var result = await ShowProfileNameDialogAsync("Rename Profile", "Rename", profile.Name, profileId);
+        var result = await ShowProfileNameDialogAsync(Loc.Get("Profiles_RenameDialog"), Loc.Get("Profiles_Rename"), profile.Name, profileId);
         if (result != null)
         {
             await _profileService.RenameProfileAsync(profileId, result);
@@ -424,7 +438,7 @@ public sealed partial class ProfilesContent : UserControl
             ? _profileService.GetUniqueProfileName(suggestedName)
             : suggestedName;
 
-        var result = await ShowProfileNameDialogAsync("Duplicate Profile", "Duplicate", initialName, null);
+        var result = await ShowProfileNameDialogAsync(Loc.Get("Profiles_DuplicateDialog"), Loc.Get("Profiles_Duplicate"), initialName, null);
         if (result != null)
         {
             await _profileService.DuplicateProfileAsync(profileId, result);
@@ -460,9 +474,9 @@ public sealed partial class ProfilesContent : UserControl
 
                 var successDialog = new ContentDialog
                 {
-                    Title = "Exported",
-                    Content = $"Profile \"{profile.Name}\" exported successfully.",
-                    CloseButtonText = "OK",
+                    Title = Loc.Get("Profiles_Exported"),
+                    Content = Loc.Get("Profiles_ExportedMsg", profile.Name),
+                    CloseButtonText = Loc.Get("OK"),
                     XamlRoot = this.XamlRoot
                 };
                 await successDialog.ShowAsync();
@@ -471,9 +485,9 @@ public sealed partial class ProfilesContent : UserControl
             {
                 var errorDialog = new ContentDialog
                 {
-                    Title = "Export Failed",
-                    Content = $"Failed to export profile: {ex.Message}",
-                    CloseButtonText = "OK",
+                    Title = Loc.Get("Profiles_ExportFailed"),
+                    Content = Loc.Get("Profiles_FailedMsg", Loc.Get("Profiles_Export").ToLower(), ex.Message),
+                    CloseButtonText = Loc.Get("OK"),
                     XamlRoot = this.XamlRoot
                 };
                 await errorDialog.ShowAsync();
@@ -494,9 +508,9 @@ public sealed partial class ProfilesContent : UserControl
         {
             var errorDialog = new ContentDialog
             {
-                Title = "Cannot Delete",
-                Content = "You cannot delete the last remaining profile.",
-                CloseButtonText = "OK",
+                Title = Loc.Get("Profiles_CannotDeleteLast"),
+                Content = Loc.Get("Profiles_CannotDeleteLastMsg"),
+                CloseButtonText = Loc.Get("OK"),
                 XamlRoot = this.XamlRoot
             };
             await errorDialog.ShowAsync();
@@ -505,10 +519,10 @@ public sealed partial class ProfilesContent : UserControl
 
         var dialog = new ContentDialog
         {
-            Title = "Delete Profile",
-            Content = $"Are you sure you want to delete \"{profile.Name}\"?\n\nThis will permanently delete all rules, categories, and settings in this profile.",
-            PrimaryButtonText = "Delete",
-            CloseButtonText = "Cancel",
+            Title = Loc.Get("Profiles_DeleteDialog"),
+            Content = Loc.Get("Profiles_DeleteConfirm", profile.Name),
+            PrimaryButtonText = Loc.Get("Delete"),
+            CloseButtonText = Loc.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = this.XamlRoot
         };

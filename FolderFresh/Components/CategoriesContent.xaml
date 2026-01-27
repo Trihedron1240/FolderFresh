@@ -23,6 +23,7 @@
 
                 <!-- Title -->
                 <TextBlock Grid.Column="0"
+                           x:Name="TitleText"
                            Text="Categories"
                            FontSize="20"
                            FontWeight="SemiBold"
@@ -32,7 +33,7 @@
                 <!-- New Category Button -->
                 <Button Grid.Column="1"
                         x:Name="NewCategoryButton"
-                        Background="#60CDFF"
+                        Background="#5865F2"
                         Foreground="White"
                         CornerRadius="10"
                         Height="36"
@@ -40,7 +41,7 @@
                         Click="NewCategoryButton_Click">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE710;" FontSize="12"/>
-                        <TextBlock Text="New Category" FontSize="13" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="NewCategoryButtonText" Text="New Category" FontSize="13" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -54,7 +55,8 @@
                           Padding="24,0,24,24">
                 <StackPanel Spacing="12">
                     <!-- Default Categories Section -->
-                    <TextBlock Text="DEFAULT CATEGORIES"
+                    <TextBlock x:Name="DefaultCategoriesLabel"
+                               Text="DEFAULT CATEGORIES"
                                FontSize="10"
                                FontWeight="SemiBold"
                                Foreground="#666666"
@@ -84,7 +86,7 @@
                             Visibility="{x:Bind HasCustomCategories, Mode=OneWay}"/>
 
                     <!-- Custom Categories Section -->
-                    <TextBlock x:Name="CustomCategoriesLabel"
+                    <TextBlock x:Name="CustomCategoriesLabelText"
                                Text="CUSTOM CATEGORIES"
                                FontSize="10"
                                FontWeight="SemiBold"

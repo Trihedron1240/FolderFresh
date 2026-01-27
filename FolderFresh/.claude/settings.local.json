@@ -7,7 +7,18 @@
       "Bash(dotnet build:*)",
       "Bash(dotnet test:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(cmd /c \"dir /s /b C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin\\\\Debug\\\\*.pri 2>NUL\")",
+      "Bash(cmd /c \"dir /s C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin 2>NUL\")",
+      "Bash(cmd /c \"if exist C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin \\(echo EXISTS\\) else \\(echo NOT EXISTS\\)\")",
+      "Bash(cmd /c \"dir /b C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin\\\\Debug\\\\net9.0-windows10.0.22621\\\\win-x64\\\\Languages 2>NUL || echo NOT FOUND\")",
+      "Bash(cmd /c \"dir /s /b C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin\\\\Debug\\\\net9.0-windows10.0.22621\\\\*.json 2>NUL\")",
+      "Bash(cmd /c \"dir C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\Languages\")",
+      "Bash(dotnet clean:*)",
+      "Bash(cmd /c \"if exist C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin\\\\Debug\\\\net9.0-windows10.0.22621\\\\win-x64\\\\Languages \\(dir C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin\\\\Debug\\\\net9.0-windows10.0.22621\\\\win-x64\\\\Languages\\) else \\(echo Languages folder not found\\)\")",
+      "Bash(cmd /c \"dir /b C:\\\\Users\\\\tristan\\\\Desktop\\\\FolderFresh-repo\\\\FolderFresh\\\\bin\\\\Debug\\\\net9.0-windows10.0.22621\")",
+      "Bash(powershell:*)"
     ]
   }
 }

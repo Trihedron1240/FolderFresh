@@ -47,7 +47,20 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
         _folderWatcherManager = folderWatcherManager;
         _watchedFolderService = watchedFolderService;
 
+        ApplyLocalization();
         PopulateDialog();
+    }
+
+    private void ApplyLocalization()
+    {
+        Title = Loc.Get("Preview_Title");
+        PrimaryButtonText = Loc.Get("Preview_OrganizeNow");
+        CloseButtonText = Loc.Get("Cancel");
+        ScannedLabel.Text = Loc.Get("Preview_Scanned");
+        ToOrganizeLabel.Text = Loc.Get("Preview_ToOrganize");
+        AlreadyDoneLabel.Text = Loc.Get("Preview_AlreadyDone");
+        IgnoredLabel.Text = Loc.Get("Preview_Ignored");
+        ProgressText.Text = Loc.Get("Preview_OrganizingFiles");
     }
 
     private void PopulateDialog()
@@ -55,16 +68,21 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
         // Header info
         FolderNameText.Text = _folder.DisplayName;
         FolderPathText.Text = _folder.FolderPath;
-        ProfileText.Text = $"Using profile: {_folder.ProfileName ?? "Unknown"}";
+        ProfileText.Text = string.Format(Loc.Get("Preview_UsingProfile"), _folder.ProfileName ?? "Unknown");
 
         // Summary stats
         TotalScannedText.Text = _previewResult.TotalFilesScanned.ToString();
         ToOrganizeText.Text = _previewResult.FilesWouldMove.ToString();
 
-        var alreadyDone = _previewResult.PreviewResults.Count(r => !r.WillBeOrganized && r.MatchedBy != OrganizeMatchType.None);
-        AlreadyDoneText.Text = _previewResult.FilesSkipped.ToString();
+        // Already Done = files that matched but are already in correct location (excluding ignored by rule)
+        var alreadyDone = _previewResult.PreviewResults.Count(r =>
+            !r.WillBeOrganized &&
+            r.MatchedBy != OrganizeMatchType.None &&
+            !r.IsIgnoredByRule);
+        AlreadyDoneText.Text = alreadyDone.ToString();
 
-        var ignored = _previewResult.PreviewResults.Count(r => r.MatchedBy == OrganizeMatchType.None);
+        // Ignored = files with no match OR explicitly ignored by a rule
+        var ignored = _previewResult.PreviewResults.Count(r => r.MatchedBy == OrganizeMatchType.None || r.IsIgnoredByRule);
         IgnoredText.Text = ignored.ToString();
 
         // Warnings
@@ -97,7 +115,7 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
         {
             var emptyMessage = new TextBlock
             {
-                Text = "No files need to be organized. All files are already in their correct locations.",
+                Text = Loc.Get("Preview_NoFilesToOrganize"),
                 FontSize = 13,
                 Foreground = new SolidColorBrush(Color.FromArgb(255, 136, 136, 136)),
                 TextWrapping = TextWrapping.Wrap,
@@ -120,14 +138,17 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
             DestinationGroupsPanel.Children.Add(groupPanel);
         }
 
-        // Show ignored files section if any
+        // Show ignored files section if any (both unmatched and explicitly ignored by rule)
         var ignoredFiles = _previewResult.PreviewResults
-            .Where(r => r.MatchedBy == OrganizeMatchType.None)
+            .Where(r => r.MatchedBy == OrganizeMatchType.None || r.IsIgnoredByRule)
             .ToList();
 
         if (ignoredFiles.Count > 0)
         {
-            var ignoredGroup = BuildGroupExpander("[No Match - Stays in Place]", ignoredFiles, isIgnored: true);
+            var label = ignoredFiles.Any(r => r.IsIgnoredByRule)
+                ? Loc.Get("Preview_IgnoredStaysInPlace")
+                : Loc.Get("Preview_NoMatchStaysInPlace");
+            var ignoredGroup = BuildGroupExpander(label, ignoredFiles, isIgnored: true);
             DestinationGroupsPanel.Children.Add(ignoredGroup);
         }
     }
@@ -188,7 +209,7 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
         };
         countBadge.Child = new TextBlock
         {
-            Text = $"{files.Count} files",
+            Text = string.Format(Loc.Get("Preview_Files"), files.Count),
             FontSize = 11,
             Foreground = new SolidColorBrush(Color.FromArgb(255, 153, 153, 153))
         };
@@ -246,7 +267,7 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
         {
             var moreText = new TextBlock
             {
-                Text = $"+ {files.Count - 5} more files",
+                Text = string.Format(Loc.Get("Preview_MoreFiles"), files.Count - 5),
                 FontSize = 11,
                 Foreground = new SolidColorBrush(Color.FromArgb(255, 102, 102, 102)),
                 FontStyle = Windows.UI.Text.FontStyle.Italic,
@@ -280,10 +301,10 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
             {
                 DispatcherQueue.TryEnqueue(() =>
                 {
-                    ProgressDetailText.Text = $"{p.CurrentFile} of {p.TotalFiles} files";
+                    ProgressDetailText.Text = string.Format(Loc.Get("Preview_FilesProgress"), p.CurrentFile, p.TotalFiles);
                     if (!string.IsNullOrEmpty(p.CurrentFileName))
                     {
-                        ProgressText.Text = $"Organizing: {p.CurrentFileName}";
+                        ProgressText.Text = string.Format(Loc.Get("Preview_Organizing"), p.CurrentFileName);
                     }
                 });
             });
@@ -300,7 +321,7 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
             // Show error
             ProgressOverlay.Visibility = Visibility.Collapsed;
             WarningsPanel.Visibility = Visibility.Visible;
-            WarningsText.Text = $"Organization failed: {ex.Message}";
+            WarningsText.Text = string.Format(Loc.Get("Preview_OrganizationFailed"), ex.Message);
             IsPrimaryButtonEnabled = false;
             IsSecondaryButtonEnabled = true;
             _isOrganizing = false;

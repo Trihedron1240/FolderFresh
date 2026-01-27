@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using FolderFresh.Models;
+using FolderFresh.Services;
 
 namespace FolderFresh.Components;
 
@@ -16,106 +17,106 @@ public sealed partial class ConditionRow : UserControl
     public event EventHandler<Condition>? ConditionChanged;
     public event EventHandler<Condition>? DeleteRequested;
 
-    // Operator options for each attribute type
-    private static readonly Dictionary<ConditionAttribute, List<(ConditionOperator Op, string Display)>> OperatorsByAttribute = new()
+    // Operator options for each attribute type - using ConditionOperator enum as keys
+    private static readonly Dictionary<ConditionAttribute, List<ConditionOperator>> OperatorsByAttribute = new()
     {
         {
             ConditionAttribute.Name, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsNot, "is not"),
-                (ConditionOperator.Contains, "contains"),
-                (ConditionOperator.DoesNotContain, "does not contain"),
-                (ConditionOperator.StartsWith, "starts with"),
-                (ConditionOperator.EndsWith, "ends with"),
-                (ConditionOperator.MatchesPattern, "matches pattern")
+                ConditionOperator.Is,
+                ConditionOperator.IsNot,
+                ConditionOperator.Contains,
+                ConditionOperator.DoesNotContain,
+                ConditionOperator.StartsWith,
+                ConditionOperator.EndsWith,
+                ConditionOperator.MatchesPattern
             }
         },
         {
             ConditionAttribute.Extension, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsNot, "is not"),
-                (ConditionOperator.Contains, "contains"),
-                (ConditionOperator.StartsWith, "starts with"),
-                (ConditionOperator.EndsWith, "ends with")
+                ConditionOperator.Is,
+                ConditionOperator.IsNot,
+                ConditionOperator.Contains,
+                ConditionOperator.StartsWith,
+                ConditionOperator.EndsWith
             }
         },
         {
             ConditionAttribute.FullName, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsNot, "is not"),
-                (ConditionOperator.Contains, "contains"),
-                (ConditionOperator.DoesNotContain, "does not contain"),
-                (ConditionOperator.StartsWith, "starts with"),
-                (ConditionOperator.EndsWith, "ends with"),
-                (ConditionOperator.MatchesPattern, "matches pattern")
+                ConditionOperator.Is,
+                ConditionOperator.IsNot,
+                ConditionOperator.Contains,
+                ConditionOperator.DoesNotContain,
+                ConditionOperator.StartsWith,
+                ConditionOperator.EndsWith,
+                ConditionOperator.MatchesPattern
             }
         },
         {
             ConditionAttribute.Kind, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsNot, "is not")
+                ConditionOperator.Is,
+                ConditionOperator.IsNot
             }
         },
         {
             ConditionAttribute.Size, new()
             {
-                (ConditionOperator.IsGreaterThan, "is greater than"),
-                (ConditionOperator.IsLessThan, "is less than")
+                ConditionOperator.IsGreaterThan,
+                ConditionOperator.IsLessThan
             }
         },
         {
             ConditionAttribute.DateCreated, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsBefore, "is before"),
-                (ConditionOperator.IsAfter, "is after"),
-                (ConditionOperator.IsInTheLast, "is in the last")
+                ConditionOperator.Is,
+                ConditionOperator.IsBefore,
+                ConditionOperator.IsAfter,
+                ConditionOperator.IsInTheLast
             }
         },
         {
             ConditionAttribute.DateModified, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsBefore, "is before"),
-                (ConditionOperator.IsAfter, "is after"),
-                (ConditionOperator.IsInTheLast, "is in the last")
+                ConditionOperator.Is,
+                ConditionOperator.IsBefore,
+                ConditionOperator.IsAfter,
+                ConditionOperator.IsInTheLast
             }
         },
         {
             ConditionAttribute.DateAccessed, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsBefore, "is before"),
-                (ConditionOperator.IsAfter, "is after"),
-                (ConditionOperator.IsInTheLast, "is in the last")
+                ConditionOperator.Is,
+                ConditionOperator.IsBefore,
+                ConditionOperator.IsAfter,
+                ConditionOperator.IsInTheLast
             }
         },
         {
             ConditionAttribute.Folder, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsNot, "is not"),
-                (ConditionOperator.Contains, "contains"),
-                (ConditionOperator.DoesNotContain, "does not contain"),
-                (ConditionOperator.StartsWith, "starts with"),
-                (ConditionOperator.EndsWith, "ends with"),
-                (ConditionOperator.MatchesPattern, "matches pattern")
+                ConditionOperator.Is,
+                ConditionOperator.IsNot,
+                ConditionOperator.Contains,
+                ConditionOperator.DoesNotContain,
+                ConditionOperator.StartsWith,
+                ConditionOperator.EndsWith,
+                ConditionOperator.MatchesPattern
             }
         },
         {
             ConditionAttribute.FolderPath, new()
             {
-                (ConditionOperator.Is, "is"),
-                (ConditionOperator.IsNot, "is not"),
-                (ConditionOperator.Contains, "contains"),
-                (ConditionOperator.DoesNotContain, "does not contain"),
-                (ConditionOperator.StartsWith, "starts with"),
-                (ConditionOperator.EndsWith, "ends with"),
-                (ConditionOperator.MatchesPattern, "matches pattern")
+                ConditionOperator.Is,
+                ConditionOperator.IsNot,
+                ConditionOperator.Contains,
+                ConditionOperator.DoesNotContain,
+                ConditionOperator.StartsWith,
+                ConditionOperator.EndsWith,
+                ConditionOperator.MatchesPattern
             }
         }
     };
@@ -124,8 +125,107 @@ public sealed partial class ConditionRow : UserControl
     {
         this.InitializeComponent();
 
+        ApplyLocalization();
+
         // Set default selection
         AttributeComboBox.SelectedIndex = 0;
+
+        // Subscribe to language changes
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        _isUpdating = true;
+        try
+        {
+            var selectedAttrIndex = AttributeComboBox.SelectedIndex;
+            var selectedOpIndex = OperatorComboBox.SelectedIndex;
+            var selectedKindIndex = KindValueComboBox.SelectedIndex;
+            var selectedDateUnitIndex = RelativeDateUnitComboBox.SelectedIndex;
+
+            PopulateAttributeDropdown();
+            PopulateKindDropdown();
+            PopulateDateUnitDropdown();
+
+            if (selectedAttrIndex >= 0)
+                AttributeComboBox.SelectedIndex = selectedAttrIndex;
+            if (selectedKindIndex >= 0)
+                KindValueComboBox.SelectedIndex = selectedKindIndex;
+            if (selectedDateUnitIndex >= 0)
+                RelativeDateUnitComboBox.SelectedIndex = selectedDateUnitIndex;
+
+            UpdateOperators();
+            if (selectedOpIndex >= 0 && selectedOpIndex < OperatorComboBox.Items.Count)
+            {
+                OperatorComboBox.SelectedIndex = selectedOpIndex;
+            }
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+
+    private void PopulateAttributeDropdown()
+    {
+        AttributeComboBox.Items.Clear();
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_Name"), Tag = "Name" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_Extension"), Tag = "Extension" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_FullName"), Tag = "FullName" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_Kind"), Tag = "Kind" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_Folder"), Tag = "Folder" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_FolderPath"), Tag = "FolderPath" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_Size"), Tag = "Size" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_DateCreated"), Tag = "DateCreated" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_DateModified"), Tag = "DateModified" });
+        AttributeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Condition_DateAccessed"), Tag = "DateAccessed" });
+    }
+
+    private void PopulateKindDropdown()
+    {
+        KindValueComboBox.Items.Clear();
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Document"), Tag = "Document" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Image"), Tag = "Image" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Audio"), Tag = "Audio" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Video"), Tag = "Video" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Archive"), Tag = "Archive" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_PDF"), Tag = "PDF" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Executable"), Tag = "Executable" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Code"), Tag = "Code" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Text"), Tag = "Text" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Spreadsheet"), Tag = "Spreadsheet" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Presentation"), Tag = "Presentation" });
+        KindValueComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Kind_Other"), Tag = "Other" });
+    }
+
+    private void PopulateDateUnitDropdown()
+    {
+        RelativeDateUnitComboBox.Items.Clear();
+        RelativeDateUnitComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("DateUnit_Days"), Tag = "days" });
+        RelativeDateUnitComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("DateUnit_Weeks"), Tag = "weeks" });
+        RelativeDateUnitComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("DateUnit_Months"), Tag = "months" });
+        RelativeDateUnitComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("DateUnit_Years"), Tag = "years" });
+    }
+
+    private static string GetOperatorDisplayText(ConditionOperator op)
+    {
+        return op switch
+        {
+            ConditionOperator.Is => Loc.Get("Operator_Is"),
+            ConditionOperator.IsNot => Loc.Get("Operator_IsNot"),
+            ConditionOperator.Contains => Loc.Get("Operator_Contains"),
+            ConditionOperator.DoesNotContain => Loc.Get("Operator_DoesNotContain"),
+            ConditionOperator.StartsWith => Loc.Get("Operator_StartsWith"),
+            ConditionOperator.EndsWith => Loc.Get("Operator_EndsWith"),
+            ConditionOperator.MatchesPattern => Loc.Get("Operator_MatchesPattern"),
+            ConditionOperator.IsGreaterThan => Loc.Get("Operator_IsGreaterThan"),
+            ConditionOperator.IsLessThan => Loc.Get("Operator_IsLessThan"),
+            ConditionOperator.IsBefore => Loc.Get("Operator_IsBefore"),
+            ConditionOperator.IsAfter => Loc.Get("Operator_IsAfter"),
+            ConditionOperator.IsInTheLast => Loc.Get("Operator_IsInTheLast"),
+            _ => op.ToString()
+        };
     }
 
     public Condition? Condition
@@ -303,11 +403,11 @@ public sealed partial class ConditionRow : UserControl
 
         if (OperatorsByAttribute.TryGetValue(attribute, out var operators))
         {
-            foreach (var (op, display) in operators)
+            foreach (var op in operators)
             {
                 OperatorComboBox.Items.Add(new ComboBoxItem
                 {
-                    Content = display,
+                    Content = GetOperatorDisplayText(op),
                     Tag = op
                 });
             }

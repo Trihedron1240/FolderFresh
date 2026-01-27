@@ -93,5 +93,11 @@ public class FileOrganizeResult
     /// <summary>
     /// Whether this file will be organized
     /// </summary>
-    public bool WillBeOrganized => MatchedBy != OrganizeMatchType.None && AllDestinations.Count > 0;
+    public bool WillBeOrganized => MatchedBy != OrganizeMatchType.None && AllDestinations.Count > 0 && !IsIgnoredByRule;
+
+    /// <summary>
+    /// Whether this file was explicitly ignored by a rule's Ignore action
+    /// </summary>
+    public bool IsIgnoredByRule => MatchedBy == OrganizeMatchType.Rule &&
+                                   Actions.Any(a => a.Type == ActionType.Ignore);
 }

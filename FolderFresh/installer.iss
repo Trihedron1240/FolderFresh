@@ -2,7 +2,7 @@
 ; Download Inno Setup from https://jrsoftware.org/isinfo.php
 
 #define MyAppName "FolderFresh"
-#define MyAppVersion "3.0.1-beta"
+#define MyAppVersion "3.0.2-beta"
 #define MyAppPublisher "FolderFresh"
 #define MyAppExeName "FolderFresh.exe"
 #define MyAppId "{{B8F2E4A1-5C3D-4E6F-9A8B-7C0D1E2F3A4B}"

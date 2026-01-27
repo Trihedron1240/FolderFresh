@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="0" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>1.3</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Navigation (x:Uid bindings use .Content for NavigationViewItem) -->
+  <data name="Nav_Home.Content" xml:space="preserve">
+    <value>Головна</value>
+  </data>
+  <data name="Nav_Folders.Content" xml:space="preserve">
+    <value>Папки</value>
+  </data>
+  <data name="Nav_Rules.Content" xml:space="preserve">
+    <value>Правила</value>
+  </data>
+  <data name="Nav_Categories.Content" xml:space="preserve">
+    <value>Категорії</value>
+  </data>
+  <data name="Nav_Profiles.Content" xml:space="preserve">
+    <value>Профілі</value>
+  </data>
+  <data name="Nav_Snapshots.Content" xml:space="preserve">
+    <value>Знімки</value>
+  </data>
+  <data name="Nav_Settings.Content" xml:space="preserve">
+    <value>Налаштування</value>
+  </data>
+
+  <!-- Main Page (x:Uid bindings use .Text for TextBlock, .Content for Button) -->
+  <data name="AppTitle" xml:space="preserve">
+    <value>FolderFresh 3.0.2 Beta</value>
+  </data>
+  <data name="SelectFolder.Text" xml:space="preserve">
+    <value>Вибрати папку...</value>
+  </data>
+  <data name="Current.Text" xml:space="preserve">
+    <value>ПОТОЧНИЙ</value>
+  </data>
+  <data name="After.Text" xml:space="preserve">
+    <value>ПІСЛЯ</value>
+  </data>
+  <data name="SelectFolderToPreview.Text" xml:space="preserve">
+    <value>Виберіть папку для попереднього перегляду</value>
+  </data>
+  <data name="OrganizedPreview.Text" xml:space="preserve">
+    <value>Організований попередній перегляд</value>
+  </data>
+  <data name="NoFilesToOrganize" xml:space="preserve">
+    <value>Немає файлів для організації</value>
+  </data>
+  <data name="OrganizeNow.Content" xml:space="preserve">
+    <value>Організувати зараз</value>
+  </data>
+  <data name="Undo.Content" xml:space="preserve">
+    <value>Скасувати</value>
+  </data>
+
+  <!-- Settings Page -->
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Налаштування</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>МОВА</value>
+  </data>
+  <data name="Settings_LanguageDesc" xml:space="preserve">
+    <value>Виберіть бажану мову</value>
+  </data>
+  <data name="Settings_LanguageRestart" xml:space="preserve">
+    <value>Перезапустіть програму, щоб зміни набули чинності</value>
+  </data>
+  <data name="Settings_OrganizationMode" xml:space="preserve">
+    <value>РЕЖИМ ОРГАНІЗАЦІЇ</value>
+  </data>
+  <data name="Settings_OrganizationModeDesc" xml:space="preserve">
+    <value>Виберіть, як файли будуть відповідати критеріям</value>
+  </data>
+  <data name="Settings_RulesFirst" xml:space="preserve">
+    <value>Спочатку правила, потім категорії</value>
+  </data>
+  <data name="Settings_RulesFirstDesc" xml:space="preserve">
+    <value>Рекомендовано - Правила перевіряються першими, невідповідні файли використовують категорії</value>
+  </data>
+  <data name="Settings_CategoriesOnly" xml:space="preserve">
+    <value>Тільки категорії</value>
+  </data>
+  <data name="Settings_CategoriesOnlyDesc" xml:space="preserve">
+    <value>Простий режим - Використовувати тільки організацію за категоріями</value>
+  </data>
+  <data name="Settings_RulesOnly" xml:space="preserve">
+    <value>Тільки правила</value>
+  </data>
+  <data name="Settings_RulesOnlyDesc" xml:space="preserve">
+    <value>Розширений - Організовуються тільки файли, що відповідають правилам</value>
+  </data>
+  <data name="Settings_Notifications" xml:space="preserve">
+    <value>СПОВІЩЕННЯ</value>
+  </data>
+  <data name="Settings_ShowNotifications" xml:space="preserve">
+    <value>Показувати сповіщення при організації</value>
+  </data>
+  <data name="Settings_ShowNotificationsDesc" xml:space="preserve">
+    <value>Показувати сповіщення, коли файли організовуються</value>
+  </data>
+  <data name="Settings_FileScanning" xml:space="preserve">
+    <value>СКАНУВАННЯ ФАЙЛІВ</value>
+  </data>
+  <data name="Settings_IncludeSubfolders" xml:space="preserve">
+    <value>Включати підпапки</value>
+  </data>
+  <data name="Settings_IncludeSubfoldersDesc" xml:space="preserve">
+    <value>Організовувати файли в підпапках, не тільки в кореневій</value>
+  </data>
+  <data name="Settings_IgnoreHidden" xml:space="preserve">
+    <value>Ігнорувати приховані файли</value>
+  </data>
+  <data name="Settings_IgnoreHiddenDesc" xml:space="preserve">
+    <value>Пропускати файли та папки, позначені як приховані</value>
+  </data>
+  <data name="Settings_IgnoreSystem" xml:space="preserve">
+    <value>Ігнорувати системні файли</value>
+  </data>
+  <data name="Settings_IgnoreSystemDesc" xml:space="preserve">
+    <value>Пропускати файли та папки, позначені як системні</value>
+  </data>
+  <data name="Settings_SystemTray" xml:space="preserve">
+    <value>СИСТЕМНИЙ ЛОТОК</value>
+  </data>
+  <data name="Settings_MinimizeToTray" xml:space="preserve">
+    <value>Згортати в лоток</value>
+  </data>
+  <data name="Settings_MinimizeToTrayDesc" xml:space="preserve">
+    <value>Згортати в системний лоток замість панелі завдань</value>
+  </data>
+  <data name="Settings_CloseToTray" xml:space="preserve">
+    <value>Закривати в лоток</value>
+  </data>
+  <data name="Settings_CloseToTrayDesc" xml:space="preserve">
+    <value>Продовжувати роботу в лотку при закритті вікна</value>
+  </data>
+  <data name="Settings_StartMinimized" xml:space="preserve">
+    <value>Запускати згорнутим</value>
+  </data>
+  <data name="Settings_StartMinimizedDesc" xml:space="preserve">
+    <value>Запускати програму згорнутою в лоток</value>
+  </data>
+  <data name="Settings_RunOnStartup" xml:space="preserve">
+    <value>Запускати при старті</value>
+  </data>
+  <data name="Settings_RunOnStartupDesc" xml:space="preserve">
+    <value>Автоматично запускати FolderFresh при вході в систему</value>
+  </data>
+  <data name="Settings_Safety" xml:space="preserve">
+    <value>БЕЗПЕКА</value>
+  </data>
+  <data name="Settings_RecycleBin" xml:space="preserve">
+    <value>Переміщувати в кошик замість остаточного видалення</value>
+  </data>
+  <data name="Settings_RecycleBinDesc" xml:space="preserve">
+    <value>При видаленні файли потрапляють до кошика</value>
+  </data>
+  <data name="Settings_Confirm" xml:space="preserve">
+    <value>Підтверджувати перед організацією</value>
+  </data>
+  <data name="Settings_ConfirmDesc" xml:space="preserve">
+    <value>Показувати діалог підтвердження перед переміщенням файлів</value>
+  </data>
+  <data name="Settings_About" xml:space="preserve">
+    <value>ПРО ПРОГРАМУ</value>
+  </data>
+  <data name="Settings_Version" xml:space="preserve">
+    <value>Версія 3.0.2-beta</value>
+  </data>
+  <data name="Settings_Description" xml:space="preserve">
+    <value>Потужний інструмент організації файлів з правилами та категоріями</value>
+  </data>
+
+  <!-- Rules Page -->
+  <data name="Rules_Title" xml:space="preserve">
+    <value>Правила</value>
+  </data>
+  <data name="Rules_NewRule" xml:space="preserve">
+    <value>Нове правило</value>
+  </data>
+  <data name="Rules_CreateRule" xml:space="preserve">
+    <value>Створити правило</value>
+  </data>
+  <data name="Rules_EmptyTitle" xml:space="preserve">
+    <value>Ще немає правил</value>
+  </data>
+  <data name="Rules_EmptyDesc" xml:space="preserve">
+    <value>Створіть правила для організації файлів за власними умовами</value>
+  </data>
+
+  <!-- Categories Page -->
+  <data name="Categories_Title" xml:space="preserve">
+    <value>Категорії</value>
+  </data>
+  <data name="Categories_NewCategory" xml:space="preserve">
+    <value>Нова категорія</value>
+  </data>
+  <data name="Categories_CreateCategory" xml:space="preserve">
+    <value>Створити категорію</value>
+  </data>
+  <data name="Categories_EmptyTitle" xml:space="preserve">
+    <value>Ще немає категорій</value>
+  </data>
+  <data name="Categories_EmptyDesc" xml:space="preserve">
+    <value>Створіть категорії для організації файлів за типом</value>
+  </data>
+
+  <!-- Folders Page -->
+  <data name="Folders_Title" xml:space="preserve">
+    <value>Відстежувані папки</value>
+  </data>
+  <data name="Folders_AddFolder" xml:space="preserve">
+    <value>Додати папку</value>
+  </data>
+  <data name="Folders_EmptyTitle" xml:space="preserve">
+    <value>Немає відстежуваних папок</value>
+  </data>
+  <data name="Folders_EmptyDesc" xml:space="preserve">
+    <value>Додайте папки для автоматичної організації файлів при їх додаванні</value>
+  </data>
+
+  <!-- Profiles Page -->
+  <data name="Profiles_Title" xml:space="preserve">
+    <value>Профілі</value>
+  </data>
+  <data name="Profiles_NewProfile" xml:space="preserve">
+    <value>Новий профіль</value>
+  </data>
+  <data name="Profiles_EmptyTitle" xml:space="preserve">
+    <value>Ще немає профілів</value>
+  </data>
+  <data name="Profiles_EmptyDesc" xml:space="preserve">
+    <value>Створіть профілі для збереження різних конфігурацій правил і категорій</value>
+  </data>
+
+  <!-- Snapshots Page -->
+  <data name="Snapshots_Title" xml:space="preserve">
+    <value>Знімки</value>
+  </data>
+  <data name="Snapshots_Subtitle" xml:space="preserve">
+    <value>Збереження та відновлення станів папок</value>
+  </data>
+  <data name="Snapshots_NewSnapshot" xml:space="preserve">
+    <value>Новий знімок</value>
+  </data>
+  <data name="Snapshots_CreateSnapshot" xml:space="preserve">
+    <value>Створити знімок</value>
+  </data>
+  <data name="Snapshots_EmptyTitle" xml:space="preserve">
+    <value>Ще немає знімків</value>
+  </data>
+  <data name="Snapshots_EmptyDesc" xml:space="preserve">
+    <value>Створіть знімок, щоб зберегти поточний стан папки</value>
+  </data>
+  <data name="Snapshots_Warning" xml:space="preserve">
+    <value>Знімки створюють повні копії ваших файлів і можуть займати значний обсяг диска. Файли зберігаються в папці даних FolderFresh. При відновленні всі зміни у файлах після знімка будуть перезаписані.</value>
+  </data>
+  <data name="Snapshots_StorageUsed" xml:space="preserve">
+    <value>Використано сховища:</value>
+  </data>
+  <data name="Snapshots_AcrossSnapshots" xml:space="preserve">
+    <value> у {0} знімках</value>
+  </data>
+  <data name="Snapshots_OpenFolder" xml:space="preserve">
+    <value>Відкрити папку</value>
+  </data>
+  <data name="Snapshots_Restore" xml:space="preserve">
+    <value>Відновити</value>
+  </data>
+  <data name="Snapshots_Rename" xml:space="preserve">
+    <value>Перейменувати</value>
+  </data>
+  <data name="Snapshots_Delete" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Snapshots_RestoreWarningTitle" xml:space="preserve">
+    <value>Відновити знімок?</value>
+  </data>
+  <data name="Snapshots_RestoreWarning" xml:space="preserve">
+    <value>Це відновить усі файли з цього знімка. Усі зміни у файлах після створення знімка будуть втрачені. Цю дію не можна скасувати.</value>
+  </data>
+
+  <!-- Common -->
+  <data name="Cancel" xml:space="preserve">
+    <value>Скасувати</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Зберегти</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Видалити</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Редагувати</value>
+  </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Так</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Ні</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Закрити</value>
+  </data>
+  <data name="Files" xml:space="preserve">
+    <value>файлів</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>файл</value>
+  </data>
+
+  <!-- Language Names -->
+  <data name="Lang_English" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="Lang_German" xml:space="preserve">
+    <value>Deutsch</value>
+  </data>
+  <data name="Lang_Ukrainian" xml:space="preserve">
+    <value>Українська</value>
+  </data>
+  <data name="Lang_French" xml:space="preserve">
+    <value>Français</value>
+  </data>
+</root>

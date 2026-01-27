@@ -26,6 +26,7 @@
 
             <!-- Title -->
             <TextBlock Grid.Column="0"
+                       x:Name="TitleText"
                        Text="Rules"
                        FontSize="20"
                        FontWeight="SemiBold"
@@ -40,7 +41,7 @@
                 <!-- New Rule Button -->
                 <Button x:Name="NewRuleButton"
                         Click="NewRuleButton_Click"
-                        Background="#60CDFF"
+                        Background="#5865F2"
                         Foreground="White"
                         Padding="16,8"
                         CornerRadius="6">
@@ -49,7 +50,8 @@
                                    FontFamily="Segoe MDL2 Assets"
                                    FontSize="12"
                                    VerticalAlignment="Center"/>
-                        <TextBlock Text="New Rule"
+                        <TextBlock x:Name="NewRuleButtonText"
+                                   Text="New Rule"
                                    FontSize="13"
                                    FontWeight="SemiBold"/>
                     </StackPanel>
@@ -82,6 +84,7 @@
 
                 <!-- Info Text -->
                 <TextBlock Grid.Column="1"
+                           x:Name="InfoBannerText"
                            Text="Rules are checked in order from top to bottom. The first matching rule wins. Drag rules to reorder priority."
                            FontSize="13"
                            Foreground="#999999"
@@ -116,12 +119,14 @@
                            Foreground="#404040"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,16"/>
-                <TextBlock Text="No rules yet"
+                <TextBlock x:Name="EmptyTitleText"
+                           Text="No rules yet"
                            FontSize="18"
                            Foreground="#999999"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,8"/>
-                <TextBlock Text="Rules let you automatically organize specific files based on conditions"
+                <TextBlock x:Name="EmptyDescText"
+                           Text="Rules let you automatically organize specific files based on conditions"
                            FontSize="14"
                            Foreground="#666666"
                            HorizontalAlignment="Center"
@@ -131,7 +136,7 @@
                            Margin="0,0,0,24"/>
                 <Button x:Name="CreateRuleButton"
                         Click="NewRuleButton_Click"
-                        Background="#60CDFF"
+                        Background="#5865F2"
                         Foreground="White"
                         Padding="20,10"
                         CornerRadius="6"
@@ -141,7 +146,8 @@
                                    FontFamily="Segoe MDL2 Assets"
                                    FontSize="14"
                                    VerticalAlignment="Center"/>
-                        <TextBlock Text="Create Rule"
+                        <TextBlock x:Name="CreateRuleButtonText"
+                                   Text="Create Rule"
                                    FontSize="14"
                                    FontWeight="SemiBold"/>
                     </StackPanel>
@@ -164,7 +170,7 @@
             <!-- Drop Indicator Line -->
             <Border x:Name="DropIndicator"
                     Height="2"
-                    Background="#60CDFF"
+                    Background="#5865F2"
                     HorizontalAlignment="Stretch"
                     Margin="24,0"
                     Visibility="Collapsed"

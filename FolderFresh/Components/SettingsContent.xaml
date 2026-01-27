@@ -13,21 +13,57 @@
             <StackPanel MaxWidth="600" HorizontalAlignment="Left" Spacing="24">
 
                 <!-- Header -->
-                <TextBlock Text="Settings"
+                <TextBlock x:Name="SettingsTitle"
+                           Text="Settings"
                            FontSize="28"
                            FontWeight="SemiBold"
                            Foreground="White"/>
+
+                <!-- Language Section -->
+                <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock x:Name="LanguageLabel"
+                                       Text="LANGUAGE"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="#949BA4"
+                                       CharacterSpacing="50"/>
+                            <TextBlock x:Name="LanguageDesc"
+                                       Text="Choose your preferred language"
+                                       FontSize="13"
+                                       Foreground="#B5BAC1"/>
+                        </StackPanel>
+
+                        <ComboBox x:Name="LanguageComboBox"
+                                  MinWidth="200"
+                                  SelectionChanged="LanguageComboBox_SelectionChanged">
+                            <ComboBoxItem Tag="en-US" Content="English"/>
+                            <ComboBoxItem Tag="de-DE" Content="Deutsch"/>
+                            <ComboBoxItem Tag="uk-UA" Content="Українська"/>
+                            <ComboBoxItem Tag="fr-FR" Content="Français"/>
+                        </ComboBox>
+
+                        <TextBlock x:Name="RestartHint"
+                                   Text="Restart the app for changes to take effect"
+                                   FontSize="12"
+                                   Foreground="#F0A020"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
 
                 <!-- Organization Mode Section -->
                 <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
                     <StackPanel Spacing="16">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="ORGANIZATION MODE"
+                            <TextBlock x:Name="OrganizationModeLabel"
+                                       Text="ORGANIZATION MODE"
                                        FontSize="11"
                                        FontWeight="SemiBold"
                                        Foreground="#949BA4"
                                        CharacterSpacing="50"/>
-                            <TextBlock Text="Choose how files are matched for organization"
+                            <TextBlock x:Name="OrganizationModeDesc"
+                                       Text="Choose how files are matched for organization"
                                        FontSize="13"
                                        Foreground="#B5BAC1"/>
                         </StackPanel>
@@ -39,10 +75,12 @@
                                          IsChecked="True"
                                          Checked="OrganizeMode_Changed">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="Rules first, then categories"
+                                    <TextBlock x:Name="RulesFirstText"
+                                               Text="Rules first, then categories"
                                                FontSize="14"
                                                Foreground="White"/>
-                                    <TextBlock Text="Recommended - Rules are checked first, unmatched files use categories"
+                                    <TextBlock x:Name="RulesFirstDesc"
+                                               Text="Recommended - Rules are checked first, unmatched files use categories"
                                                FontSize="12"
                                                Foreground="#949BA4"/>
                                 </StackPanel>
@@ -52,10 +90,12 @@
                                          GroupName="OrganizeMode"
                                          Checked="OrganizeMode_Changed">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="Categories only"
+                                    <TextBlock x:Name="CategoriesOnlyText"
+                                               Text="Categories only"
                                                FontSize="14"
                                                Foreground="White"/>
-                                    <TextBlock Text="Simple mode - Only use category-based organization"
+                                    <TextBlock x:Name="CategoriesOnlyDesc"
+                                               Text="Simple mode - Only use category-based organization"
                                                FontSize="12"
                                                Foreground="#949BA4"/>
                                 </StackPanel>
@@ -65,10 +105,12 @@
                                          GroupName="OrganizeMode"
                                          Checked="OrganizeMode_Changed">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="Rules only"
+                                    <TextBlock x:Name="RulesOnlyText"
+                                               Text="Rules only"
                                                FontSize="14"
                                                Foreground="White"/>
-                                    <TextBlock Text="Advanced - Only files matching rules are organized"
+                                    <TextBlock x:Name="RulesOnlyDesc"
+                                               Text="Advanced - Only files matching rules are organized"
                                                FontSize="12"
                                                Foreground="#949BA4"/>
                                 </StackPanel>
@@ -80,7 +122,8 @@
                 <!-- Notifications Section -->
                 <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="NOTIFICATIONS"
+                        <TextBlock x:Name="NotificationsLabel"
+                                   Text="NOTIFICATIONS"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="#949BA4"
@@ -93,10 +136,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Show notifications when organizing"
+                                <TextBlock x:Name="ShowNotificationsText"
+                                           Text="Show notifications when organizing"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Display a notification when files are organized"
+                                <TextBlock x:Name="ShowNotificationsDesc"
+                                           Text="Display a notification when files are organized"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -114,7 +159,8 @@
                 <!-- File Scanning Section -->
                 <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="FILE SCANNING"
+                        <TextBlock x:Name="FileScanningLabel"
+                                   Text="FILE SCANNING"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="#949BA4"
@@ -127,10 +173,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Include subfolders"
+                                <TextBlock x:Name="IncludeSubfoldersText"
+                                           Text="Include subfolders"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Organize files inside subfolders, not just root"
+                                <TextBlock x:Name="IncludeSubfoldersDesc"
+                                           Text="Organize files inside subfolders, not just root"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -150,10 +198,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Ignore hidden files"
+                                <TextBlock x:Name="IgnoreHiddenText"
+                                           Text="Ignore hidden files"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Skip files and folders marked as hidden"
+                                <TextBlock x:Name="IgnoreHiddenDesc"
+                                           Text="Skip files and folders marked as hidden"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -173,10 +223,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Ignore system files"
+                                <TextBlock x:Name="IgnoreSystemText"
+                                           Text="Ignore system files"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Skip files and folders marked as system"
+                                <TextBlock x:Name="IgnoreSystemDesc"
+                                           Text="Skip files and folders marked as system"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -194,7 +246,8 @@
                 <!-- System Tray Section -->
                 <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="SYSTEM TRAY"
+                        <TextBlock x:Name="SystemTrayLabel"
+                                   Text="SYSTEM TRAY"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="#949BA4"
@@ -207,10 +260,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Minimize to tray"
+                                <TextBlock x:Name="MinimizeToTrayText"
+                                           Text="Minimize to tray"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Minimize to system tray instead of taskbar"
+                                <TextBlock x:Name="MinimizeToTrayDesc"
+                                           Text="Minimize to system tray instead of taskbar"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -230,10 +285,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Close to tray"
+                                <TextBlock x:Name="CloseToTrayText"
+                                           Text="Close to tray"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Keep running in tray when closing the window"
+                                <TextBlock x:Name="CloseToTrayDesc"
+                                           Text="Keep running in tray when closing the window"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -253,10 +310,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Start minimized"
+                                <TextBlock x:Name="StartMinimizedText"
+                                           Text="Start minimized"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Start the app minimized to tray"
+                                <TextBlock x:Name="StartMinimizedDesc"
+                                           Text="Start the app minimized to tray"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -276,10 +335,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Run on startup"
+                                <TextBlock x:Name="RunOnStartupText"
+                                           Text="Run on startup"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Automatically start FolderFresh when you log in"
+                                <TextBlock x:Name="RunOnStartupDesc"
+                                           Text="Automatically start FolderFresh when you log in"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -297,7 +358,8 @@
                 <!-- Safety Section -->
                 <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
                     <StackPanel Spacing="16">
-                        <TextBlock Text="SAFETY"
+                        <TextBlock x:Name="SafetyLabel"
+                                   Text="SAFETY"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="#949BA4"
@@ -310,10 +372,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Move to Recycle Bin instead of permanent delete"
+                                <TextBlock x:Name="RecycleBinText"
+                                           Text="Move to Recycle Bin instead of permanent delete"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="When using Delete action, files go to Recycle Bin"
+                                <TextBlock x:Name="RecycleBinDesc"
+                                           Text="When using Delete action, files go to Recycle Bin"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -333,10 +397,12 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0" Spacing="2">
-                                <TextBlock Text="Confirm before organizing"
+                                <TextBlock x:Name="ConfirmText"
+                                           Text="Confirm before organizing"
                                            FontSize="14"
                                            Foreground="White"/>
-                                <TextBlock Text="Show confirmation dialog before moving files"
+                                <TextBlock x:Name="ConfirmDesc"
+                                           Text="Show confirmation dialog before moving files"
                                            FontSize="12"
                                            Foreground="#949BA4"/>
                             </StackPanel>
@@ -354,22 +420,25 @@
                 <!-- About Section -->
                 <Border Background="#1E1F22" CornerRadius="12" Padding="20" BorderBrush="#2B2D31" BorderThickness="1">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="ABOUT"
+                        <TextBlock x:Name="AboutLabel"
+                                   Text="ABOUT"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="#949BA4"
                                    CharacterSpacing="50"/>
 
-                        <TextBlock Text="FolderFresh 3.0.1 Beta"
+                        <TextBlock Text="FolderFresh 3.0.2 Beta"
                                    FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="White"/>
 
-                        <TextBlock Text="Version 3.0.1-beta"
+                        <TextBlock x:Name="VersionText"
+                                   Text="Version 3.0.2-beta"
                                    FontSize="13"
                                    Foreground="#B5BAC1"/>
 
-                        <TextBlock Text="A powerful file organization tool with rules and categories"
+                        <TextBlock x:Name="DescriptionText"
+                                   Text="A powerful file organization tool with rules and categories"
                                    FontSize="13"
                                    Foreground="#949BA4"
                                    TextWrapping="Wrap"/>

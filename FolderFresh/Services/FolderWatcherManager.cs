@@ -555,38 +555,162 @@ public class FolderWatcherManager : IDisposable
     }
 
     /// <summary>
-    /// Checks if a file appears to be a newly created file with a default Windows name
-    /// that the user might be in the process of renaming.
+    /// Checks if a file appears to be a newly created file that the user might be
+    /// in the process of renaming. Uses both language-independent heuristics (file age/size)
+    /// and localized name patterns for common European languages.
     /// </summary>
     private static bool IsLikelyBeingRenamed(string filePath)
+    {
+        try
+        {
+            var fileInfo = new FileInfo(filePath);
+            if (!fileInfo.Exists)
+                return false;
+
+            var ageSeconds = (DateTime.Now - fileInfo.CreationTime).TotalSeconds;
+
+            // Very recently created file (< 2 sec) - always wait for potential rename
+            if (ageSeconds < 2)
+                return true;
+
+            // Empty file created in last 10 seconds - likely a new file being renamed
+            if (fileInfo.Length == 0 && ageSeconds < 10)
+                return true;
+
+            // Small file (< 1KB) created in last 5 seconds - may be a template file being renamed
+            if (fileInfo.Length < 1024 && ageSeconds < 5)
+                return true;
+
+            // Check for localized default file name patterns (improves UX by extending wait time)
+            if (HasDefaultFileName(filePath))
+                return true;
+        }
+        catch
+        {
+            // If we can't check the file, assume it's not being renamed
+            return false;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if a file has a default Windows name pattern in any of the supported languages.
+    /// Covers the 15 most common European languages.
+    /// </summary>
+    private static bool HasDefaultFileName(string filePath)
     {
         var fileName = Path.GetFileNameWithoutExtension(filePath);
         if (string.IsNullOrEmpty(fileName))
             return false;
 
-        // Common Windows default naming patterns for new files
+        // Default file name patterns for 15 European languages
+        // Format: "New Text Document" equivalents and common variations
         var defaultNamePatterns = new[]
         {
-            "New Text Document",
-            "New Bitmap image",
-            "New Microsoft Word Document",
-            "New Microsoft Excel Worksheet",
-            "New Microsoft PowerPoint Presentation",
-            "New Rich Text Document",
-            "New Shortcut",
-            "New Folder",
-            "New WinRAR archive",
-            "New 7-Zip archive",
-            "New Compressed (zipped) Folder"
+            // English
+            "New Text Document", "New Bitmap image", "New Microsoft Word Document",
+            "New Microsoft Excel Worksheet", "New Microsoft PowerPoint Presentation",
+            "New Rich Text Document", "New Shortcut", "New Folder",
+            "New WinRAR archive", "New 7-Zip archive", "New Compressed (zipped) Folder",
+
+            // German (Deutsch)
+            "Neues Textdokument", "Neues Bitmap", "Neues Microsoft Word-Dokument",
+            "Neues Microsoft Excel-Arbeitsblatt", "Neues Microsoft PowerPoint-Präsentation",
+            "Neues RTF-Dokument", "Neue Verknüpfung", "Neuer Ordner",
+            "Neues WinRAR-Archiv", "Neues 7-Zip-Archiv", "Neuer komprimierter (gezippter) Ordner",
+
+            // French (Français)
+            "Nouveau document texte", "Nouvelle image Bitmap", "Nouveau Document Microsoft Word",
+            "Nouvelle Feuille de calcul Microsoft Excel", "Nouvelle Présentation Microsoft PowerPoint",
+            "Nouveau document RTF", "Nouveau raccourci", "Nouveau dossier",
+            "Nouvelle archive WinRAR", "Nouvelle archive 7-Zip", "Dossier compressé",
+
+            // Spanish (Español)
+            "Nuevo documento de texto", "Nueva imagen de mapa de bits", "Nuevo Documento de Microsoft Word",
+            "Nueva Hoja de cálculo de Microsoft Excel", "Nueva Presentación de Microsoft PowerPoint",
+            "Nuevo documento de texto enriquecido", "Nuevo acceso directo", "Nueva carpeta",
+            "Nuevo archivo WinRAR", "Nuevo archivo 7-Zip", "Carpeta comprimida",
+
+            // Italian (Italiano)
+            "Nuovo documento di testo", "Nuova immagine bitmap", "Nuovo Documento di Microsoft Word",
+            "Nuovo Foglio di lavoro di Microsoft Excel", "Nuova Presentazione di Microsoft PowerPoint",
+            "Nuovo documento RTF", "Nuovo collegamento", "Nuova cartella",
+            "Nuovo archivio WinRAR", "Nuovo archivio 7-Zip", "Cartella compressa",
+
+            // Portuguese (Português)
+            "Novo Documento de Texto", "Nova Imagem de Bitmap", "Novo Documento do Microsoft Word",
+            "Nova Planilha do Microsoft Excel", "Nova Apresentação do Microsoft PowerPoint",
+            "Novo Documento de Texto Formatado", "Novo Atalho", "Nova pasta",
+            "Novo arquivo WinRAR", "Novo arquivo 7-Zip", "Pasta compactada",
+
+            // Dutch (Nederlands)
+            "Nieuw tekstdocument", "Nieuwe Bitmap-afbeelding", "Nieuw Microsoft Word-document",
+            "Nieuw Microsoft Excel-werkblad", "Nieuwe Microsoft PowerPoint-presentatie",
+            "Nieuw RTF-document", "Nieuwe snelkoppeling", "Nieuwe map",
+            "Nieuw WinRAR-archief", "Nieuw 7-Zip-archief", "Gecomprimeerde map",
+
+            // Polish (Polski)
+            "Nowy dokument tekstowy", "Nowa mapa bitowa", "Nowy Dokument programu Microsoft Word",
+            "Nowy Arkusz programu Microsoft Excel", "Nowa Prezentacja programu Microsoft PowerPoint",
+            "Nowy dokument RTF", "Nowy skrót", "Nowy folder",
+            "Nowe archiwum WinRAR", "Nowe archiwum 7-Zip", "Skompresowany folder",
+
+            // Swedish (Svenska)
+            "Nytt textdokument", "Ny bitmappsbild", "Nytt Microsoft Word-dokument",
+            "Nytt Microsoft Excel-kalkylblad", "Ny Microsoft PowerPoint-presentation",
+            "Nytt RTF-dokument", "Ny genväg", "Ny mapp",
+            "Nytt WinRAR-arkiv", "Nytt 7-Zip-arkiv", "Komprimerad mapp",
+
+            // Danish (Dansk)
+            "Nyt tekstdokument", "Nyt bitmapbillede", "Nyt Microsoft Word-dokument",
+            "Nyt Microsoft Excel-regneark", "Ny Microsoft PowerPoint-præsentation",
+            "Nyt RTF-dokument", "Ny genvej", "Ny mappe",
+            "Nyt WinRAR-arkiv", "Nyt 7-Zip-arkiv", "Komprimeret mappe",
+
+            // Norwegian (Norsk)
+            "Nytt tekstdokument", "Nytt punktgrafikkbilde", "Nytt Microsoft Word-dokument",
+            "Nytt Microsoft Excel-regneark", "Ny Microsoft PowerPoint-presentasjon",
+            "Nytt RTF-dokument", "Ny snarvei", "Ny mappe",
+            "Nytt WinRAR-arkiv", "Nytt 7-Zip-arkiv", "Komprimert mappe",
+
+            // Finnish (Suomi)
+            "Uusi tekstiasiakirja", "Uusi bittikarttakuva", "Uusi Microsoft Word -asiakirja",
+            "Uusi Microsoft Excel -laskentataulukko", "Uusi Microsoft PowerPoint -esitys",
+            "Uusi RTF-asiakirja", "Uusi pikakuvake", "Uusi kansio",
+            "Uusi WinRAR-arkisto", "Uusi 7-Zip-arkisto", "Pakattu kansio",
+
+            // Czech (Čeština)
+            "Nový textový dokument", "Nový rastrový obrázek", "Nový dokument aplikace Microsoft Word",
+            "Nový list aplikace Microsoft Excel", "Nová prezentace aplikace Microsoft PowerPoint",
+            "Nový dokument RTF", "Nový zástupce", "Nová složka",
+            "Nový archiv WinRAR", "Nový archiv 7-Zip", "Komprimovaná složka",
+
+            // Hungarian (Magyar)
+            "Új szöveges dokumentum", "Új bitképes kép", "Új Microsoft Word-dokumentum",
+            "Új Microsoft Excel-munkalap", "Új Microsoft PowerPoint-bemutató",
+            "Új RTF-dokumentum", "Új parancsikon", "Új mappa",
+            "Új WinRAR-archívum", "Új 7-Zip archívum", "Tömörített mappa",
+
+            // Greek (Ελληνικά)
+            "Νέο έγγραφο κειμένου", "Νέα εικόνα Bitmap", "Νέο Έγγραφο του Microsoft Word",
+            "Νέο Φύλλο εργασίας του Microsoft Excel", "Νέα Παρουσίαση του Microsoft PowerPoint",
+            "Νέο έγγραφο RTF", "Νέα συντόμευση", "Νέος φάκελος",
+            "Νέο αρχείο WinRAR", "Νέο αρχείο 7-Zip", "Συμπιεσμένος φάκελος",
+
+            // Romanian (Română)
+            "Document text nou", "Imagine bitmap nouă", "Document Microsoft Word nou",
+            "Foaie de calcul Microsoft Excel nouă", "Prezentare Microsoft PowerPoint nouă",
+            "Document RTF nou", "Comandă rapidă nouă", "Folder nou",
+            "Arhivă WinRAR nouă", "Arhivă 7-Zip nouă", "Folder comprimat"
         };
 
-        // Check for exact match or match with number suffix (e.g., "New Text Document (2)")
         foreach (var pattern in defaultNamePatterns)
         {
             if (fileName.Equals(pattern, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            // Check for numbered variants like "New Text Document (2)"
+            // Check for numbered variants like "New Text Document (2)" or "Neues Textdokument (2)"
             if (fileName.StartsWith(pattern, StringComparison.OrdinalIgnoreCase) &&
                 fileName.Length > pattern.Length)
             {
@@ -981,10 +1105,16 @@ public class FolderWatcherManager : IDisposable
             {
                 var allActions = matchingRules.SelectMany(r => r.Actions).ToList();
 
-                // Check for Ignore action
+                // Check for Ignore action - return result with Ignore so it shows in preview
                 if (allActions.Any(a => a.Type == ActionType.Ignore))
                 {
-                    return null;
+                    result.MatchedBy = OrganizeMatchType.Rule;
+                    result.MatchedRuleName = string.Join(" → ", matchingRules.Select(r => r.Name));
+                    result.MatchedRuleId = matchingRules.First().Id;
+                    result.MatchedRules = matchingRules;
+                    result.Actions = allActions;
+                    // No destination - file stays in place
+                    return result;
                 }
 
                 // Calculate destinations
@@ -1021,7 +1151,12 @@ public class FolderWatcherManager : IDisposable
 
                 if (currentFolder.Equals(expectedFolder, StringComparison.OrdinalIgnoreCase))
                 {
-                    return null; // Already in correct location
+                    // Already in correct location - return result so it shows in preview
+                    result.MatchedBy = OrganizeMatchType.Category;
+                    result.MatchedCategoryName = category.Name;
+                    result.MatchedCategoryIcon = category.Icon;
+                    // No destination - file stays in place (already organized)
+                    return result;
                 }
 
                 result.MatchedBy = OrganizeMatchType.Category;

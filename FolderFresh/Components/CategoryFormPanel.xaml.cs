@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using FolderFresh.Models;
+using FolderFresh.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -84,6 +85,25 @@ public sealed partial class CategoryFormPanel : UserControl
         InitializeIconGrid();
         InitializeColorGrid();
         ExtensionPillsList.ItemsSource = _extensions;
+        ApplyLocalization();
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        NameLabel.Text = Loc.Get("CategoryForm_CategoryName");
+        NameTextBox.PlaceholderText = Loc.Get("CategoryForm_CategoryNamePlaceholder");
+        FolderNameLabel.Text = Loc.Get("CategoryForm_FolderName");
+        DestinationTextBox.PlaceholderText = Loc.Get("CategoryForm_FolderNamePlaceholder");
+        ExtensionsLabel.Text = Loc.Get("CategoryForm_FileExtensions");
+        ExtensionsDesc.Text = Loc.Get("CategoryForm_FileExtensionsPlaceholder");
+        CancelButton.Content = Loc.Get("Cancel");
+        SaveButton.Content = Loc.Get("CategoryForm_SaveCategory");
+
+        // Update header title based on mode
+        HeaderText.Text = IsEditMode
+            ? Loc.Get("CategoryForm_EditCategory")
+            : Loc.Get("CategoryForm_NewCategory");
     }
 
     private void InitializeIconGrid()
@@ -122,7 +142,9 @@ public sealed partial class CategoryFormPanel : UserControl
     {
         if (d is CategoryFormPanel panel)
         {
-            panel.HeaderText.Text = (bool)e.NewValue ? "Edit Category" : "New Category";
+            panel.HeaderText.Text = (bool)e.NewValue
+                ? Loc.Get("CategoryForm_EditCategory")
+                : Loc.Get("CategoryForm_NewCategory");
         }
     }
 

@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using FolderFresh.Models;
+using FolderFresh.Services;
 
 namespace FolderFresh.Components;
 
@@ -24,6 +25,7 @@ public sealed partial class RuleCard : UserControl
     public RuleCard()
     {
         this.InitializeComponent();
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(UpdateDisplay);
     }
 
     public Rule? Rule
@@ -64,12 +66,12 @@ public sealed partial class RuleCard : UserControl
     {
         if (_matchCount == 0)
         {
-            MatchCountText.Text = "No matches";
+            MatchCountText.Text = Loc.Get("RuleCard_NoMatches");
             MatchCountText.Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 102, 102, 102));
         }
         else
         {
-            MatchCountText.Text = _matchCount == 1 ? "1 file" : $"{_matchCount} files";
+            MatchCountText.Text = _matchCount == 1 ? Loc.Get("RuleCard_OneFile") : Loc.Get("RuleCard_Files", _matchCount);
             MatchCountText.Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 96, 205, 255));
         }
     }
@@ -85,7 +87,7 @@ public sealed partial class RuleCard : UserControl
     private static string GetConditionSummary(ConditionGroup? group)
     {
         if (group == null || group.Conditions.Count == 0)
-            return "No conditions (matches all files)";
+            return Loc.Get("RuleCard_NoConditions");
 
         var parts = new List<string>();
         foreach (var condition in group.Conditions.Take(3))
@@ -95,17 +97,17 @@ public sealed partial class RuleCard : UserControl
 
         var connector = group.MatchType switch
         {
-            ConditionMatchType.All => " AND ",
-            ConditionMatchType.Any => " OR ",
-            ConditionMatchType.None => " NOR ",
-            _ => " AND "
+            ConditionMatchType.All => $" {Loc.Get("RuleCard_And")} ",
+            ConditionMatchType.Any => $" {Loc.Get("RuleCard_Or")} ",
+            ConditionMatchType.None => $" {Loc.Get("RuleCard_Nor")} ",
+            _ => $" {Loc.Get("RuleCard_And")} "
         };
 
         var summary = string.Join(connector, parts);
 
         if (group.Conditions.Count > 3)
         {
-            summary += $" (+{group.Conditions.Count - 3} more)";
+            summary += " " + Loc.Get("RuleCard_MoreConditions", group.Conditions.Count - 3);
         }
 
         return summary;
@@ -115,33 +117,35 @@ public sealed partial class RuleCard : UserControl
     {
         var attr = condition.Attribute switch
         {
-            ConditionAttribute.Name => "Name",
-            ConditionAttribute.Extension => "Extension",
-            ConditionAttribute.FullName => "Full name",
-            ConditionAttribute.Kind => "Kind",
-            ConditionAttribute.Size => "Size",
-            ConditionAttribute.DateCreated => "Created",
-            ConditionAttribute.DateModified => "Modified",
-            ConditionAttribute.DateAccessed => "Accessed",
+            ConditionAttribute.Name => Loc.Get("RuleCard_Attr_Name"),
+            ConditionAttribute.Extension => Loc.Get("RuleCard_Attr_Extension"),
+            ConditionAttribute.FullName => Loc.Get("RuleCard_Attr_FullName"),
+            ConditionAttribute.Kind => Loc.Get("RuleCard_Attr_Kind"),
+            ConditionAttribute.Size => Loc.Get("RuleCard_Attr_Size"),
+            ConditionAttribute.DateCreated => Loc.Get("RuleCard_Attr_Created"),
+            ConditionAttribute.DateModified => Loc.Get("RuleCard_Attr_Modified"),
+            ConditionAttribute.DateAccessed => Loc.Get("RuleCard_Attr_Accessed"),
+            ConditionAttribute.Folder => Loc.Get("RuleCard_Attr_Folder"),
+            ConditionAttribute.FolderPath => Loc.Get("RuleCard_Attr_FolderPath"),
             _ => condition.Attribute.ToString()
         };
 
         var op = condition.Operator switch
         {
-            ConditionOperator.Is => "is",
-            ConditionOperator.IsNot => "is not",
-            ConditionOperator.Contains => "contains",
-            ConditionOperator.DoesNotContain => "doesn't contain",
-            ConditionOperator.StartsWith => "starts with",
-            ConditionOperator.EndsWith => "ends with",
-            ConditionOperator.MatchesPattern => "matches",
-            ConditionOperator.IsGreaterThan => ">",
-            ConditionOperator.IsLessThan => "<",
-            ConditionOperator.IsInTheLast => "in last",
-            ConditionOperator.IsBefore => "before",
-            ConditionOperator.IsAfter => "after",
-            ConditionOperator.IsBlank => "is blank",
-            ConditionOperator.IsNotBlank => "is not blank",
+            ConditionOperator.Is => Loc.Get("RuleCard_Op_Is"),
+            ConditionOperator.IsNot => Loc.Get("RuleCard_Op_IsNot"),
+            ConditionOperator.Contains => Loc.Get("RuleCard_Op_Contains"),
+            ConditionOperator.DoesNotContain => Loc.Get("RuleCard_Op_DoesNotContain"),
+            ConditionOperator.StartsWith => Loc.Get("RuleCard_Op_StartsWith"),
+            ConditionOperator.EndsWith => Loc.Get("RuleCard_Op_EndsWith"),
+            ConditionOperator.MatchesPattern => Loc.Get("RuleCard_Op_Matches"),
+            ConditionOperator.IsGreaterThan => Loc.Get("RuleCard_Op_GreaterThan"),
+            ConditionOperator.IsLessThan => Loc.Get("RuleCard_Op_LessThan"),
+            ConditionOperator.IsInTheLast => Loc.Get("RuleCard_Op_InLast"),
+            ConditionOperator.IsBefore => Loc.Get("RuleCard_Op_Before"),
+            ConditionOperator.IsAfter => Loc.Get("RuleCard_Op_After"),
+            ConditionOperator.IsBlank => Loc.Get("RuleCard_Op_IsBlank"),
+            ConditionOperator.IsNotBlank => Loc.Get("RuleCard_Op_IsNotBlank"),
             _ => condition.Operator.ToString()
         };
 
@@ -163,7 +167,7 @@ public sealed partial class RuleCard : UserControl
     private static string GetActionSummary(List<RuleAction>? actions)
     {
         if (actions == null || actions.Count == 0)
-            return "No actions";
+            return Loc.Get("RuleCard_NoActions");
 
         var summaries = new List<string>();
         foreach (var action in actions.Take(2))
@@ -171,11 +175,11 @@ public sealed partial class RuleCard : UserControl
             summaries.Add(GetActionText(action));
         }
 
-        var summary = string.Join(", then ", summaries);
+        var summary = string.Join(Loc.Get("RuleCard_ThenConnector"), summaries);
 
         if (actions.Count > 2)
         {
-            summary += $" (+{actions.Count - 2} more)";
+            summary += " " + Loc.Get("RuleCard_MoreActions", actions.Count - 2);
         }
 
         return summary;
@@ -185,21 +189,21 @@ public sealed partial class RuleCard : UserControl
     {
         return action.Type switch
         {
-            ActionType.MoveToFolder => $"Move to {GetFolderName(action.Value)}",
-            ActionType.CopyToFolder => $"Copy to {GetFolderName(action.Value)}",
-            ActionType.MoveToCategory => "Move to category folder",
-            ActionType.SortIntoSubfolder => $"Sort into {action.Value}",
-            ActionType.Rename => $"Rename to {action.Value}",
-            ActionType.Delete => "Move to trash",
-            ActionType.Ignore => "Ignore",
-            ActionType.Continue => "Continue matching",
+            ActionType.MoveToFolder => Loc.Get("RuleCard_Action_MoveTo", GetFolderName(action.Value)),
+            ActionType.CopyToFolder => Loc.Get("RuleCard_Action_CopyTo", GetFolderName(action.Value)),
+            ActionType.MoveToCategory => Loc.Get("RuleCard_Action_MoveToCategory"),
+            ActionType.SortIntoSubfolder => Loc.Get("RuleCard_Action_SortInto", action.Value),
+            ActionType.Rename => Loc.Get("RuleCard_Action_RenameTo", action.Value),
+            ActionType.Delete => Loc.Get("RuleCard_Action_Trash"),
+            ActionType.Ignore => Loc.Get("RuleCard_Action_Ignore"),
+            ActionType.Continue => Loc.Get("RuleCard_Action_Continue"),
             _ => action.Type.ToString()
         };
     }
 
     private static string GetFolderName(string path)
     {
-        if (string.IsNullOrEmpty(path)) return "folder";
+        if (string.IsNullOrEmpty(path)) return Loc.Get("RuleCard_Action_Folder");
         try
         {
             return Path.GetFileName(path) ?? path;

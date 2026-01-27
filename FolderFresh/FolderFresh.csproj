@@ -34,4 +34,17 @@
     <UnoIcon Include="Assets\Icons\icon.png" ForegroundScale="1.0" />
   </ItemGroup>
 
+  <!-- Localization Resources -->
+  <ItemGroup>
+    <PRIResource Include="Strings\**\*.resw" />
+  </ItemGroup>
+
+  <!-- JSON Language Files -->
+  <ItemGroup>
+    <None Include="Languages\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Languages\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
 </Project>

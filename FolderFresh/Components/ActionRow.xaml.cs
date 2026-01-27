@@ -24,7 +24,52 @@ public sealed partial class ActionRow : UserControl
     public ActionRow()
     {
         this.InitializeComponent();
+        ApplyLocalization();
         ActionTypeComboBox.SelectedIndex = 0;
+
+        // Subscribe to language changes
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        _isUpdating = true;
+        try
+        {
+            var selectedActionIndex = ActionTypeComboBox.SelectedIndex;
+
+            PopulateActionTypeDropdown();
+
+            if (selectedActionIndex >= 0)
+                ActionTypeComboBox.SelectedIndex = selectedActionIndex;
+
+            // Update helper texts
+            DeleteWarningText.Text = Loc.Get("Action_DeleteInfo");
+            IgnoreInfo.Text = Loc.Get("Action_IgnoreInfo");
+            ContinueInfo.Text = Loc.Get("Action_ContinueInfo");
+            PatternTokensHelper.Text = Loc.Get("Action_PatternTokens");
+            CategoryComboBox.PlaceholderText = Loc.Get("Action_SelectCategory");
+
+            // Update category destination helper if visible
+            UpdateCategoryDestinationHelper();
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+
+    private void PopulateActionTypeDropdown()
+    {
+        ActionTypeComboBox.Items.Clear();
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_MoveToFolder"), Tag = "MoveToFolder" });
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_CopyToFolder"), Tag = "CopyToFolder" });
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_MoveToCategory"), Tag = "MoveToCategory" });
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_SortIntoSubfolder"), Tag = "SortIntoSubfolder" });
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_Rename"), Tag = "Rename" });
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_Delete"), Tag = "Delete" });
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_Ignore"), Tag = "Ignore" });
+        ActionTypeComboBox.Items.Add(new ComboBoxItem { Content = Loc.Get("Action_Continue"), Tag = "Continue" });
     }
 
     public RuleAction? Action
@@ -231,7 +276,7 @@ public sealed partial class ActionRow : UserControl
             var category = _categories?.FirstOrDefault(c => c.Id == categoryId);
             if (category != null)
             {
-                CategoryDestinationHelper.Text = $"Files will go to: {category.Destination}/";
+                CategoryDestinationHelper.Text = Loc.Get("Action_DestinationPreview", category.Destination);
             }
             else
             {

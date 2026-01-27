@@ -17,8 +17,27 @@ public partial class App : Application
     /// </summary>
     public static TrayIconManager? TrayIconManager => _trayIconManager;
     private static SettingsService? _settingsService;
+    private static SnapshotService? _snapshotService;
     private static bool _isExiting;
     private static AppWindow? _appWindow;
+
+    /// <summary>
+    /// Gets a registered service instance.
+    /// </summary>
+    public static T GetService<T>() where T : class
+    {
+        if (typeof(T) == typeof(SnapshotService))
+        {
+            _snapshotService ??= new SnapshotService();
+            return (_snapshotService as T)!;
+        }
+        if (typeof(T) == typeof(SettingsService))
+        {
+            _settingsService ??= new SettingsService();
+            return (_settingsService as T)!;
+        }
+        throw new InvalidOperationException($"Service {typeof(T).Name} is not registered.");
+    }
 
     /// <summary>
     /// Whether watched folders are globally paused from the tray icon.
@@ -35,6 +54,12 @@ public partial class App : Application
         _settingsService = new SettingsService();
         var settings = _settingsService.GetSettings();
 
+        // Apply saved language setting
+        if (!string.IsNullOrEmpty(settings.Language))
+        {
+            LocalizationService.Instance.SetLanguage(settings.Language);
+        }
+
         // Validate/update startup registry if app is configured to run on startup
         // This ensures the registry points to the current exe path if it was moved
         if (settings.RunOnStartup)
@@ -49,7 +74,7 @@ public partial class App : Application
         _mainPage = new MainPage();
         MainWindow = new Window
         {
-            Title = "FolderFresh 3.0.1 Beta",
+            Title = "FolderFresh 3.0.2 Beta",
             Content = _mainPage
         };
 

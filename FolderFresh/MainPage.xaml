@@ -39,6 +39,7 @@
 
         <NavigationView.MenuItems>
             <NavigationViewItem
+                x:Name="NavItem_Home"
                 Content="Home"
                 IsSelected="True"
                 Tag="home">
@@ -46,30 +47,35 @@
                     <FontIcon Glyph="&#xE80F;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Folders" Tag="folders">
+            <NavigationViewItem x:Name="NavItem_Folders" Content="Folders" Tag="folders">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE8B7;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Rules" Tag="rules">
+            <NavigationViewItem x:Name="NavItem_Rules" Content="Rules" Tag="rules">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE945;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Categories" Tag="categories">
+            <NavigationViewItem x:Name="NavItem_Categories" Content="Categories" Tag="categories">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE8EC;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem Content="Profiles" Tag="profiles">
+            <NavigationViewItem x:Name="NavItem_Profiles" Content="Profiles" Tag="profiles">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE77B;" />
+                </NavigationViewItem.Icon>
+            </NavigationViewItem>
+            <NavigationViewItem x:Name="NavItem_Snapshots" Content="Snapshots" Tag="snapshots">
+                <NavigationViewItem.Icon>
+                    <FontIcon Glyph="&#xE722;" />
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
         </NavigationView.MenuItems>
 
         <NavigationView.FooterMenuItems>
-            <NavigationViewItem Content="Settings" Tag="settings">
+            <NavigationViewItem x:Name="NavItem_Settings" Content="Settings" Tag="settings">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xE713;" />
                 </NavigationViewItem.Icon>
@@ -109,7 +115,7 @@
                         FontSize="14"
                         FontWeight="SemiBold"
                         Foreground="White"
-                        Text="FolderFresh 3.0.1 Beta" />
+                        Text="FolderFresh 3.0.2 Beta" />
                 </StackPanel>
 
                 <!--  Folder Selector  -->
@@ -165,6 +171,7 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock
+                        x:Name="CurrentLabel"
                         Grid.Row="0"
                         Margin="0,0,0,8"
                         CharacterSpacing="50"
@@ -194,6 +201,7 @@
                                     Foreground="#3F4147"
                                     Glyph="&#xE838;" />
                                 <TextBlock
+                                    x:Name="SelectFolderToPreviewText"
                                     FontSize="14"
                                     Foreground="#6D6F78"
                                     Text="Select a folder to preview" />
@@ -228,6 +236,7 @@
                     </Grid.RowDefinitions>
 
                     <TextBlock
+                        x:Name="AfterLabel"
                         Grid.Row="0"
                         Margin="0,0,0,8"
                         CharacterSpacing="50"
@@ -257,6 +266,7 @@
                                     Foreground="#3F4147"
                                     Glyph="&#xE734;" />
                                 <TextBlock
+                                    x:Name="OrganizedPreviewText"
                                     FontSize="14"
                                     Foreground="#6D6F78"
                                     Text="Organized preview" />

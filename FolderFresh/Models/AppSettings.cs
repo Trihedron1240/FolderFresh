@@ -33,6 +33,9 @@ public class AppSettings : INotifyPropertyChanged
     private bool _startMinimized = false;
     private bool _runOnStartup = false;
 
+    // Language setting
+    private string _language = "en-US";
+
     /// <summary>
     /// Whether to evaluate rules before categories.
     /// If true: Rules are checked first, then categories as fallback.
@@ -227,6 +230,16 @@ public class AppSettings : INotifyPropertyChanged
         set => SetProperty(ref _runOnStartup, value);
     }
 
+    /// <summary>
+    /// The application language code (e.g., "en-US", "de-DE", "uk-UA", "fr-FR").
+    /// </summary>
+    [JsonPropertyName("language")]
+    public string Language
+    {
+        get => _language;
+        set => SetProperty(ref _language, value);
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
@@ -265,7 +278,8 @@ public class AppSettings : INotifyPropertyChanged
             MinimizeToTray = false,
             CloseToTray = false,
             StartMinimized = false,
-            RunOnStartup = false
+            RunOnStartup = false,
+            Language = "en-US"
         };
     }
 }

@@ -52,7 +52,8 @@
                     <StackPanel Spacing="16">
                         <!-- Rule Name -->
                         <StackPanel Spacing="6">
-                            <TextBlock Text="Rule Name"
+                            <TextBlock x:Name="RuleNameLabel"
+                                       Text="Rule Name"
                                        FontSize="12"
                                        Foreground="#999999"/>
                             <TextBox x:Name="RuleNameTextBox"
@@ -73,7 +74,8 @@
                                           MinWidth="40"
                                           IsOn="True"
                                           Toggled="EnabledToggle_Toggled"/>
-                            <TextBlock Text="Rule enabled"
+                            <TextBlock x:Name="RuleEnabledLabel"
+                                       Text="Rule enabled"
                                        FontSize="14"
                                        Foreground="White"
                                        VerticalAlignment="Center"/>
@@ -93,6 +95,7 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Grid.Column="0"
+                                       x:Name="IfLabel"
                                        Text="If"
                                        FontSize="16"
                                        FontWeight="SemiBold"
@@ -123,7 +126,8 @@
                         </Grid>
 
                         <!-- Subheader -->
-                        <TextBlock Text="of these conditions are met:"
+                        <TextBlock x:Name="ConditionsMetLabel"
+                                   Text="of these conditions are met:"
                                    FontSize="14"
                                    Foreground="#999999"/>
 
@@ -145,7 +149,8 @@
                                            FontSize="12"
                                            Foreground="#60CDFF"
                                            VerticalAlignment="Center"/>
-                                <TextBlock Text="Add Condition"
+                                <TextBlock x:Name="AddConditionButtonText"
+                                           Text="Add Condition"
                                            FontSize="14"
                                            Foreground="#60CDFF"/>
                             </StackPanel>
@@ -156,12 +161,14 @@
                 <!-- SECTION 3: Actions (placeholder for next prompt) -->
                 <Border Background="#252525" CornerRadius="12" Padding="20">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Then"
+                        <TextBlock x:Name="ThenLabel"
+                                   Text="Then"
                                    FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="White"/>
 
-                        <TextBlock Text="perform these actions:"
+                        <TextBlock x:Name="PerformActionsLabel"
+                                   Text="perform these actions:"
                                    FontSize="14"
                                    Foreground="#999999"/>
 
@@ -183,7 +190,8 @@
                                            FontSize="12"
                                            Foreground="#60CDFF"
                                            VerticalAlignment="Center"/>
-                                <TextBlock Text="Add Action"
+                                <TextBlock x:Name="AddActionButtonText"
+                                           Text="Add Action"
                                            FontSize="14"
                                            Foreground="#60CDFF"/>
                             </StackPanel>

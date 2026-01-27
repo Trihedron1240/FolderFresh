@@ -54,7 +54,8 @@
                     <StackPanel Spacing="20">
                         <!-- Name Row -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Name"
+                            <TextBlock x:Name="NameLabel"
+                                       Text="Name"
                                        FontSize="12"
                                        Foreground="#999999"/>
                             <TextBox x:Name="NameTextBox"
@@ -79,7 +80,8 @@
 
                             <!-- Icon Picker -->
                             <StackPanel Grid.Column="0" Spacing="8">
-                                <TextBlock Text="Icon"
+                                <TextBlock x:Name="IconLabel"
+                                           Text="Icon"
                                            FontSize="12"
                                            Foreground="#999999"/>
                                 <GridView x:Name="IconGrid"
@@ -122,7 +124,8 @@
 
                             <!-- Color Picker -->
                             <StackPanel Grid.Column="2" Spacing="8">
-                                <TextBlock Text="Color"
+                                <TextBlock x:Name="ColorLabel"
+                                           Text="Color"
                                            FontSize="12"
                                            Foreground="#999999"/>
                                 <GridView x:Name="ColorGrid"
@@ -153,10 +156,12 @@
 
                         <!-- Extensions Row -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="File extensions"
+                            <TextBlock x:Name="ExtensionsLabel"
+                                       Text="File extensions"
                                        FontSize="12"
                                        Foreground="#999999"/>
-                            <TextBlock Text="Files with these extensions will be categorized here"
+                            <TextBlock x:Name="ExtensionsDesc"
+                                       Text="Files with these extensions will be categorized here"
                                        FontSize="11"
                                        Foreground="#666666"/>
 
@@ -274,7 +279,8 @@
 
                         <!-- Destination Row -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Move to folder"
+                            <TextBlock x:Name="FolderNameLabel"
+                                       Text="Move to folder"
                                        FontSize="12"
                                        Foreground="#999999"/>
                             <Grid>

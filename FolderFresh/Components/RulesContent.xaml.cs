@@ -33,6 +33,18 @@ public sealed partial class RulesContent : UserControl
         this.InitializeComponent();
         _ruleService = new RuleService();
         _settingsService = new SettingsService();
+        ApplyLocalization();
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        TitleText.Text = Loc.Get("Rules_Title");
+        NewRuleButtonText.Text = Loc.Get("Rules_NewRule");
+        InfoBannerText.Text = Loc.Get("Rules_InfoBanner");
+        EmptyTitleText.Text = Loc.Get("Rules_EmptyTitle");
+        EmptyDescText.Text = Loc.Get("Rules_EmptyDesc");
+        CreateRuleButtonText.Text = Loc.Get("Rules_CreateRule");
     }
 
     /// <summary>
@@ -227,10 +239,10 @@ public sealed partial class RulesContent : UserControl
     {
         var dialog = new ContentDialog
         {
-            Title = "Delete Rule",
-            Content = $"Are you sure you want to delete \"{rule.Name}\"?",
-            PrimaryButtonText = "Delete",
-            CloseButtonText = "Cancel",
+            Title = Loc.Get("Rules_DeleteTitle"),
+            Content = Loc.Get("Rules_DeleteConfirm", rule.Name),
+            PrimaryButtonText = Loc.Get("Delete"),
+            CloseButtonText = Loc.Get("Cancel"),
             DefaultButton = ContentDialogButton.Close,
             XamlRoot = this.XamlRoot
         };

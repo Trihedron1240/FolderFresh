@@ -24,12 +24,14 @@
 
             <!-- Title -->
             <StackPanel Grid.Column="0" Orientation="Vertical">
-                <TextBlock Text="Watched Folders"
+                <TextBlock x:Name="TitleText"
+                           Text="Watched Folders"
                            FontSize="20"
                            FontWeight="SemiBold"
                            Foreground="White"
                            VerticalAlignment="Center"/>
-                <TextBlock Text="Automatically organize files when they change in these folders"
+                <TextBlock x:Name="SubtitleText"
+                           Text="Automatically organize files when they change in these folders"
                            FontSize="13"
                            Foreground="#666666"
                            Margin="0,4,0,0"/>
@@ -48,7 +50,7 @@
                         ToolTipService.ToolTip="Stop watching all folders">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE71A;" FontSize="14"/>
-                        <TextBlock Text="Stop All" FontSize="13"/>
+                        <TextBlock x:Name="StopAllButtonText" Text="Stop All" FontSize="13"/>
                     </StackPanel>
                 </Button>
 
@@ -63,7 +65,7 @@
                         ToolTipService.ToolTip="Start watching all enabled folders">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE768;" FontSize="14"/>
-                        <TextBlock Text="Start All" FontSize="13"/>
+                        <TextBlock x:Name="StartAllButtonText" Text="Start All" FontSize="13"/>
                     </StackPanel>
                 </Button>
 
@@ -76,7 +78,7 @@
                         CornerRadius="6">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE710;" FontSize="12"/>
-                        <TextBlock Text="Add Folder" FontSize="13" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="AddFolderButtonText" Text="Add Folder" FontSize="13" FontWeight="SemiBold"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -105,7 +107,8 @@
                           Margin="0,0,12,0"/>
 
                 <!-- Info Text -->
-                <TextBlock Grid.Column="1"
+                <TextBlock x:Name="InfoBannerText"
+                           Grid.Column="1"
                            Text="Watched folders are monitored for changes. When files are added or modified, they can be automatically organized using the selected profile's rules and categories."
                            FontSize="13"
                            Foreground="#999999"
@@ -159,14 +162,16 @@
             </Grid>
 
             <!-- Title -->
-            <TextBlock Text="No watched folders"
+            <TextBlock x:Name="EmptyTitleText"
+                       Text="No watched folders"
                        FontSize="18"
                        FontWeight="SemiBold"
                        Foreground="White"
                        HorizontalAlignment="Center"/>
 
             <!-- Subtitle -->
-            <TextBlock Text="Add folders to automatically organize files when they change"
+            <TextBlock x:Name="EmptyDescText"
+                       Text="Add folders to automatically organize files when they change"
                        FontSize="13"
                        Foreground="#666666"
                        HorizontalAlignment="Center"
@@ -184,7 +189,7 @@
                     Margin="0,8,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="&#xE710;" FontSize="12"/>
-                    <TextBlock Text="Add Folder" FontSize="13" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="EmptyAddButtonText" Text="Add Folder" FontSize="13" FontWeight="SemiBold"/>
                 </StackPanel>
             </Button>
         </StackPanel>

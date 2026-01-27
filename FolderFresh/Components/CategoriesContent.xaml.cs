@@ -42,6 +42,18 @@ public sealed partial class CategoriesContent : UserControl, INotifyPropertyChan
 
         // Load categories when control is loaded
         this.Loaded += CategoriesContent_Loaded;
+
+        ApplyLocalization();
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+    }
+
+    private void ApplyLocalization()
+    {
+        TitleText.Text = Loc.Get("Categories_Title");
+        NewCategoryButtonText.Text = Loc.Get("Categories_NewCategory");
+        DefaultCategoriesLabel.Text = Loc.Get("Categories_DefaultCategories");
+        CustomCategoriesLabelText.Text = Loc.Get("Categories_CustomCategories");
+        EmptyStateText.Text = Loc.Get("Categories_EmptyCustom");
     }
 
     private async void CategoriesContent_Loaded(object sender, RoutedEventArgs e)

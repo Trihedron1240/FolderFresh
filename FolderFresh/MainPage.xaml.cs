@@ -78,8 +78,37 @@ public sealed partial class MainPage : Page
         // Subscribe to settings changes to restart watchers when profile settings change
         _settingsService.SettingsChanged += SettingsService_SettingsChanged;
 
+        // Subscribe to language changes for immediate UI updates
+        LocalizationService.Instance.LanguageChanged += (s, e) => DispatcherQueue.TryEnqueue(ApplyLocalization);
+
         // Load services on startup
         _ = InitializeServicesAsync();
+    }
+
+    private void ApplyLocalization()
+    {
+        // Navigation items
+        NavItem_Home.Content = Loc.Get("Nav_Home");
+        NavItem_Folders.Content = Loc.Get("Nav_Folders");
+        NavItem_Rules.Content = Loc.Get("Nav_Rules");
+        NavItem_Categories.Content = Loc.Get("Nav_Categories");
+        NavItem_Profiles.Content = Loc.Get("Nav_Profiles");
+        NavItem_Snapshots.Content = Loc.Get("Nav_Snapshots");
+        NavItem_Settings.Content = Loc.Get("Nav_Settings");
+
+        // Home page labels
+        CurrentLabel.Text = Loc.Get("Current");
+        AfterLabel.Text = Loc.Get("After");
+        SelectFolderToPreviewText.Text = Loc.Get("SelectFolderToPreview");
+        OrganizedPreviewText.Text = Loc.Get("OrganizedPreview");
+        OrganizeButton.Content = Loc.Get("OrganizeNow");
+        UndoButton.Content = Loc.Get("Undo");
+
+        // Only update folder path text if no folder is selected
+        if (_selectedFolder == null)
+        {
+            FolderPathText.Text = Loc.Get("SelectFolder");
+        }
     }
 
     private async Task InitializeServicesAsync()
@@ -88,6 +117,17 @@ public sealed partial class MainPage : Page
         await _categoryService.LoadCategoriesAsync();
         await _ruleService.LoadRulesAsync();
         var settings = await _settingsService.LoadSettingsAsync();
+
+        // Set language from settings (this will trigger LanguageChanged event which calls ApplyLocalization)
+        if (!string.IsNullOrEmpty(settings.Language))
+        {
+            LocalizationService.Instance.SetLanguage(settings.Language);
+        }
+        else
+        {
+            // Apply default localization if no language is set
+            ApplyLocalization();
+        }
 
         // Load profiles (will capture current service state for default profile on first run)
         await _profileService.LoadProfilesAsync();
@@ -164,6 +204,9 @@ public sealed partial class MainPage : Page
                 case "profiles":
                     ShowProfilesContent();
                     break;
+                case "snapshots":
+                    ShowSnapshotsContent();
+                    break;
                 case "settings":
                     ShowSettingsContent();
                     break;
@@ -224,6 +267,7 @@ public sealed partial class MainPage : Page
     private SettingsContent? _settingsContent;
     private ProfilesContent? _profilesContent;
     private WatchedFoldersContent? _watchedFoldersContent;
+    private SnapshotsContent? _snapshotsContent;
 
     private void ShowRulesContent()
     {
@@ -359,6 +403,20 @@ public sealed partial class MainPage : Page
         }
 
         ContentFrame.Content = _profilesContent;
+    }
+
+    private void ShowSnapshotsContent()
+    {
+        HomeContent.Visibility = Visibility.Collapsed;
+        ContentFrame.Visibility = Visibility.Visible;
+        BottomActionPanel.Visibility = Visibility.Collapsed;
+
+        if (_snapshotsContent == null)
+        {
+            _snapshotsContent = new SnapshotsContent();
+        }
+
+        ContentFrame.Content = _snapshotsContent;
     }
 
     private async void ProfilesContent_ProfileSwitched(object? sender, string profileId)
