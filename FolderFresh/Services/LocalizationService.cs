@@ -219,7 +219,7 @@ public class LocalizationService
             { "Settings_Confirm", "Confirm before organizing" },
             { "Settings_ConfirmDesc", "Show confirmation dialog before moving files" },
             { "Settings_About", "ABOUT" },
-            { "Settings_Version", "Version 3.0.2-beta" },
+            { "Settings_Version", "Version 3.0.3" },
             { "Settings_Description", "A powerful file organization tool with rules and categories" },
         };
     }

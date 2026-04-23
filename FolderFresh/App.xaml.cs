@@ -74,7 +74,7 @@ public partial class App : Application
         _mainPage = new MainPage();
         MainWindow = new Window
         {
-            Title = "FolderFresh 3.0.2 Beta",
+            Title = "FolderFresh 3.0.3",
             Content = _mainPage
         };
 

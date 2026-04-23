@@ -6,7 +6,7 @@
     
     <Application.Resources>
         <ResourceDictionary>
-            <!-- FolderFresh 3.0.2 Beta Color Palette - Discord Dark Purple Theme -->
+    <!-- FolderFresh 3.0.3 Color Palette - Discord Dark Purple Theme -->
             <Color x:Key="AppBackground">#111214</Color>
             <Color x:Key="TopBarBackground">#1E1F22</Color>
             <Color x:Key="CardBackground">#1E1F22</Color>

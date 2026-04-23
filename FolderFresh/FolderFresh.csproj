@@ -11,6 +11,10 @@
     <ApplicationTitle>FolderFresh</ApplicationTitle>
     <ApplicationId>com.folderfresh.lite</ApplicationId>
     <ApplicationIcon>Assets\Icons\icon.ico</ApplicationIcon>
+    <Version>3.0.3</Version>
+    <AssemblyVersion>3.0.3.0</AssemblyVersion>
+    <FileVersion>3.0.3.0</FileVersion>
+    <InformationalVersion>3.0.3</InformationalVersion>
     
     <!-- Windows specific -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

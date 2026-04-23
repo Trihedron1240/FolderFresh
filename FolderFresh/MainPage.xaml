@@ -59,7 +59,7 @@
 
                 <StackPanel Grid.Column="0" VerticalAlignment="Center" Orientation="Horizontal" Spacing="8">
                     <FontIcon FontSize="16" Foreground="#5865F2" Glyph="&#xE8B5;" />
-                    <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Foreground="White" Text="FolderFresh 3.0.2 Beta" />
+                    <TextBlock VerticalAlignment="Center" FontSize="14" FontWeight="SemiBold" Foreground="White" Text="FolderFresh 3.0.3" />
                 </StackPanel>
 
                 <Button Grid.Column="2" Padding="12,6" VerticalAlignment="Center" Background="#232428" BorderBrush="Transparent" Click="FolderSelector_Click" CornerRadius="8">

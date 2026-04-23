@@ -2,7 +2,7 @@
 ; Download Inno Setup from https://jrsoftware.org/isinfo.php
 
 #define MyAppName "FolderFresh"
-#define MyAppVersion "3.0.2-beta"
+#define MyAppVersion "3.0.3"
 #define MyAppPublisher "FolderFresh"
 #define MyAppExeName "FolderFresh.exe"
 #define MyAppId "{{B8F2E4A1-5C3D-4E6F-9A8B-7C0D1E2F3A4B}"
@@ -19,7 +19,7 @@ AllowNoIcons=yes
 OutputDir=installer_output
 OutputBaseFilename=FolderFresh-Setup-{#MyAppVersion}
 ; App icon for installer
-SetupIconFile=bin\Release\net9.0-windows10.0.22621\icon.ico
+SetupIconFile=bin\Release\net9.0-windows10.0.22621\win-x64\icon.ico
 ; Compression
 Compression=lzma2/ultra64
 SolidCompression=yes
@@ -131,7 +131,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; Include all files from the build folder (framework-dependent)
-Source: "bin\Release\net9.0-windows10.0.22621\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "bin\Release\net9.0-windows10.0.22621\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

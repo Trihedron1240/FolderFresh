@@ -63,7 +63,7 @@
 
   <!-- Main Page (x:Uid bindings use .Text for TextBlock, .Content for Button) -->
   <data name="AppTitle" xml:space="preserve">
-    <value>FolderFresh 3.0.2 Beta</value>
+    <value>FolderFresh 3.0.3</value>
   </data>
   <data name="SelectFolder.Text" xml:space="preserve">
     <value>Sélectionner un dossier...</value>
@@ -203,7 +203,7 @@
     <value>À PROPOS</value>
   </data>
   <data name="Settings_Version" xml:space="preserve">
-    <value>Version 3.0.2-beta</value>
+    <value>Version 3.0.3</value>
   </data>
   <data name="Settings_Description" xml:space="preserve">
     <value>Un puissant outil d'organisation de fichiers avec règles et catégories</value>

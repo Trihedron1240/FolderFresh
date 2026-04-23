@@ -453,13 +453,13 @@
                                    Foreground="#949BA4"
                                    CharacterSpacing="50"/>
 
-                        <TextBlock Text="FolderFresh 3.0.2 Beta"
+                    <TextBlock Text="FolderFresh 3.0.3"
                                    FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="White"/>
 
                         <TextBlock x:Name="VersionText"
-                                   Text="Version 3.0.2-beta"
+                               Text="Version 3.0.3"
                                    FontSize="13"
                                    Foreground="#B5BAC1"/>
 
