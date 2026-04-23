@@ -575,7 +575,6 @@ public sealed partial class WatchedFoldersContent : UserControl
 
     private void ShowLoading(bool show)
     {
-        LoadingIndicator.IsActive = show;
         LoadingIndicator.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         FoldersScrollViewer.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
     }

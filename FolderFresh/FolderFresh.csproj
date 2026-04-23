@@ -1,24 +1,28 @@
-<Project Sdk="Uno.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net9.0-windows10.0.22621</TargetFrameworks>
+    <TargetFramework>net9.0-windows10.0.22621</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <UnoSingleProject>true</UnoSingleProject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>FolderFreshLite</RootNamespace>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <RootNamespace>FolderFresh</RootNamespace>
     <AssemblyName>FolderFresh</AssemblyName>
     <ApplicationTitle>FolderFresh</ApplicationTitle>
     <ApplicationId>com.folderfresh.lite</ApplicationId>
+    <ApplicationIcon>Assets\Icons\icon.ico</ApplicationIcon>
     
     <!-- Windows specific -->
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 
     <!-- Force MSBuild XAML compiler -->
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>false</EnableMsixTooling>
+    <EnableCoreMrtTooling>false</EnableCoreMrtTooling>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+    <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
 
     <!-- Publish settings -->
     <PublishReadyToRun>false</PublishReadyToRun>
@@ -29,18 +33,35 @@
     <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
   </ItemGroup>
 
-  <!-- App Icon -->
   <ItemGroup>
-    <UnoIcon Include="Assets\Icons\icon.png" ForegroundScale="1.0" />
+    <Compile Remove="Platforms\Android\**" />
+    <Compile Remove="Platforms\iOS\**" />
+    <Compile Remove="Platforms\WebAssembly\**" />
+    <None Remove="Platforms\Android\**" />
+    <None Remove="Platforms\iOS\**" />
+    <None Remove="Platforms\WebAssembly\**" />
+    <Content Remove="Platforms\Android\**" />
+    <Content Remove="Platforms\iOS\**" />
+    <Content Remove="Platforms\WebAssembly\**" />
   </ItemGroup>
 
-  <!-- Localization Resources -->
   <ItemGroup>
-    <PRIResource Include="Strings\**\*.resw" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
   <!-- JSON Language Files -->
   <ItemGroup>
+    <None Include="Assets\Icons\icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>icon.png</Link>
+    </None>
+    <None Include="Assets\Icons\icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>icon.ico</Link>
+    </None>
     <None Include="Languages\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Languages\%(Filename)%(Extension)</Link>

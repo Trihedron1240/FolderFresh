@@ -13,7 +13,6 @@ namespace FolderFresh.Components;
 public sealed partial class SnapshotsContent : UserControl
 {
     private readonly SnapshotService _snapshotService;
-    private bool _bannerDismissed;
 
     public SnapshotsContent()
     {
@@ -579,7 +578,6 @@ public sealed partial class SnapshotsContent : UserControl
     private void DismissBannerButton_Click(object sender, RoutedEventArgs e)
     {
         InfoBanner.Visibility = Visibility.Collapsed;
-        _bannerDismissed = true;
     }
 
     private void OpenFolderButton_Click(object sender, RoutedEventArgs e)

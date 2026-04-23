@@ -128,14 +128,16 @@
         </Border>
 
         <!-- Loading Indicator -->
-        <ProgressRing Grid.Row="2"
-                      x:Name="LoadingIndicator"
-                      IsActive="False"
-                      Width="32"
-                      Height="32"
-                      Margin="24,16"
-                      HorizontalAlignment="Center"
-                      Visibility="Collapsed"/>
+        <Border Grid.Row="2"
+                x:Name="LoadingIndicator"
+                Background="Transparent"
+                Margin="24,16"
+                HorizontalAlignment="Center"
+                Visibility="Collapsed">
+            <TextBlock Text="Loading..."
+                       FontSize="13"
+                       Foreground="#999999"/>
+        </Border>
 
         <!-- Watched Folders List -->
         <ScrollViewer Grid.Row="3"

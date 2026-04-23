@@ -42,6 +42,7 @@
                             <ComboBoxItem Tag="de-DE" Content="Deutsch"/>
                             <ComboBoxItem Tag="uk-UA" Content="Українська"/>
                             <ComboBoxItem Tag="fr-FR" Content="Français"/>
+                            <ComboBoxItem Tag="vi-VN" Content="Tiếng Việt"/>
                         </ComboBox>
 
                         <TextBlock x:Name="RestartHint"

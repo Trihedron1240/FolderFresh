@@ -44,6 +44,7 @@ public sealed partial class MainPage : Page
     private FileSystemWatcher? _folderWatcher;
     private CancellationTokenSource? _debounceTokenSource;
     private const int DebounceDelayMs = 300;
+    private Button? _selectedNavButton;
 
     // Prevent concurrent organize/undo operations
     private bool _isOperationInProgress;
@@ -55,6 +56,8 @@ public sealed partial class MainPage : Page
     public MainPage()
     {
         this.InitializeComponent();
+        InitializeNavButtons();
+        _selectedNavButton = NavItem_Home;
         _categoryService = new CategoryService();
         _ruleService = new RuleService();
         _settingsService = new SettingsService();
@@ -85,16 +88,48 @@ public sealed partial class MainPage : Page
         _ = InitializeServicesAsync();
     }
 
+    private void InitializeNavButtons()
+    {
+        SetNavContent(NavItem_Home, "\uE80F", Loc.Get("Nav_Home"));
+        SetNavContent(NavItem_Folders, "\uE8B7", Loc.Get("Nav_Folders"));
+        SetNavContent(NavItem_Rules, "\uE945", Loc.Get("Nav_Rules"));
+        SetNavContent(NavItem_Categories, "\uE8EC", Loc.Get("Nav_Categories"));
+        SetNavContent(NavItem_Profiles, "\uE77B", Loc.Get("Nav_Profiles"));
+        SetNavContent(NavItem_Snapshots, "\uE722", Loc.Get("Nav_Snapshots"));
+        SetNavContent(NavItem_Settings, "\uE713", Loc.Get("Nav_Settings"));
+    }
+
+    private static void SetNavContent(Button button, string glyph, string text)
+    {
+        button.Content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            Children =
+            {
+                new FontIcon
+                {
+                    Glyph = glyph,
+                    FontSize = 16
+                },
+                new TextBlock
+                {
+                    Text = text
+                }
+            }
+        };
+    }
+
     private void ApplyLocalization()
     {
         // Navigation items
-        NavItem_Home.Content = Loc.Get("Nav_Home");
-        NavItem_Folders.Content = Loc.Get("Nav_Folders");
-        NavItem_Rules.Content = Loc.Get("Nav_Rules");
-        NavItem_Categories.Content = Loc.Get("Nav_Categories");
-        NavItem_Profiles.Content = Loc.Get("Nav_Profiles");
-        NavItem_Snapshots.Content = Loc.Get("Nav_Snapshots");
-        NavItem_Settings.Content = Loc.Get("Nav_Settings");
+        SetNavText(NavItem_Home, Loc.Get("Nav_Home"));
+        SetNavText(NavItem_Folders, Loc.Get("Nav_Folders"));
+        SetNavText(NavItem_Rules, Loc.Get("Nav_Rules"));
+        SetNavText(NavItem_Categories, Loc.Get("Nav_Categories"));
+        SetNavText(NavItem_Profiles, Loc.Get("Nav_Profiles"));
+        SetNavText(NavItem_Snapshots, Loc.Get("Nav_Snapshots"));
+        SetNavText(NavItem_Settings, Loc.Get("Nav_Settings"));
 
         // Home page labels
         CurrentLabel.Text = Loc.Get("Current");
@@ -172,13 +207,26 @@ public sealed partial class MainPage : Page
         }
     }
 
+    private static void SetNavText(Button button, string text)
+    {
+        if (button.Content is StackPanel panel)
+        {
+            var label = panel.Children.OfType<TextBlock>().FirstOrDefault();
+            if (label != null)
+            {
+                label.Text = text;
+            }
+        }
+    }
+
     private string? _previousTab;
 
-    private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    private void NavButton_Click(object sender, RoutedEventArgs e)
     {
-        if (args.SelectedItemContainer is NavigationViewItem item)
+        if (sender is Button item)
         {
             var tag = item.Tag?.ToString();
+            SetSelectedNavButton(item);
 
             switch (tag)
             {
@@ -214,6 +262,19 @@ public sealed partial class MainPage : Page
 
             _previousTab = tag;
         }
+    }
+
+    private void SetSelectedNavButton(Button selectedButton)
+    {
+        if (_selectedNavButton != null)
+        {
+            _selectedNavButton.Background = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
+            _selectedNavButton.Foreground = new SolidColorBrush(Color.FromArgb(255, 181, 186, 193));
+        }
+
+        _selectedNavButton = selectedButton;
+        _selectedNavButton.Background = new SolidColorBrush(Color.FromArgb(255, 35, 36, 40));
+        _selectedNavButton.Foreground = new SolidColorBrush(Color.FromArgb(255, 255, 255, 255));
     }
 
     private void ShowPlaceholder(string title, string description)
@@ -1719,13 +1780,14 @@ public sealed partial class MainPage : Page
 
     private async void OrganizeButton_Click(object sender, RoutedEventArgs e)
     {
-        if (_selectedFolder == null) return;
+        var selectedFolder = _selectedFolder;
+        if (selectedFolder == null) return;
         if (_isOperationInProgress) return;
 
         var settings = _settingsService.GetSettings();
         var rules = _ruleService.GetRules();
         var allCategories = _categoryService.GetCategories();
-        var folderPath = _selectedFolder.Path;
+        var folderPath = selectedFolder.Path;
 
         // Show confirmation dialog if enabled (use preview count as estimate)
         var estimatedFiles = _organizePreview?.Results.Count(r => r.WillBeOrganized) ?? 0;
@@ -1817,9 +1879,9 @@ public sealed partial class MainPage : Page
             });
 
             // Clean up empty folders after organizing only when the user opts in.
-            if (_selectedFolder != null && !settings.PreserveEmptyFolders)
+            if (!settings.PreserveEmptyFolders)
             {
-                await CleanupEmptyFoldersAsync(_selectedFolder);
+                await CleanupEmptyFoldersAsync(selectedFolder);
             }
 
             // Success state
@@ -1838,7 +1900,7 @@ public sealed partial class MainPage : Page
             UndoButton.Visibility = moveOps.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
             // Refresh both panels
-            await LoadFolderContentsAsync(_selectedFolder);
+            await LoadFolderContentsAsync(selectedFolder);
             await GeneratePreviewAsync();
 
             // Reset after delay
@@ -1858,7 +1920,7 @@ public sealed partial class MainPage : Page
 
             try
             {
-                await LoadFolderContentsAsync(_selectedFolder);
+                await LoadFolderContentsAsync(selectedFolder);
                 await GeneratePreviewAsync();
             }
             catch

@@ -6,10 +6,6 @@
     
     <Application.Resources>
         <ResourceDictionary>
-            <ResourceDictionary.MergedDictionaries>
-                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/>
-            </ResourceDictionary.MergedDictionaries>
-
             <!-- FolderFresh 3.0.2 Beta Color Palette - Discord Dark Purple Theme -->
             <Color x:Key="AppBackground">#111214</Color>
             <Color x:Key="TopBarBackground">#1E1F22</Color>

@@ -28,7 +28,8 @@ public class LocalizationService
         { "en-US", "English" },
         { "de-DE", "Deutsch" },
         { "uk-UA", "Українська" },
-        { "fr-FR", "Français" }
+        { "fr-FR", "Français" },
+        { "vi-VN", "Tiếng Việt" }
     };
 
     /// <summary>

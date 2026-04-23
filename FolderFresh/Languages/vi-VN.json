@@ -38,6 +38,8 @@
   "Settings_IgnoreHiddenDesc": "Bỏ qua các tệp và thư mục được đánh dấu là ẩn",
   "Settings_IgnoreSystem": "Bỏ qua tệp hệ thống",
   "Settings_IgnoreSystemDesc": "Bỏ qua các tệp và thư mục được đánh dấu là hệ thống",
+  "Settings_PreserveEmptyFolders": "Giữ lại thư mục trống",
+  "Settings_PreserveEmptyFoldersDesc": "Không xóa các thư mục trống sau khi sắp xếp",
   "Settings_SystemTray": "KHAY HỆ THỐNG",
   "Settings_MinimizeToTray": "Thu nhỏ vào khay",
   "Settings_MinimizeToTrayDesc": "Thu nhỏ vào khay hệ thống thay vì thanh tác vụ",
@@ -336,4 +338,4 @@
   "Snapshots_Error": "Lỗi",
   "Snapshots_FailedToCreate": "Không thể tạo ảnh chụp: {0}",
   "Snapshots_FailedToRestore": "Không thể khôi phục ảnh chụp: {0}"
-} 
+}
