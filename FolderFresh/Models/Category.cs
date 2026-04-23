@@ -114,7 +114,7 @@ public class Category : INotifyPropertyChanged
                 Name = "Documents",
                 Icon = "\U0001F4C4", // 📄
                 Color = "#5B9BD5",
-                Extensions = new List<string> { ".pdf", ".doc", ".docx", ".txt", ".rtf", ".xls", ".xlsx", ".ppt", ".pptx" },
+                Extensions = new List<string> { ".pdf", ".doc", ".docx", ".txt", ".rtf", ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp" },
                 Destination = "Documents",
                 IsDefault = true
             },

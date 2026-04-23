@@ -28,7 +28,8 @@ public class LocalizationService
         { "en-US", "English" },
         { "de-DE", "Deutsch" },
         { "uk-UA", "Українська" },
-        { "fr-FR", "Français" }
+        { "fr-FR", "Français" },
+        { "vi-VN", "Tiếng Việt" }
     };
 
     /// <summary>
@@ -201,6 +202,8 @@ public class LocalizationService
             { "Settings_IgnoreHiddenDesc", "Skip files and folders marked as hidden" },
             { "Settings_IgnoreSystem", "Ignore system files" },
             { "Settings_IgnoreSystemDesc", "Skip files and folders marked as system" },
+            { "Settings_PreserveEmptyFolders", "Preserve empty folders" },
+            { "Settings_PreserveEmptyFoldersDesc", "Do not remove folders that become empty after organizing" },
             { "Settings_SystemTray", "SYSTEM TRAY" },
             { "Settings_MinimizeToTray", "Minimize to tray" },
             { "Settings_MinimizeToTrayDesc", "Minimize to system tray instead of taskbar" },

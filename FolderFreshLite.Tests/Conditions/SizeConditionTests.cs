@@ -1,5 +1,5 @@
-using FolderFreshLite.Models;
-using FolderFreshLite.Services;
+using FolderFresh.Models;
+using FolderFresh.Services;
 using FolderFreshLite.Tests.Helpers;
 
 namespace FolderFreshLite.Tests.Conditions;

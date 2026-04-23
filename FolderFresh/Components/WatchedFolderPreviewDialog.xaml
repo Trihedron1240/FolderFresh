@@ -158,7 +158,9 @@
               Background="#E0000000"
               Visibility="Collapsed">
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
-                <ProgressRing x:Name="ProgressRing" IsActive="True" Width="48" Height="48"/>
+                <FontIcon Glyph="&#xE895;"
+                          FontSize="32"
+                          Foreground="#5865F2"/>
                 <TextBlock x:Name="ProgressText"
                            Text="Organizing files..."
                            FontSize="14"

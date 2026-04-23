@@ -59,6 +59,10 @@ public class CategoryService
             if (data?.Categories != null && data.Categories.Count > 0)
             {
                 _categories = data.Categories;
+                if (EnsureDefaultCategoryExtensions(_categories))
+                {
+                    await SaveCategoriesAsync(_categories);
+                }
             }
             else
             {
@@ -233,7 +237,7 @@ public class CategoryService
                 Extensions = new List<string>
                 {
                     ".pdf", ".doc", ".docx", ".txt", ".rtf",
-                    ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods"
+                    ".xls", ".xlsx", ".ppt", ".pptx", ".odt", ".ods", ".odp"
                 },
                 Destination = "Documents",
                 IsDefault = true
@@ -303,6 +307,27 @@ public class CategoryService
                 IsFallback = true
             }
         };
+    }
+
+    private static bool EnsureDefaultCategoryExtensions(List<Category> categories)
+    {
+        var changed = false;
+        var documentCategory = categories.FirstOrDefault(c => c.Id == "documents" && c.IsDefault);
+        if (documentCategory == null)
+        {
+            return false;
+        }
+
+        foreach (var extension in new[] { ".odt", ".ods", ".odp" })
+        {
+            if (!documentCategory.Extensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+            {
+                documentCategory.Extensions.Add(extension);
+                changed = true;
+            }
+        }
+
+        return changed;
     }
 
     /// <summary>

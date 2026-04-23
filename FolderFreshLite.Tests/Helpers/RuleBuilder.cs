@@ -1,4 +1,4 @@
-using FolderFreshLite.Models;
+using FolderFresh.Models;
 
 namespace FolderFreshLite.Tests.Helpers;
 

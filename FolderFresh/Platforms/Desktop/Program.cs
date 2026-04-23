@@ -1,4 +1,5 @@
-using Uno.UI.Hosting;
+using Microsoft.UI.Dispatching;
+using System.Threading;
 
 namespace FolderFresh;
 
@@ -7,16 +8,12 @@ internal class Program
     [STAThread]
     public static void Main(string[] args)
     {
-        App.InitializeLogging();
-
-        var host = UnoPlatformHostBuilder.Create()
-            .App(() => new App())
-            .UseX11()
-            .UseLinuxFrameBuffer()
-            .UseMacOS()
-            .UseWin32()
-            .Build();
-
-        host.Run();
+        WinRT.ComWrappersSupport.InitializeComWrappers();
+        Microsoft.UI.Xaml.Application.Start(_ =>
+        {
+            var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
+            SynchronizationContext.SetSynchronizationContext(context);
+            new App();
+        });
     }
 }

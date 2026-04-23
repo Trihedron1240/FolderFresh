@@ -38,6 +38,8 @@
   "Settings_IgnoreHiddenDesc": "Dateien und Ordner überspringen, die als versteckt markiert sind",
   "Settings_IgnoreSystem": "Systemdateien ignorieren",
   "Settings_IgnoreSystemDesc": "Dateien und Ordner überspringen, die als System markiert sind",
+  "Settings_PreserveEmptyFolders": "Leere Ordner beibehalten",
+  "Settings_PreserveEmptyFoldersDesc": "Ordner nicht entfernen, die nach dem Organisieren leer werden",
   "Settings_SystemTray": "SYSTEMLEISTE",
   "Settings_MinimizeToTray": "In die Systemleiste minimieren",
   "Settings_MinimizeToTrayDesc": "In die Systemleiste statt in die Taskleiste minimieren",

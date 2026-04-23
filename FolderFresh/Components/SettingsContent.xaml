@@ -42,6 +42,7 @@
                             <ComboBoxItem Tag="de-DE" Content="Deutsch"/>
                             <ComboBoxItem Tag="uk-UA" Content="Українська"/>
                             <ComboBoxItem Tag="fr-FR" Content="Français"/>
+                            <ComboBoxItem Tag="vi-VN" Content="Tiếng Việt"/>
                         </ComboBox>
 
                         <TextBlock x:Name="RestartHint"
@@ -239,6 +240,31 @@
                                           OffContent=""
                                           IsOn="True"
                                           Toggled="IgnoreSystemToggle_Toggled"/>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock x:Name="PreserveEmptyFoldersText"
+                                           Text="Preserve empty folders"
+                                           FontSize="14"
+                                           Foreground="White"/>
+                                <TextBlock x:Name="PreserveEmptyFoldersDesc"
+                                           Text="Do not remove folders that become empty after organizing"
+                                           FontSize="12"
+                                           Foreground="#949BA4"/>
+                            </StackPanel>
+
+                            <ToggleSwitch x:Name="PreserveEmptyFoldersToggle"
+                                          Grid.Column="1"
+                                          OnContent=""
+                                          OffContent=""
+                                          IsOn="True"
+                                          Toggled="PreserveEmptyFoldersToggle_Toggled"/>
                         </Grid>
                     </StackPanel>
                 </Border>

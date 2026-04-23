@@ -14,6 +14,8 @@ public sealed partial class SettingsContent : UserControl
     private bool _isLoading;
     private string? _initialLanguage;
 
+    public event EventHandler? SettingsChanged;
+
     public SettingsContent()
     {
         this.InitializeComponent();
@@ -58,6 +60,8 @@ public sealed partial class SettingsContent : UserControl
         IgnoreHiddenDesc.Text = Loc.Get("Settings_IgnoreHiddenDesc");
         IgnoreSystemText.Text = Loc.Get("Settings_IgnoreSystem");
         IgnoreSystemDesc.Text = Loc.Get("Settings_IgnoreSystemDesc");
+        PreserveEmptyFoldersText.Text = Loc.Get("Settings_PreserveEmptyFolders");
+        PreserveEmptyFoldersDesc.Text = Loc.Get("Settings_PreserveEmptyFoldersDesc");
 
         // System Tray section
         SystemTrayLabel.Text = Loc.Get("Settings_SystemTray");
@@ -119,6 +123,7 @@ public sealed partial class SettingsContent : UserControl
             IncludeSubfoldersToggle.IsOn = _settings.IncludeSubfolders;
             IgnoreHiddenToggle.IsOn = _settings.IgnoreHiddenFiles;
             IgnoreSystemToggle.IsOn = _settings.IgnoreSystemFiles;
+            PreserveEmptyFoldersToggle.IsOn = _settings.PreserveEmptyFolders;
 
             // Set tray toggles
             MinimizeToTrayToggle.IsOn = _settings.MinimizeToTray;
@@ -228,6 +233,14 @@ public sealed partial class SettingsContent : UserControl
         await SaveSettingsAsync();
     }
 
+    private async void PreserveEmptyFoldersToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isLoading || _settings == null) return;
+
+        _settings.PreserveEmptyFolders = PreserveEmptyFoldersToggle.IsOn;
+        await SaveSettingsAsync();
+    }
+
     private async void MinimizeToTrayToggle_Toggled(object sender, RoutedEventArgs e)
     {
         if (_isLoading || _settings == null) return;
@@ -286,6 +299,7 @@ public sealed partial class SettingsContent : UserControl
         if (_settings != null && _settingsService != null)
         {
             await _settingsService.SaveSettingsAsync(_settings);
+            SettingsChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }
