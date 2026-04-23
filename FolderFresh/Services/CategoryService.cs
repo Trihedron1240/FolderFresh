@@ -24,10 +24,11 @@ public class CategoryService
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public CategoryService()
+    public CategoryService(string? storageDirectory = null)
     {
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var appFolderPath = Path.Combine(appDataPath, AppFolderName);
+        var appFolderPath = string.IsNullOrWhiteSpace(storageDirectory)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppFolderName)
+            : storageDirectory;
 
         // Ensure directory exists
         if (!Directory.Exists(appFolderPath))

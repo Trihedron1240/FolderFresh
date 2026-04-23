@@ -72,11 +72,11 @@ public sealed partial class CategoryCard : UserControl
         // Update destination
         DestinationText.Text = $"→ {category.Destination}";
 
-        // Show/hide action buttons based on whether it's a default category
+        // Default categories can be edited, but only custom categories can be deleted.
         if (category.IsDefault)
         {
             LockIcon.Visibility = Visibility.Visible;
-            EditButton.Visibility = Visibility.Collapsed;
+            EditButton.Visibility = Visibility.Visible;
             DeleteButton.Visibility = Visibility.Collapsed;
         }
         else

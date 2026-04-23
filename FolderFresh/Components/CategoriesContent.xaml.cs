@@ -128,14 +128,7 @@ public sealed partial class CategoriesContent : UserControl, INotifyPropertyChan
         {
             // Update existing category
             await _categoryService.UpdateCategoryAsync(category);
-
-            // Refresh display
-            var index = CustomCategories.IndexOf(category);
-            if (index >= 0)
-            {
-                CustomCategories.RemoveAt(index);
-                CustomCategories.Insert(index, category);
-            }
+            RefreshCategory(category);
             CategoriesChanged?.Invoke(this, EventArgs.Empty);
         }
         else
@@ -191,6 +184,16 @@ public sealed partial class CategoriesContent : UserControl, INotifyPropertyChan
     /// Gets the CategoryService instance for external use
     /// </summary>
     public CategoryService GetCategoryService() => _categoryService;
+
+    private void RefreshCategory(Category category)
+    {
+        var categories = category.IsDefault ? DefaultCategories : CustomCategories;
+        var index = categories.IndexOf(category);
+        if (index >= 0)
+        {
+            categories[index] = category;
+        }
+    }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
