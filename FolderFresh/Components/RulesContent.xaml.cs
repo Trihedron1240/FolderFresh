@@ -27,6 +27,7 @@ public sealed partial class RulesContent : UserControl
 
     public event EventHandler<Rule>? NewRuleRequested;
     public event EventHandler<Rule>? EditRuleRequested;
+    public event EventHandler? RulesChanged;
 
     public RulesContent()
     {
@@ -254,12 +255,14 @@ public sealed partial class RulesContent : UserControl
             await _ruleService.DeleteRuleAsync(rule.Id);
             _rules.Remove(rule);
             RefreshRulesList();
+            RulesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
     private async void RuleCard_EnabledChanged(object? sender, Rule rule)
     {
         await _ruleService.UpdateRuleAsync(rule);
+        RulesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private void RuleCard_DragStarted(object? sender, (Rule Rule, string RuleId) args)
@@ -356,6 +359,7 @@ public sealed partial class RulesContent : UserControl
         // Reload to get updated priorities
         _rules = await _ruleService.LoadRulesAsync();
         RefreshRulesList();
+        RulesChanged?.Invoke(this, EventArgs.Empty);
 
         _draggedRuleId = null;
         _dropIndex = -1;
@@ -369,6 +373,7 @@ public sealed partial class RulesContent : UserControl
         await _ruleService.AddRuleAsync(rule);
         _rules = await _ruleService.LoadRulesAsync();
         RefreshRulesList();
+        RulesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -379,6 +384,7 @@ public sealed partial class RulesContent : UserControl
         await _ruleService.UpdateRuleAsync(rule);
         _rules = await _ruleService.LoadRulesAsync();
         RefreshRulesList();
+        RulesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>

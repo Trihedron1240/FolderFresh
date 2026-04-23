@@ -280,6 +280,7 @@ public sealed partial class MainPage : Page
             _rulesContent = new RulesContent();
             _rulesContent.NewRuleRequested += RulesContent_NewRuleRequested;
             _rulesContent.EditRuleRequested += RulesContent_EditRuleRequested;
+            _rulesContent.RulesChanged += ProfileBackedDataChanged;
         }
 
         // Update match counts based on selected folder
@@ -349,6 +350,7 @@ public sealed partial class MainPage : Page
             _categoriesContent.NewCategoryRequested += CategoriesContent_NewCategoryRequested;
             _categoriesContent.CategoryEditRequested += CategoriesContent_CategoryEditRequested;
             _categoriesContent.CategoryDeleteRequested += CategoriesContent_CategoryDeleteRequested;
+            _categoriesContent.CategoriesChanged += ProfileBackedDataChanged;
         }
 
         ContentFrame.Content = _categoriesContent;
@@ -378,6 +380,7 @@ public sealed partial class MainPage : Page
         if (_settingsContent == null)
         {
             _settingsContent = new SettingsContent();
+            _settingsContent.SettingsChanged += ProfileBackedDataChanged;
         }
 
         ContentFrame.Content = _settingsContent;
@@ -437,6 +440,11 @@ public sealed partial class MainPage : Page
         {
             await GeneratePreviewAsync();
         }
+    }
+
+    private async void ProfileBackedDataChanged(object? sender, EventArgs e)
+    {
+        await _profileService.SaveCurrentProfileStateAsync();
     }
 
     private async void ProfilesContent_ProfilesChanged(object? sender, EventArgs e)
@@ -1808,8 +1816,8 @@ public sealed partial class MainPage : Page
                 }
             });
 
-            // Clean up empty folders after organizing
-            if (_selectedFolder != null)
+            // Clean up empty folders after organizing only when the user opts in.
+            if (_selectedFolder != null && !settings.PreserveEmptyFolders)
             {
                 await CleanupEmptyFoldersAsync(_selectedFolder);
             }
@@ -2468,8 +2476,9 @@ public sealed partial class MainPage : Page
                 }
             }
 
-            // Do general cleanup for empty folders
-            if (_selectedFolder != null)
+            // Do general cleanup for empty folders only when the user opts in.
+            var settings = _settingsService.GetSettings();
+            if (_selectedFolder != null && !settings.PreserveEmptyFolders)
             {
                 await CleanupEmptyFoldersAsync(_selectedFolder);
             }

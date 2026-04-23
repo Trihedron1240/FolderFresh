@@ -38,6 +38,8 @@
   "Settings_IgnoreHiddenDesc": "Ignorer les fichiers et dossiers marqués comme cachés",
   "Settings_IgnoreSystem": "Ignorer les fichiers système",
   "Settings_IgnoreSystemDesc": "Ignorer les fichiers et dossiers marqués comme système",
+  "Settings_PreserveEmptyFolders": "Conserver les dossiers vides",
+  "Settings_PreserveEmptyFoldersDesc": "Ne pas supprimer les dossiers qui deviennent vides après l'organisation",
   "Settings_SystemTray": "ZONE DE NOTIFICATION",
   "Settings_MinimizeToTray": "Réduire dans la zone de notification",
   "Settings_MinimizeToTrayDesc": "Réduire dans la zone de notification au lieu de la barre des tâches",

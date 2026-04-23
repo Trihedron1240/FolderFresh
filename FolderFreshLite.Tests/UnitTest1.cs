@@ -1,4 +1,4 @@
-﻿namespace FolderFreshLite.Tests;
+namespace FolderFreshLite.Tests;
 
 public class UnitTest1
 {

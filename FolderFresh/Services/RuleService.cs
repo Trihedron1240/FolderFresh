@@ -549,7 +549,7 @@ public class RuleService
             ConditionAttribute.Contents => false, // Future: implement content search
 
             ConditionAttribute.Folder => EvaluateStringCondition(
-                file.Directory?.Name ?? string.Empty,
+                GetAncestorFolderNames(file.Directory),
                 condition.Operator,
                 condition.Value ?? string.Empty),
 
@@ -581,11 +581,12 @@ public class RuleService
         // Normalize paths to handle trailing slash differences
         var normalizedActual = NormalizePath(actual);
         var normalizedExpected = NormalizePath(expected);
+        var ancestorPaths = GetAncestorFolderPaths(normalizedActual);
 
         return op switch
         {
-            ConditionOperator.Is => normalizedActual.Equals(normalizedExpected, StringComparison.OrdinalIgnoreCase),
-            ConditionOperator.IsNot => !normalizedActual.Equals(normalizedExpected, StringComparison.OrdinalIgnoreCase),
+            ConditionOperator.Is => ancestorPaths.Any(path => path.Equals(normalizedExpected, StringComparison.OrdinalIgnoreCase)),
+            ConditionOperator.IsNot => !ancestorPaths.Any(path => path.Equals(normalizedExpected, StringComparison.OrdinalIgnoreCase)),
             ConditionOperator.Contains => normalizedActual.Contains(normalizedExpected, StringComparison.OrdinalIgnoreCase),
             ConditionOperator.DoesNotContain => !normalizedActual.Contains(normalizedExpected, StringComparison.OrdinalIgnoreCase),
             ConditionOperator.StartsWith => normalizedActual.StartsWith(normalizedExpected, StringComparison.OrdinalIgnoreCase),
@@ -615,6 +616,46 @@ public class RuleService
             ConditionOperator.IsNotBlank => !string.IsNullOrWhiteSpace(actual),
             _ => false
         };
+    }
+
+    /// <summary>
+    /// Evaluates string-based conditions against multiple possible values.
+    /// </summary>
+    private static bool EvaluateStringCondition(IEnumerable<string> actualValues, ConditionOperator op, string expected)
+    {
+        var values = actualValues.Where(value => !string.IsNullOrWhiteSpace(value)).ToList();
+
+        return op switch
+        {
+            ConditionOperator.IsBlank => values.Count == 0,
+            ConditionOperator.IsNotBlank => values.Count > 0,
+            ConditionOperator.IsNot or ConditionOperator.DoesNotContain => values.All(value => EvaluateStringCondition(value, op, expected)),
+            _ => values.Any(value => EvaluateStringCondition(value, op, expected))
+        };
+    }
+
+    private static IEnumerable<string> GetAncestorFolderNames(DirectoryInfo? directory)
+    {
+        for (var current = directory; current != null; current = current.Parent)
+        {
+            if (!string.IsNullOrWhiteSpace(current.Name))
+            {
+                yield return current.Name;
+            }
+        }
+    }
+
+    private static IEnumerable<string> GetAncestorFolderPaths(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            yield break;
+        }
+
+        for (var current = new DirectoryInfo(folderPath); current != null; current = current.Parent)
+        {
+            yield return NormalizePath(current.FullName);
+        }
     }
 
     /// <summary>

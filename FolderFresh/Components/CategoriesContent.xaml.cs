@@ -24,6 +24,7 @@ public sealed partial class CategoriesContent : UserControl, INotifyPropertyChan
     public event EventHandler<Category>? CategoryEditRequested;
     public event EventHandler<Category>? CategoryDeleteRequested;
     public event EventHandler? NewCategoryRequested;
+    public event EventHandler? CategoriesChanged;
 
     public CategoriesContent()
     {
@@ -108,12 +109,14 @@ public sealed partial class CategoriesContent : UserControl, INotifyPropertyChan
         {
             CustomCategories.Remove(category);
             await _categoryService.DeleteCategoryAsync(category.Id);
+            CategoriesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
     private async void CategoryCard_EnabledChanged(object sender, Category category)
     {
         await _categoryService.UpdateCategoryAsync(category);
+        CategoriesChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private async void FormPanel_SaveClicked(object sender, Category category)
@@ -133,12 +136,14 @@ public sealed partial class CategoriesContent : UserControl, INotifyPropertyChan
                 CustomCategories.RemoveAt(index);
                 CustomCategories.Insert(index, category);
             }
+            CategoriesChanged?.Invoke(this, EventArgs.Empty);
         }
         else
         {
             // Add new category
             await _categoryService.AddCategoryAsync(category);
             CustomCategories.Add(category);
+            CategoriesChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

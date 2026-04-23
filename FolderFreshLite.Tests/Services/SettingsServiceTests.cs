@@ -1,6 +1,6 @@
 using System.Text.Json;
-using FolderFreshLite.Models;
-using FolderFreshLite.Services;
+using FolderFresh.Models;
+using FolderFresh.Services;
 
 namespace FolderFreshLite.Tests.Services;
 

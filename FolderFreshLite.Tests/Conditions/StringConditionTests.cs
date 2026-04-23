@@ -1,5 +1,5 @@
-using FolderFreshLite.Models;
-using FolderFreshLite.Services;
+using FolderFresh.Models;
+using FolderFresh.Services;
 using FolderFreshLite.Tests.Helpers;
 
 namespace FolderFreshLite.Tests.Conditions;
@@ -257,6 +257,62 @@ public class StringConditionTests : IDisposable
         var result = _ruleService.EvaluateCondition(condition, file);
 
         Assert.Equal(expected, result);
+    }
+
+    #endregion
+
+    #region Folder Conditions
+
+    [Fact]
+    public void Folder_Is_MatchesAncestorFolder()
+    {
+        var file = _helper.CreateFile(Path.Combine("radarr", "MovieName", "movie.mkv"));
+        var condition = new Condition
+        {
+            Attribute = ConditionAttribute.Folder,
+            Operator = ConditionOperator.Is,
+            Value = "radarr"
+        };
+
+        var result = _ruleService.EvaluateCondition(condition, file);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void Folder_IsNot_FalseWhenAncestorFolderMatches()
+    {
+        var file = _helper.CreateFile(Path.Combine("radarr", "MovieName", "movie.mkv"));
+        var condition = new Condition
+        {
+            Attribute = ConditionAttribute.Folder,
+            Operator = ConditionOperator.IsNot,
+            Value = "radarr"
+        };
+
+        var result = _ruleService.EvaluateCondition(condition, file);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void FolderPath_Is_MatchesAncestorFolderPath()
+    {
+        var ignoredFolder = _helper.CreateSubdirectory("radarr");
+        var nestedFolder = Path.Combine(ignoredFolder, "MovieName");
+        Directory.CreateDirectory(nestedFolder);
+
+        var file = _helper.CreateFile(Path.Combine("radarr", "MovieName", "movie.mkv"));
+        var condition = new Condition
+        {
+            Attribute = ConditionAttribute.FolderPath,
+            Operator = ConditionOperator.Is,
+            Value = ignoredFolder
+        };
+
+        var result = _ruleService.EvaluateCondition(condition, file);
+
+        Assert.True(result);
     }
 
     #endregion

@@ -19,6 +19,7 @@ public class AppSettings : INotifyPropertyChanged
     private bool _includeSubfolders = true;
     private bool _ignoreHiddenFiles = true;
     private bool _ignoreSystemFiles = true;
+    private bool _preserveEmptyFolders = true;
     private string? _lastSelectedFolderPath;
     private string? _currentProfileId;
 
@@ -137,6 +138,16 @@ public class AppSettings : INotifyPropertyChanged
     {
         get => _ignoreSystemFiles;
         set => SetProperty(ref _ignoreSystemFiles, value);
+    }
+
+    /// <summary>
+    /// Whether to leave empty folders in place after organizing files.
+    /// </summary>
+    [JsonPropertyName("preserveEmptyFolders")]
+    public bool PreserveEmptyFolders
+    {
+        get => _preserveEmptyFolders;
+        set => SetProperty(ref _preserveEmptyFolders, value);
     }
 
     /// <summary>
@@ -272,6 +283,7 @@ public class AppSettings : INotifyPropertyChanged
             IncludeSubfolders = true,
             IgnoreHiddenFiles = true,
             IgnoreSystemFiles = true,
+            PreserveEmptyFolders = true,
             WatchedFoldersEnabled = true,
             NotifyOnAutoOrganize = true,
             NotifyOnWatcherError = true,

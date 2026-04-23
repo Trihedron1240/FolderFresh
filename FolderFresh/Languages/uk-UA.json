@@ -38,6 +38,8 @@
   "Settings_IgnoreHiddenDesc": "Пропускати файли та папки, позначені як приховані",
   "Settings_IgnoreSystem": "Ігнорувати системні файли",
   "Settings_IgnoreSystemDesc": "Пропускати файли та папки, позначені як системні",
+  "Settings_PreserveEmptyFolders": "Зберігати порожні папки",
+  "Settings_PreserveEmptyFoldersDesc": "Не видаляти папки, які стають порожніми після впорядкування",
   "Settings_SystemTray": "СИСТЕМНИЙ ТРЕЙ",
   "Settings_MinimizeToTray": "Згортати в трей",
   "Settings_MinimizeToTrayDesc": "Згортати в системний трей замість панелі завдань",
