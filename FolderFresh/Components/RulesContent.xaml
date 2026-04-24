@@ -37,6 +37,24 @@
             <StackPanel Grid.Column="2"
                         Orientation="Horizontal"
                         Spacing="16">
+                <!-- Smart Setup Button -->
+                <Button x:Name="SmartSetupButton"
+                        Click="SmartSetupButton_Click"
+                        Background="#2D2D2D"
+                        Foreground="#B5BAC1"
+                        Padding="16,8"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="&#xE71D;"
+                                   FontFamily="Segoe MDL2 Assets"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock x:Name="SmartSetupButtonText"
+                                   Text="Smart Setup"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
 
                 <!-- New Rule Button -->
                 <Button x:Name="NewRuleButton"

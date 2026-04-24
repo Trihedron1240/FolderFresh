@@ -52,6 +52,10 @@
     <PackageReference Include="Newtonsoft.Json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FolderFresh.SetupAdvisor\FolderFresh.SetupAdvisor.csproj" />
+  </ItemGroup>
+
   <!-- JSON Language Files -->
   <ItemGroup>
     <None Include="Assets\Icons\icon.png">
