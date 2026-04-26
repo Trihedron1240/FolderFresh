@@ -81,12 +81,24 @@ jobs:
       - name: Verify silent install and uninstall
         shell: pwsh
         run: |
-          $installer = Join-Path "FolderFresh/installer_output" $env:INSTALLER_NAME
+          $installer = (Resolve-Path -LiteralPath (Join-Path "FolderFresh/installer_output" $env:INSTALLER_NAME)).Path
           $installDir = Join-Path $env:RUNNER_TEMP "FolderFreshInstall"
+          $installLog = Join-Path $env:RUNNER_TEMP "FolderFresh-install.log"
+          $uninstallLog = Join-Path $env:RUNNER_TEMP "FolderFresh-uninstall.log"
 
-          & $installer /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR="$installDir"
-          if ($LASTEXITCODE -ne 0) {
-            throw "Silent install failed with exit code $LASTEXITCODE."
+          Remove-Item -LiteralPath $installDir -Recurse -Force -ErrorAction SilentlyContinue
+
+          $install = Start-Process -FilePath $installer -ArgumentList @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/NOICONS",
+            "/DIR=$installDir",
+            "/LOG=$installLog"
+          ) -Wait -PassThru -WindowStyle Hidden
+
+          if ($install.ExitCode -ne 0) {
+            throw "Silent install failed with exit code $($install.ExitCode). Log: $installLog"
           }
 
           $appExe = Join-Path $installDir "FolderFresh.exe"
@@ -99,9 +111,15 @@ jobs:
             throw "Silent install did not create an Inno Setup uninstaller."
           }
 
-          & $uninstaller.FullName /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-          if ($LASTEXITCODE -ne 0) {
-            throw "Silent uninstall failed with exit code $LASTEXITCODE."
+          $uninstall = Start-Process -FilePath $uninstaller.FullName -ArgumentList @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/LOG=$uninstallLog"
+          ) -Wait -PassThru -WindowStyle Hidden
+
+          if ($uninstall.ExitCode -ne 0) {
+            throw "Silent uninstall failed with exit code $($uninstall.ExitCode). Log: $uninstallLog"
           }
 
           if (Test-Path -LiteralPath $appExe) {
