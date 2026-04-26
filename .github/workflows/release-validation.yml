@@ -1,6 +1,9 @@
 name: Release Validation
 
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
 permissions:
@@ -13,12 +16,32 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 9.0.x
+
+      - name: Resolve release version
+        shell: pwsh
+        run: |
+          [xml]$project = Get-Content -LiteralPath "FolderFresh/FolderFresh.csproj"
+          $version = ($project.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "FolderFresh/FolderFresh.csproj does not contain a Version value."
+          }
+
+          if ($env:GITHUB_REF_TYPE -eq "tag") {
+            $tagVersion = $env:GITHUB_REF_NAME.TrimStart("v")
+            if ($tagVersion -ne $version) {
+              throw "Release tag $($env:GITHUB_REF_NAME) does not match project version $version."
+            }
+          }
+
+          "RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "INSTALLER_NAME=FolderFresh-Setup-$version.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Restore
         run: dotnet restore FolderFresh.sln
@@ -28,6 +51,9 @@ jobs:
 
       - name: Test Release
         run: dotnet test FolderFresh.Tests\FolderFresh.Tests.csproj -c Release --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=release-tests.trx"
+
+      - name: Publish self-contained app
+        run: dotnet publish FolderFresh\FolderFresh.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -p:PublishTrimmed=false
 
       - name: Install Inno Setup
         run: choco install innosetup --no-progress -y
@@ -43,16 +69,101 @@ jobs:
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
           & $iscc "FolderFresh\installer.iss"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Inno Setup failed with exit code $LASTEXITCODE."
+          }
+
+          $expectedInstaller = Join-Path "FolderFresh/installer_output" $env:INSTALLER_NAME
+          if (-not (Test-Path -LiteralPath $expectedInstaller)) {
+            throw "Expected installer was not produced: $expectedInstaller"
+          }
+
+      - name: Verify silent install and uninstall
+        shell: pwsh
+        run: |
+          $installer = (Resolve-Path -LiteralPath (Join-Path "FolderFresh/installer_output" $env:INSTALLER_NAME)).Path
+          $installDir = Join-Path $env:RUNNER_TEMP "FolderFreshInstall"
+          $installLog = Join-Path $env:RUNNER_TEMP "FolderFresh-install.log"
+          $uninstallLog = Join-Path $env:RUNNER_TEMP "FolderFresh-uninstall.log"
+
+          Remove-Item -LiteralPath $installDir -Recurse -Force -ErrorAction SilentlyContinue
+
+          $install = Start-Process -FilePath $installer -ArgumentList @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/NOICONS",
+            "/DIR=$installDir",
+            "/LOG=$installLog"
+          ) -Wait -PassThru -WindowStyle Hidden
+
+          if ($install.ExitCode -ne 0) {
+            throw "Silent install failed with exit code $($install.ExitCode). Log: $installLog"
+          }
+
+          $appExe = Join-Path $installDir "FolderFresh.exe"
+          if (-not (Test-Path -LiteralPath $appExe)) {
+            throw "Silent install did not place FolderFresh.exe in $installDir."
+          }
+
+          $uninstaller = Get-ChildItem -LiteralPath $installDir -Filter "unins*.exe" | Select-Object -First 1
+          if ($null -eq $uninstaller) {
+            throw "Silent install did not create an Inno Setup uninstaller."
+          }
+
+          $uninstall = Start-Process -FilePath $uninstaller.FullName -ArgumentList @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",
+            "/LOG=$uninstallLog"
+          ) -Wait -PassThru -WindowStyle Hidden
+
+          if ($uninstall.ExitCode -ne 0) {
+            throw "Silent uninstall failed with exit code $($uninstall.ExitCode). Log: $uninstallLog"
+          }
+
+          if (Test-Path -LiteralPath $appExe) {
+            throw "Silent uninstall left FolderFresh.exe behind in $installDir."
+          }
 
       - name: Generate checksums
         shell: pwsh
-        run: ./scripts/New-ReleaseChecksums.ps1 -ArtifactDirectory FolderFresh/installer_output
+        run: ./scripts/New-ReleaseChecksums.ps1 -ArtifactDirectory FolderFresh/installer_output -Include $env:INSTALLER_NAME
+
+      - name: Prepare release notes artifact
+        shell: pwsh
+        run: |
+          $source = "release-notes/$env:RELEASE_VERSION.md"
+          if (-not (Test-Path -LiteralPath $source)) {
+            throw "Missing release notes source file: $source"
+          }
+
+          $target = "FolderFresh/installer_output/FolderFresh-ReleaseNotes-$env:RELEASE_VERSION.md"
+          Copy-Item -LiteralPath $source -Destination $target -Force
+
+      - name: Validate release artifact names
+        shell: pwsh
+        run: |
+          $expected = @(
+            "FolderFresh-Setup-$env:RELEASE_VERSION.exe",
+            "FolderFresh-Setup-$env:RELEASE_VERSION.exe.sha256",
+            "FolderFresh-ReleaseNotes-$env:RELEASE_VERSION.md"
+          )
+
+          foreach ($name in $expected) {
+            $path = Join-Path "FolderFresh/installer_output" $name
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Missing expected release artifact: $name"
+            }
+          }
 
       - name: Upload release validation artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: release-validation-artifacts
+          name: FolderFresh-release-validation-${{ env.RELEASE_VERSION }}
           path: |
-            FolderFresh/installer_output/**
+            FolderFresh/installer_output/FolderFresh-Setup-*.exe
+            FolderFresh/installer_output/FolderFresh-Setup-*.exe.sha256
+            FolderFresh/installer_output/FolderFresh-ReleaseNotes-*.md
             **/TestResults/**

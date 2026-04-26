@@ -510,6 +510,13 @@ public sealed partial class MainPage : Page
         ContentFrame.Content = _profilesContent;
     }
 
+    private void StarterPacksHomeButton_Click(object sender, RoutedEventArgs e)
+    {
+        SetSelectedNavButton(NavItem_Profiles);
+        ShowProfilesContent();
+        _previousTab = "profiles";
+    }
+
     private void ShowSnapshotsContent()
     {
         HomeContent.Visibility = Visibility.Collapsed;
