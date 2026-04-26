@@ -35,8 +35,11 @@ jobs:
         with:
           languages: csharp
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Restore
+        run: dotnet restore FolderFresh.sln
+
+      - name: Build
+        run: dotnet build FolderFresh.sln -c Release --no-restore
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
