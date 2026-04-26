@@ -20,6 +20,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FolderFresh.SetupAdvisor\FolderFresh.SetupAdvisor.csproj" />
+  </ItemGroup>
+
   <!-- Reference pure model/service files directly so tests stay fast and UI-independent. -->
   <ItemGroup>
     <Compile Include="..\FolderFresh\Models\Condition.cs" Link="Models\Condition.cs" />

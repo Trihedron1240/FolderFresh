@@ -329,6 +329,7 @@ public sealed partial class MainPage : Page
     private ProfilesContent? _profilesContent;
     private WatchedFoldersContent? _watchedFoldersContent;
     private SnapshotsContent? _snapshotsContent;
+    private SetupAdvisorPanel? _setupAdvisorPanel;
 
     private void ShowRulesContent()
     {
@@ -341,6 +342,7 @@ public sealed partial class MainPage : Page
             _rulesContent = new RulesContent();
             _rulesContent.NewRuleRequested += RulesContent_NewRuleRequested;
             _rulesContent.EditRuleRequested += RulesContent_EditRuleRequested;
+            _rulesContent.SmartSetupRequested += RulesContent_SmartSetupRequested;
             _rulesContent.RulesChanged += ProfileBackedDataChanged;
         }
 
@@ -362,6 +364,11 @@ public sealed partial class MainPage : Page
         ShowRuleEditor(rule);
     }
 
+    private void RulesContent_SmartSetupRequested(object? sender, EventArgs e)
+    {
+        ShowSetupAdvisorPanel();
+    }
+
     private void ShowRuleEditor(Models.Rule? rule)
     {
         if (_ruleEditorPanel == null)
@@ -373,6 +380,20 @@ public sealed partial class MainPage : Page
 
         _ruleEditorPanel.SetRule(rule);
         ContentFrame.Content = _ruleEditorPanel;
+    }
+
+    private void ShowSetupAdvisorPanel()
+    {
+        if (_setupAdvisorPanel == null)
+        {
+            _setupAdvisorPanel = new SetupAdvisorPanel();
+            _setupAdvisorPanel.Initialize(_categoryService, _ruleService, _settingsService);
+            _setupAdvisorPanel.CloseRequested += SetupAdvisorPanel_CloseRequested;
+            _setupAdvisorPanel.SuggestionsApplied += SetupAdvisorPanel_SuggestionsApplied;
+        }
+
+        _setupAdvisorPanel.SetSelectedFolder(_selectedFolder?.Path);
+        ContentFrame.Content = _setupAdvisorPanel;
     }
 
     private async void RuleEditorPanel_SaveRequested(object? sender, Models.Rule rule)
@@ -396,6 +417,26 @@ public sealed partial class MainPage : Page
     private void RuleEditorPanel_CloseRequested(object? sender, EventArgs e)
     {
         // Go back to rules list
+        ShowRulesContent();
+    }
+
+    private void SetupAdvisorPanel_CloseRequested(object? sender, EventArgs e)
+    {
+        ShowRulesContent();
+    }
+
+    private async void SetupAdvisorPanel_SuggestionsApplied(object? sender, EventArgs e)
+    {
+        await _profileService.SaveCurrentProfileStateAsync();
+
+        _rulesContent = null;
+        _categoriesContent = null;
+
+        if (_selectedFolder != null)
+        {
+            await GeneratePreviewAsync();
+        }
+
         ShowRulesContent();
     }
 

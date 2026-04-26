@@ -108,11 +108,12 @@ public class LocalizationService
     {
         try
         {
+            LoadDefaultStrings();
+
             var exePath = Environment.ProcessPath;
             if (string.IsNullOrEmpty(exePath))
             {
                 System.Diagnostics.Debug.WriteLine("[LocalizationService] Could not get process path");
-                LoadDefaultStrings();
                 return;
             }
 
@@ -131,7 +132,6 @@ public class LocalizationService
                 if (!File.Exists(langFile))
                 {
                     System.Diagnostics.Debug.WriteLine("[LocalizationService] English language file not found, using defaults");
-                    LoadDefaultStrings();
                     return;
                 }
             }
@@ -141,12 +141,11 @@ public class LocalizationService
 
             if (strings != null)
             {
-                _strings = strings;
+                foreach (var pair in strings)
+                {
+                    _strings[pair.Key] = pair.Value;
+                }
                 System.Diagnostics.Debug.WriteLine($"[LocalizationService] Loaded {_strings.Count} strings for {languageCode}");
-            }
-            else
-            {
-                LoadDefaultStrings();
             }
         }
         catch (Exception ex)
@@ -221,6 +220,37 @@ public class LocalizationService
             { "Settings_About", "ABOUT" },
             { "Settings_Version", "Version 3.0.3" },
             { "Settings_Description", "A powerful file organization tool with rules and categories" },
+
+            // Rules / Smart Setup
+            { "Rules_Title", "Rules" },
+            { "Rules_SmartSetup", "Smart Setup" },
+            { "Rules_NewRule", "New Rule" },
+            { "Rules_CreateRule", "Create Rule" },
+            { "Rules_EmptyTitle", "No rules yet" },
+            { "Rules_EmptyDesc", "Rules let you automatically organize specific files based on conditions" },
+            { "Rules_InfoBanner", "Rules are checked in order from top to bottom. The first matching rule wins. Drag rules to reorder priority." },
+            { "Rules_DeleteTitle", "Delete Rule" },
+            { "Rules_DeleteConfirm", "Are you sure you want to delete \"{0}\"?" },
+
+            { "SmartSetup_Title", "Smart Setup" },
+            { "SmartSetup_Subtitle", "Analyze a folder and generate starter categories and rules you can review before saving." },
+            { "SmartSetup_Folder", "Folder" },
+            { "SmartSetup_Browse", "Browse" },
+            { "SmartSetup_IncludeSubfolders", "Include subfolders" },
+            { "SmartSetup_MaxFiles", "Max files to scan" },
+            { "SmartSetup_Analyze", "Analyze Folder" },
+            { "SmartSetup_Apply", "Apply Selected Suggestions" },
+            { "SmartSetup_Status", "Status" },
+            { "SmartSetup_Categories", "Suggested Categories" },
+            { "SmartSetup_Rules", "Suggested Rules" },
+            { "SmartSetup_NoCategories", "No category suggestions yet." },
+            { "SmartSetup_NoRules", "No rule suggestions yet." },
+            { "SmartSetup_Destination", "Destination" },
+            { "SmartSetup_Extensions", "Extensions" },
+            { "SmartSetup_SampleFiles", "Sample files" },
+            { "SmartSetup_MatchToken", "Match token" },
+            { "SmartSetup_TargetCategory", "Target category" },
+            { "Close", "Close" },
         };
     }
 

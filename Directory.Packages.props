@@ -2,7 +2,7 @@
   <ItemGroup>
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.11" />
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.7.250909003" />
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="1.7.260224002" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <!-- Test packages -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />

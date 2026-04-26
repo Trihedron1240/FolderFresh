@@ -27,6 +27,7 @@ public sealed partial class RulesContent : UserControl
 
     public event EventHandler<Rule>? NewRuleRequested;
     public event EventHandler<Rule>? EditRuleRequested;
+    public event EventHandler? SmartSetupRequested;
     public event EventHandler? RulesChanged;
 
     public RulesContent()
@@ -41,6 +42,7 @@ public sealed partial class RulesContent : UserControl
     private void ApplyLocalization()
     {
         TitleText.Text = Loc.Get("Rules_Title");
+        SmartSetupButtonText.Text = Loc.Get("Rules_SmartSetup");
         NewRuleButtonText.Text = Loc.Get("Rules_NewRule");
         InfoBannerText.Text = Loc.Get("Rules_InfoBanner");
         EmptyTitleText.Text = Loc.Get("Rules_EmptyTitle");
@@ -229,6 +231,11 @@ public sealed partial class RulesContent : UserControl
     {
         var newRule = Rule.Create("New Rule");
         NewRuleRequested?.Invoke(this, newRule);
+    }
+
+    private void SmartSetupButton_Click(object sender, RoutedEventArgs e)
+    {
+        SmartSetupRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void RuleCard_EditRequested(object? sender, Rule rule)
