@@ -1,0 +1,83 @@
+{
+  "version": 2,
+  "name": "Client Intake",
+  "description": "Splits incoming client files into dated document, spreadsheet, image, and archive folders.",
+  "rules": {
+    "rules": [
+      {
+        "id": "cli_docs",
+        "name": "Client documents",
+        "isEnabled": true,
+        "priority": 0,
+        "conditions": {
+          "matchType": "Any",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Document" },
+            { "attribute": "Kind", "operator": "Is", "value": "PDF" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Client Intake/{date:yyyy-MM}/Documents", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "cli_sheets",
+        "name": "Client spreadsheets",
+        "isEnabled": true,
+        "priority": 1,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Spreadsheet" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Client Intake/{date:yyyy-MM}/Spreadsheets", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "cli_images",
+        "name": "Client images",
+        "isEnabled": true,
+        "priority": 2,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Image" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Client Intake/{date:yyyy-MM}/Images", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "cli_arch",
+        "name": "Client archives",
+        "isEnabled": true,
+        "priority": 3,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Archive" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Client Intake/{date:yyyy-MM}/Archives", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      }
+    ]
+  },
+  "exportedAt": "2026-04-26T00:00:00"
+}

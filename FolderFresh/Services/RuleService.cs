@@ -83,16 +83,17 @@ public class RuleService
         { ".woff2", FileKind.Font }
     };
 
-    public RuleService() : this(null)
+    public RuleService() : this(null, null)
     {
     }
 
-    public RuleService(CategoryService? categoryService)
+    public RuleService(CategoryService? categoryService, string? storageDirectory = null)
     {
         _categoryService = categoryService;
 
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var appFolderPath = Path.Combine(appDataPath, AppFolderName);
+        var appFolderPath = string.IsNullOrWhiteSpace(storageDirectory)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppFolderName)
+            : storageDirectory;
 
         if (!Directory.Exists(appFolderPath))
         {

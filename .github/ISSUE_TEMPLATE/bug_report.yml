@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a reproducible FolderFresh problem.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "Use temporary folders when reproducing file operation bugs."
+  - type: input
+    id: version
+    attributes:
+      label: FolderFresh version
+      placeholder: "3.0.3"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 23H2 x64"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include rules, categories, settings, and watched-folder state.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety features involved
+      options:
+        - label: Preview
+        - label: Undo
+        - label: Recycle Bin delete
+        - label: Snapshots
+        - label: Watched folders

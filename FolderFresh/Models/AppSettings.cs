@@ -12,11 +12,11 @@ public class AppSettings : INotifyPropertyChanged
     private bool _useRulesFirst = true;
     private bool _fallbackToCategories = true;
     private bool _showNotifications = true;
-    private bool _confirmBeforeOrganize = false;
+    private bool _confirmBeforeOrganize = true;
     private bool _moveToTrashInsteadOfDelete = true;
     private bool _createUndoHistory = true;
     private int _maxUndoHistory = 10;
-    private bool _includeSubfolders = true;
+    private bool _includeSubfolders = false;
     private bool _ignoreHiddenFiles = true;
     private bool _ignoreSystemFiles = true;
     private bool _preserveEmptyFolders = true;
@@ -276,11 +276,11 @@ public class AppSettings : INotifyPropertyChanged
             UseRulesFirst = true,
             FallbackToCategories = true,
             ShowNotifications = true,
-            ConfirmBeforeOrganize = false,
+            ConfirmBeforeOrganize = true,
             MoveToTrashInsteadOfDelete = true,
             CreateUndoHistory = true,
             MaxUndoHistory = 10,
-            IncludeSubfolders = true,
+            IncludeSubfolders = false,
             IgnoreHiddenFiles = true,
             IgnoreSystemFiles = true,
             PreserveEmptyFolders = true,

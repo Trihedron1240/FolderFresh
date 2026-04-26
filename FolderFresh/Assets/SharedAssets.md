@@ -1,12 +1,8 @@
-# Shared Assets
+# Windows Assets
 
-See documentation about assets here: https://github.com/unoplatform/uno/blob/master/doc/articles/features/working-with-assets.md
-
-## Here is a cheat sheet
-
-1. Add the image file to the `Assets` directory of a shared project.
-2. Set the build action to `Content`.
-3. (Recommended) Provide an asset for various scales/dpi
+FolderFresh is a Windows-first WinUI 3 app. Keep shared app imagery in this
+directory and mark assets as `Content` when they need to be copied with the
+desktop build.
 
 ### Examples
 
@@ -20,13 +16,13 @@ See documentation about assets here: https://github.com/unoplatform/uno/blob/mas
 \Assets\Images\scale-400\logo.png
 ```
 
-### Table of scales
+### WinUI scale suffixes
 
-| Scale | WinUI       | iOS | Android |
-|-------|:-----------:|:---------------:|:-------:|
-| `100` | scale-100   | @1x             | mdpi    |
-| `125` | scale-125   | N/A             | N/A     |
-| `150` | scale-150   | N/A             | hdpi    |
-| `200` | scale-200   | @2x             | xhdpi   |
-| `300` | scale-300   | @3x             | xxhdpi  |
-| `400` | scale-400   | N/A             | xxxhdpi |
+| Scale | WinUI suffix |
+|-------|:------------:|
+| `100` | scale-100    |
+| `125` | scale-125    |
+| `150` | scale-150    |
+| `200` | scale-200    |
+| `300` | scale-300    |
+| `400` | scale-400    |

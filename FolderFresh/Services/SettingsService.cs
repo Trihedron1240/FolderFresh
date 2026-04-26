@@ -19,10 +19,11 @@ public class SettingsService
     /// </summary>
     public event EventHandler<AppSettings>? SettingsChanged;
 
-    public SettingsService()
+    public SettingsService(string? storageDirectory = null)
     {
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var folderFreshPath = Path.Combine(appDataPath, "FolderFresh");
+        var folderFreshPath = string.IsNullOrWhiteSpace(storageDirectory)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FolderFresh")
+            : storageDirectory;
         Directory.CreateDirectory(folderFreshPath);
         _settingsPath = Path.Combine(folderFreshPath, "settings.json");
     }

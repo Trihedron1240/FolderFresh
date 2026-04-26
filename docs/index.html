@@ -59,6 +59,8 @@
 
       <div class="hidden md:flex items-center gap-6 text-sm text-[var(--ff-muted)]">
         <a href="#features" class="hover:text-white transition">Features</a>
+        <a href="#trust" class="hover:text-white transition">Trust</a>
+        <a href="#starter-packs" class="hover:text-white transition">Starter Packs</a>
         <a href="#screenshots" class="hover:text-white transition">Screenshots</a>
         <a href="#whats-new" class="hover:text-white transition">What's New</a>
         <a href="https://github.com/Trihedron1240/FolderFresh" target="_blank" class="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--ff-border)] hover:bg-[var(--ff-panel)] text-[var(--ff-text)] transition">GitHub</a>
@@ -84,12 +86,12 @@
           </div>
 
           <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight text-white">
-            Intelligent file automation<br>
-            <span class="text-[var(--ff-purple)]">rebuilt for Windows.</span>
+            Trusted file automation<br>
+            <span class="text-[var(--ff-purple)]">built for Windows.</span>
           </h1>
 
           <p class="mt-6 text-lg text-[var(--ff-muted)] max-w-xl">
-            FolderFresh 3.0.3 is the current release of FolderFresh's rewrite in <strong class="text-white">C# / .NET 9</strong> with <strong class="text-white">WinUI 3</strong>. It brings native performance, modern Fluent Design, toast notifications, and powerful rule-based automation.
+            FolderFresh 3.0.3 is a Windows-first organiser built in <strong class="text-white">C# / .NET 9</strong> with <strong class="text-white">WinUI 3</strong>. It focuses on local rules, profiles, previews, undo, snapshots, and safer folder automation.
           </p>
 
           <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -108,6 +110,7 @@
             <span class="px-3 py-1 rounded-full bg-[var(--ff-panel)] border border-[var(--ff-border)]">WinUI 3</span>
             <span class="px-3 py-1 rounded-full bg-[var(--ff-panel)] border border-[var(--ff-border)]">GPL-3.0</span>
             <span class="px-3 py-1 rounded-full bg-[var(--ff-panel)] border border-[var(--ff-border)]">Windows 10/11</span>
+            <span class="px-3 py-1 rounded-full bg-[var(--ff-panel)] border border-[var(--ff-border)]">Preview + Undo</span>
           </div>
         </div>
 
@@ -160,6 +163,37 @@
     </div>
   </section>
 
+  <section id="trust" class="py-20 bg-[var(--ff-bg)]">
+    <div class="max-w-6xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-white">Trust Signals</h2>
+      <p class="text-center text-[var(--ff-muted)] mt-3 mb-12 max-w-2xl mx-auto">
+        FolderFresh moves files, so accuracy, validation, and recovery are treated as core product features.
+      </p>
+
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Current Release</h3>
+          <p class="text-sm text-[var(--ff-muted)]">v3.0.3 stable for Windows 10/11 x64.</p>
+        </div>
+
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Safer Defaults</h3>
+          <p class="text-sm text-[var(--ff-muted)]">New installs confirm before organizing and keep subfolder scanning opt-in.</p>
+        </div>
+
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Recovery Tools</h3>
+          <p class="text-sm text-[var(--ff-muted)]">Preview, undo, Recycle Bin deletes, and snapshots reduce file-loss risk.</p>
+        </div>
+
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Release Checks</h3>
+          <p class="text-sm text-[var(--ff-muted)]">CI artifacts and checksum generation are tracked in the repo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="features" class="py-20 bg-[var(--ff-bg)]">
     <div class="max-w-6xl mx-auto px-6">
       <h2 class="text-3xl font-bold text-center text-white">Core Features</h2>
@@ -168,7 +202,7 @@
       <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div class="feature-card p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] transition-all duration-200">
           <h3 class="font-semibold text-lg text-white mb-2">Advanced Rule Engine</h3>
-          <p class="text-sm text-[var(--ff-muted)]">Create rules with regex patterns, date ranges, file content matching, size conditions, and more. Multiple actions per rule with dynamic placeholders.</p>
+          <p class="text-sm text-[var(--ff-muted)]">Create rules with regex patterns, date ranges, size conditions, folder/path matching, file kinds, and extensions. Multiple actions per rule use dynamic placeholders.</p>
         </div>
 
         <div class="feature-card p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] transition-all duration-200">
@@ -194,6 +228,38 @@
         <div class="feature-card p-6 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)] transition-all duration-200">
           <h3 class="font-semibold text-lg text-white mb-2">Undo History</h3>
           <p class="text-sm text-[var(--ff-muted)]">Undo recent file operations and optionally send deleted files to the Recycle Bin for safer cleanup.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="starter-packs" class="py-20 bg-[var(--ff-bg-dark)]">
+    <div class="max-w-6xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-center text-white">Starter Packs</h2>
+      <p class="text-center text-[var(--ff-muted)] mt-3 mb-12 max-w-2xl mx-auto">
+        Import a ready-made profile, preview it on a temporary folder, then adjust it for your workflow.
+      </p>
+
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Clean Downloads</h3>
+          <p class="text-sm text-[var(--ff-muted)]">Documents, images, installers, and archives.</p>
+        </div>
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Receipts</h3>
+          <p class="text-sm text-[var(--ff-muted)]">Receipt and invoice PDFs by year and month.</p>
+        </div>
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Screenshots</h3>
+          <p class="text-sm text-[var(--ff-muted)]">Screenshot files into monthly folders.</p>
+        </div>
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Creator Inbox</h3>
+          <p class="text-sm text-[var(--ff-muted)]">Images, video, audio, archives, and design exports.</p>
+        </div>
+        <div class="p-5 bg-[var(--ff-panel)] rounded-2xl border border-[var(--ff-border)]">
+          <h3 class="font-semibold text-white mb-2">Client Intake</h3>
+          <p class="text-sm text-[var(--ff-muted)]">Client files split into dated intake folders.</p>
         </div>
       </div>
     </div>
@@ -264,7 +330,7 @@
   <section class="py-20 bg-[var(--ff-bg-dark)]">
     <div class="max-w-4xl mx-auto px-6 text-center">
       <h3 class="text-3xl font-bold text-white">Ready to automate your files?</h3>
-      <p class="mt-4 text-[var(--ff-muted)] max-w-xl mx-auto">Download FolderFresh 3.0.3 and get a native Windows file automation workflow with rules, profiles, previews, and real-time watchers.</p>
+      <p class="mt-4 text-[var(--ff-muted)] max-w-xl mx-auto">Download FolderFresh 3.0.3 and get a native Windows file automation workflow with rules, profiles, previews, undo, and real-time watchers.</p>
 
       <div class="mt-8 flex flex-col sm:flex-row justify-center gap-4">
         <a href="https://github.com/Trihedron1240/FolderFresh/releases/latest" class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[var(--ff-purple)] text-white rounded-xl font-semibold glow-btn hover:bg-[var(--ff-purple-light)] transition">
@@ -281,7 +347,7 @@
 
   <footer class="py-10 bg-[var(--ff-panel)] border-t border-[var(--ff-border)]">
     <div class="max-w-6xl mx-auto px-6 text-center text-[var(--ff-muted)]">
-      <div class="mb-3 text-sm">2025 FolderFresh - Created by <a href="https://github.com/Trihedron1240" class="text-[var(--ff-purple-light)] hover:text-white">Trihedron</a></div>
+      <div class="mb-3 text-sm">2026 FolderFresh - Created by <a href="https://github.com/Trihedron1240" class="text-[var(--ff-purple-light)] hover:text-white">Trihedron</a></div>
       <div class="text-xs">
         Open source under <a href="https://github.com/Trihedron1240/FolderFresh/blob/main/LICENSE" class="text-[var(--ff-purple-light)] hover:text-white">GPL-3.0</a>
       </div>

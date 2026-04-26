@@ -1,0 +1,26 @@
+name: Starter pack
+description: Propose a reusable starter profile.
+title: "[Starter Pack]: "
+labels: ["starter-pack", "docs"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Pack name
+      placeholder: "Clean Downloads"
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow
+      description: What files should the pack organize, and where should they go?
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: Rules
+      description: List conditions and actions. Avoid unsupported content matching.
+    validations:
+      required: true

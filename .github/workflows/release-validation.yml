@@ -1,0 +1,58 @@
+name: Release Validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-release:
+    name: Build, package, and checksum
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore FolderFresh.sln
+
+      - name: Build Release
+        run: dotnet build FolderFresh.sln -c Release --no-restore
+
+      - name: Test Release
+        run: dotnet test FolderFresh.Tests\FolderFresh.Tests.csproj -c Release --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=release-tests.trx"
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Clean installer output
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force "FolderFresh\installer_output" -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force "FolderFresh\installer_output" | Out-Null
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          & $iscc "FolderFresh\installer.iss"
+
+      - name: Generate checksums
+        shell: pwsh
+        run: ./scripts/New-ReleaseChecksums.ps1 -ArtifactDirectory FolderFresh/installer_output
+
+      - name: Upload release validation artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-validation-artifacts
+          path: |
+            FolderFresh/installer_output/**
+            **/TestResults/**

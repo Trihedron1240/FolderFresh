@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "name": "Screenshots by Date",
+  "description": "Sorts screenshot files into monthly folders.",
+  "rules": {
+    "rules": [
+      {
+        "id": "shot_png",
+        "name": "PNG screenshots",
+        "isEnabled": true,
+        "priority": 0,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Extension", "operator": "Is", "value": ".png" },
+            { "attribute": "FullName", "operator": "Contains", "value": "screenshot" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Screenshots/{date:yyyy-MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "shot_jpg",
+        "name": "Other screenshot names",
+        "isEnabled": true,
+        "priority": 1,
+        "conditions": {
+          "matchType": "Any",
+          "conditions": [
+            { "attribute": "FullName", "operator": "Contains", "value": "screen shot" },
+            { "attribute": "FullName", "operator": "Contains", "value": "screenshot" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Screenshots/{date:yyyy-MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      }
+    ]
+  },
+  "exportedAt": "2026-04-26T00:00:00"
+}

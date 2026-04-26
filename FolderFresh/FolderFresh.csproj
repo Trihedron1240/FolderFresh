@@ -9,7 +9,7 @@
     <RootNamespace>FolderFresh</RootNamespace>
     <AssemblyName>FolderFresh</AssemblyName>
     <ApplicationTitle>FolderFresh</ApplicationTitle>
-    <ApplicationId>com.folderfresh.lite</ApplicationId>
+    <ApplicationId>com.folderfresh</ApplicationId>
     <ApplicationIcon>Assets\Icons\icon.ico</ApplicationIcon>
     <Version>3.0.3</Version>
     <AssemblyVersion>3.0.3.0</AssemblyVersion>
@@ -38,18 +38,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Platforms\Android\**" />
-    <Compile Remove="Platforms\iOS\**" />
-    <Compile Remove="Platforms\WebAssembly\**" />
-    <None Remove="Platforms\Android\**" />
-    <None Remove="Platforms\iOS\**" />
-    <None Remove="Platforms\WebAssembly\**" />
-    <Content Remove="Platforms\Android\**" />
-    <Content Remove="Platforms\iOS\**" />
-    <Content Remove="Platforms\WebAssembly\**" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" />
     <PackageReference Include="Microsoft.WindowsAppSDK" />
@@ -69,6 +57,10 @@
     <None Include="Languages\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Languages\%(Filename)%(Extension)</Link>
+    </None>
+    <None Include="..\starter-packs\*.folderfresh">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>StarterPacks\%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
 

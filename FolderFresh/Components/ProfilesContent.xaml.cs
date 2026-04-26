@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using FolderFresh.Models;
 using FolderFresh.Services;
@@ -390,6 +392,108 @@ public sealed partial class ProfilesContent : UserControl
                 await errorDialog.ShowAsync();
             }
         }
+    }
+
+    private void StarterPacksButton_Click(object sender, RoutedEventArgs e)
+    {
+        var starterPackDirectory = Path.Combine(AppContext.BaseDirectory, "StarterPacks");
+        var flyout = new MenuFlyout();
+
+        if (!Directory.Exists(starterPackDirectory))
+        {
+            flyout.Items.Add(new MenuFlyoutItem
+            {
+                Text = "No starter packs found",
+                IsEnabled = false
+            });
+            flyout.ShowAt(StarterPacksButton);
+            return;
+        }
+
+        var packFiles = Directory.GetFiles(starterPackDirectory, "*.folderfresh")
+            .OrderBy(GetStarterPackName)
+            .ToList();
+
+        if (packFiles.Count == 0)
+        {
+            flyout.Items.Add(new MenuFlyoutItem
+            {
+                Text = "No starter packs found",
+                IsEnabled = false
+            });
+        }
+        else
+        {
+            foreach (var packFile in packFiles)
+            {
+                var item = new MenuFlyoutItem
+                {
+                    Text = GetStarterPackName(packFile),
+                    Tag = packFile
+                };
+                item.Click += StarterPackMenuItem_Click;
+                flyout.Items.Add(item);
+            }
+        }
+
+        flyout.ShowAt(StarterPacksButton);
+    }
+
+    private async void StarterPackMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_profileService == null) return;
+        if (sender is not MenuFlyoutItem item || item.Tag is not string packPath) return;
+
+        try
+        {
+            var packName = GetStarterPackName(packPath);
+            var importName = _profileService.ProfileNameExists(packName)
+                ? _profileService.GetUniqueProfileName(packName)
+                : packName;
+
+            await _profileService.ImportProfileAsync(packPath, importName);
+            LoadProfiles();
+            ProfilesChanged?.Invoke(this, EventArgs.Empty);
+
+            var dialog = new ContentDialog
+            {
+                Title = "Starter Pack Imported",
+                Content = $"Imported \"{importName}\". Preview a temporary folder before running it on real files.",
+                CloseButtonText = Loc.Get("OK"),
+                XamlRoot = this.XamlRoot
+            };
+            await dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Starter Pack Import Failed",
+                Content = ex.Message,
+                CloseButtonText = Loc.Get("OK"),
+                XamlRoot = this.XamlRoot
+            };
+            await dialog.ShowAsync();
+        }
+    }
+
+    private static string GetStarterPackName(string packPath)
+    {
+        try
+        {
+            var json = File.ReadAllText(packPath);
+            var info = JsonSerializer.Deserialize<ImportedProfileInfo>(json);
+            if (!string.IsNullOrWhiteSpace(info?.Name))
+            {
+                return info.Name;
+            }
+        }
+        catch
+        {
+            // Fall back to file name below.
+        }
+
+        return Path.GetFileNameWithoutExtension(packPath).Replace('-', ' ');
     }
 
     private async void SwitchProfileButton_Click(object sender, RoutedEventArgs e)

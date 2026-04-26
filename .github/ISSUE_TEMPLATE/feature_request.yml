@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a focused FolderFresh improvement.
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow should this improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the smallest useful version.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Rules
+        - Categories
+        - Profiles
+        - Watched folders
+        - Preview and undo
+        - Snapshots
+        - Packaging and distribution
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety considerations
+      description: How should FolderFresh keep file operations previewable and reversible?

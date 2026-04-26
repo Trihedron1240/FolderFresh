@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "FolderFreshLite (Windows)": {
+    "FolderFresh (Windows)": {
       "commandName": "Project",
       "nativeDebugging": false,
       "environmentVariables": {

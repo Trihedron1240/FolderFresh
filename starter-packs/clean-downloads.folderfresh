@@ -1,0 +1,86 @@
+{
+  "version": 2,
+  "name": "Clean Downloads",
+  "description": "Routes common download-folder files into predictable folders.",
+  "rules": {
+    "rules": [
+      {
+        "id": "dl_docs",
+        "name": "Documents and office files",
+        "isEnabled": true,
+        "priority": 0,
+        "conditions": {
+          "matchType": "Any",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Document" },
+            { "attribute": "Kind", "operator": "Is", "value": "PDF" },
+            { "attribute": "Kind", "operator": "Is", "value": "Spreadsheet" },
+            { "attribute": "Kind", "operator": "Is", "value": "Presentation" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "MoveToFolder", "value": "Documents", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "dl_images",
+        "name": "Images by month",
+        "isEnabled": true,
+        "priority": 1,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Image" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Images/{date:yyyy-MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "dl_install",
+        "name": "Installers",
+        "isEnabled": true,
+        "priority": 2,
+        "conditions": {
+          "matchType": "Any",
+          "conditions": [
+            { "attribute": "Extension", "operator": "Is", "value": ".exe" },
+            { "attribute": "Extension", "operator": "Is", "value": ".msi" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "MoveToFolder", "value": "Installers", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "dl_arch",
+        "name": "Archives",
+        "isEnabled": true,
+        "priority": 3,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Archive" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "MoveToFolder", "value": "Archives", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      }
+    ]
+  },
+  "exportedAt": "2026-04-26T00:00:00"
+}

@@ -1,4 +1,4 @@
-# FolderFresh 3.0.3 - Intelligent File Automation Engine for Windows
+# FolderFresh 3.0.3 - Trusted File Automation For Windows
 
 ## License
 FolderFresh is licensed under **GPL-3.0**.
@@ -6,8 +6,22 @@ Versions prior to 1.4.0 remain under the MIT license they were originally releas
 
 Website: https://trihedron1240.github.io/FolderFresh/
 
-FolderFresh is a powerful, rule-based file automation engine that intelligently organizes, manages, and processes your files in real time.
-It is built for power users, developers, and anyone who wants precise control over folder workflows on Windows.
+FolderFresh is a Windows-first, rule-based file automation app for organizing ordinary folders with previews, profiles, undo, snapshots, and watched-folder workflows.
+It is built for people who want precise local automation without writing scripts or YAML.
+
+---
+
+## Safety And Reliability
+
+FolderFresh is designed for local file automation, so the public feature set is
+kept conservative and explicit:
+
+- Preview shows what will happen before files are organized.
+- New installs ask for confirmation before organizing.
+- Subfolder scanning is opt-in for new installs.
+- Delete actions use the Recycle Bin by default.
+- Undo tracking is enabled for supported file operations.
+- Current rules use file names, metadata, dates, paths, sizes, extensions, and file types. FolderFresh does not inspect document contents in this release.
 
 ---
 
@@ -63,7 +77,7 @@ Version 3.0.3 adds important fixes and release polish:
 
 ### Rule-Based Automation Engine
 - Create custom rules with flexible conditions and actions
-- Match by filename patterns, file size, created/modified date, path, content, and extension
+- Match by filename patterns, file size, created/modified/accessed date, folder, path, kind, and extension
 - Use operators such as contains, starts with, ends with, equals, regex, greater/less than, and date ranges
 - Perform move, copy, rename, delete, and sort-into-subfolder actions
 - Group conditions with AND / OR / NONE logic
@@ -90,6 +104,36 @@ Version 3.0.3 adds important fixes and release polish:
 - Preview mode
 - Undo history
 - Optional Recycle Bin support for deletes
+- Confirmation before organizing is enabled by default for new installs
+- Subfolder scanning is opt-in for new installs
+- Folder snapshots help with recovery-oriented workflows
+
+---
+
+## Feature Matrix
+
+| Area | Supported now | Not currently supported |
+| --- | --- | --- |
+| Platforms | Windows 10/11 x64 | macOS, Linux, mobile, browser |
+| Rule conditions | Name, extension, full name, kind, folder, folder path, size, created/modified/accessed dates | Document-content matching, OCR, AI classification |
+| Rule actions | Move, copy, rename, delete to Recycle Bin, move to category, sort into subfolder, ignore, continue | Cloud sync actions, external app actions |
+| Safety | Preview, confirmation default, undo for moves/copies/renames, Recycle Bin deletes, snapshots | Guaranteed recovery after permanent delete |
+| Profiles | Create, duplicate, switch, import, export, starter packs | Shared/team rule libraries |
+
+---
+
+## Starter Packs
+
+Starter packs are importable `.folderfresh` profiles for common jobs:
+
+- Clean Downloads
+- Receipts by Year/Month
+- Screenshots by Date
+- Creator Export Inbox
+- Client Intake
+
+Use **Profiles -> Starter Packs** in the app, or import files from `starter-packs/`.
+Preview a temporary folder before running any starter pack on real files.
 
 ---
 
@@ -149,6 +193,7 @@ git clone https://github.com/Trihedron1240/FolderFresh.git
 cd FolderFresh
 dotnet restore
 dotnet build FolderFresh/FolderFresh.csproj
+dotnet test FolderFresh.Tests/FolderFresh.Tests.csproj --collect:"XPlat Code Coverage"
 dotnet run --project FolderFresh/FolderFresh.csproj
 ```
 
@@ -166,6 +211,16 @@ dotnet run --project FolderFresh/FolderFresh.csproj
 2. Select the `Release` configuration and `x64` target.
 3. Build the app.
 4. Release output will be in `FolderFresh/bin/Release/net9.0-windows10.0.22621/win-x64/`.
+
+### Validation
+
+```bash
+dotnet restore
+dotnet build FolderFresh.sln -c Release
+dotnet test FolderFresh.Tests/FolderFresh.Tests.csproj -c Release --collect:"XPlat Code Coverage"
+```
+
+Use the same commands before opening a pull request.
 
 ### Creating the Installer
 1. Build in Release mode.
@@ -193,7 +248,12 @@ You will need to:
 
 ## Contributions
 
-Pull requests, issues, and suggestions are welcome.
+Pull requests, issues, and suggestions are welcome. Start with:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [SECURITY.md](SECURITY.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- [docs/STARTER_PACKS.md](docs/STARTER_PACKS.md)
 
 ---
 
@@ -205,6 +265,15 @@ All logic has been manually reviewed, tested, and verified.
 ---
 
 ## Version History
+
+### Unreleased
+- Added security policy, contribution guide, architecture notes, and starter pack documentation
+- Added checksum helper and release-validation workflow
+- Added importable starter profile packs
+- Added Profiles screen starter-pack import entry point
+- Removed stale cross-platform template scaffolding and updated project identity away from `Lite`
+- Made new-install defaults safer with confirmation enabled and subfolder scanning opt-in
+- Renamed the test project to `FolderFresh.Tests`
 
 ### v3.0.3 (2026)
 - Updated release branding from beta to stable 3.0.3

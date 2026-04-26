@@ -33,14 +33,19 @@ public class ProfileService
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public ProfileService(CategoryService categoryService, RuleService ruleService, SettingsService settingsService)
+    public ProfileService(
+        CategoryService categoryService,
+        RuleService ruleService,
+        SettingsService settingsService,
+        string? storageDirectory = null)
     {
         _categoryService = categoryService;
         _ruleService = ruleService;
         _settingsService = settingsService;
 
-        var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var appFolderPath = Path.Combine(appDataPath, AppFolderName);
+        var appFolderPath = string.IsNullOrWhiteSpace(storageDirectory)
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppFolderName)
+            : storageDirectory;
 
         if (!Directory.Exists(appFolderPath))
         {
@@ -62,7 +67,7 @@ public class ProfileService
             if (!File.Exists(_profilesFilePath))
             {
                 // First run - create default profile from current defaults
-                var defaultProfile = await CreateDefaultProfileAsync();
+                var defaultProfile = CreateDefaultProfile();
                 _profiles = new List<Profile> { defaultProfile };
                 _currentProfileId = defaultProfile.Id;
                 await SaveProfilesAsync();
@@ -88,7 +93,7 @@ public class ProfileService
             else
             {
                 // File exists but empty/corrupt - reset to defaults
-                var defaultProfile = await CreateDefaultProfileAsync();
+                var defaultProfile = CreateDefaultProfile();
                 _profiles = new List<Profile> { defaultProfile };
                 await SaveProfilesAsync();
             }
@@ -98,7 +103,7 @@ public class ProfileService
         catch (Exception)
         {
             // On any error, return defaults
-            var defaultProfile = await CreateDefaultProfileAsync();
+            var defaultProfile = CreateDefaultProfile();
             _profiles = new List<Profile> { defaultProfile };
             return _profiles;
         }
@@ -483,7 +488,7 @@ public class ProfileService
     /// Creates the default profile by capturing the current state from the services.
     /// This preserves any existing rules/categories/settings from before profiles were implemented.
     /// </summary>
-    private async Task<Profile> CreateDefaultProfileAsync()
+    private Profile CreateDefaultProfile()
     {
         var profile = new Profile
         {
@@ -508,7 +513,7 @@ public class ProfileService
     {
         if (!_profiles.Any(p => p.Id == DefaultProfileId))
         {
-            var defaultProfile = await CreateDefaultProfileAsync();
+            var defaultProfile = CreateDefaultProfile();
             _profiles.Insert(0, defaultProfile);
             await SaveProfilesAsync();
         }
@@ -562,9 +567,12 @@ public class ProfileService
 
         // Create new profile with imported data
         var profile = Profile.Create(profileName);
-        profile.RulesJson = exportData.RulesJson ?? SerializeRules(new List<Rule>());
-        profile.CategoriesJson = exportData.CategoriesJson ?? SerializeCategories(Category.GetDefaultCategories());
-        profile.SettingsJson = exportData.SettingsJson ?? SerializeSettings(AppSettings.GetDefaults());
+        profile.RulesJson = exportData.RulesJson
+            ?? SerializeRules(exportData.Rules?.Rules ?? new List<Rule>());
+        profile.CategoriesJson = exportData.CategoriesJson
+            ?? SerializeCategories(exportData.Categories?.Categories ?? Category.GetDefaultCategories());
+        profile.SettingsJson = exportData.SettingsJson
+            ?? SerializeSettings(exportData.Settings ?? AppSettings.GetDefaults());
 
         _profiles.Add(profile);
         await SaveProfilesAsync();
@@ -618,11 +626,20 @@ public class ProfileService
         [JsonPropertyName("rulesJson")]
         public string? RulesJson { get; set; }
 
+        [JsonPropertyName("rules")]
+        public RulesWrapper? Rules { get; set; }
+
         [JsonPropertyName("categoriesJson")]
         public string? CategoriesJson { get; set; }
 
+        [JsonPropertyName("categories")]
+        public CategoriesWrapper? Categories { get; set; }
+
         [JsonPropertyName("settingsJson")]
         public string? SettingsJson { get; set; }
+
+        [JsonPropertyName("settings")]
+        public AppSettings? Settings { get; set; }
 
         [JsonPropertyName("exportedAt")]
         public DateTime ExportedAt { get; set; }

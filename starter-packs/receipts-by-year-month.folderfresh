@@ -1,0 +1,48 @@
+{
+  "version": 2,
+  "name": "Receipts by Year Month",
+  "description": "Moves receipt and invoice PDFs into dated folders.",
+  "rules": {
+    "rules": [
+      {
+        "id": "rec_receipt",
+        "name": "Receipt PDFs",
+        "isEnabled": true,
+        "priority": 0,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "PDF" },
+            { "attribute": "FullName", "operator": "Contains", "value": "receipt" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Receipts/{date:yyyy}/{date:MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "rec_invoice",
+        "name": "Invoice PDFs",
+        "isEnabled": true,
+        "priority": 1,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "PDF" },
+            { "attribute": "FullName", "operator": "Contains", "value": "invoice" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Receipts/{date:yyyy}/{date:MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      }
+    ]
+  },
+  "exportedAt": "2026-04-26T00:00:00"
+}

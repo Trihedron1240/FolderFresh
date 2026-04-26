@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "name": "Creator Export Inbox",
+  "description": "Routes media exports into dated image, video, audio, archive, and design folders.",
+  "rules": {
+    "rules": [
+      {
+        "id": "crt_video",
+        "name": "Video exports",
+        "isEnabled": true,
+        "priority": 0,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Video" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Exports/Video/{date:yyyy-MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "crt_image",
+        "name": "Image exports",
+        "isEnabled": true,
+        "priority": 1,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Image" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Exports/Images/{date:yyyy-MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "crt_audio",
+        "name": "Audio exports",
+        "isEnabled": true,
+        "priority": 2,
+        "conditions": {
+          "matchType": "All",
+          "conditions": [
+            { "attribute": "Kind", "operator": "Is", "value": "Audio" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "SortIntoSubfolder", "value": "Exports/Audio/{date:yyyy-MM}", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      },
+      {
+        "id": "crt_design",
+        "name": "Design source files",
+        "isEnabled": true,
+        "priority": 3,
+        "conditions": {
+          "matchType": "Any",
+          "conditions": [
+            { "attribute": "Extension", "operator": "Is", "value": ".psd" },
+            { "attribute": "Extension", "operator": "Is", "value": ".ai" },
+            { "attribute": "Extension", "operator": "Is", "value": ".afdesign" }
+          ],
+          "nestedGroups": []
+        },
+        "actions": [
+          { "type": "MoveToFolder", "value": "Exports/Design", "options": { "conflictResolution": "rename" } }
+        ],
+        "createdAt": "2026-04-26T00:00:00",
+        "modifiedAt": "2026-04-26T00:00:00"
+      }
+    ]
+  },
+  "exportedAt": "2026-04-26T00:00:00"
+}

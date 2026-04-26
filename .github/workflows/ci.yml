@@ -1,0 +1,44 @@
+name: FolderFresh CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+      - development
+      - Development
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Windows build and tests
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore FolderFresh.sln
+
+      - name: Build
+        run: dotnet build FolderFresh.sln -c Release --no-restore
+
+      - name: Test with coverage
+        run: dotnet test FolderFresh.Tests\FolderFresh.Tests.csproj -c Release --no-build --collect:"XPlat Code Coverage" --logger "trx;LogFileName=tests.trx"
+
+      - name: Upload test and coverage artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-and-coverage
+          path: |
+            **/TestResults/**
