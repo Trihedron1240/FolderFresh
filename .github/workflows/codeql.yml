@@ -34,12 +34,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: csharp
-
-      - name: Restore
-        run: dotnet restore FolderFresh.sln
-
-      - name: Build
-        run: dotnet build FolderFresh.sln -c Release --no-restore
+          build-mode: none
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
