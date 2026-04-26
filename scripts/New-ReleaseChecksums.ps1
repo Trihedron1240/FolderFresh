@@ -1,12 +1,16 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string] $ArtifactDirectory
+    [string] $ArtifactDirectory,
+
+    [string[]] $Include = @("*")
 )
 
 $resolved = Resolve-Path -LiteralPath $ArtifactDirectory
-$files = Get-ChildItem -LiteralPath $resolved -File | Where-Object {
-    $_.Name -notmatch '\.sha256$'
+$files = foreach ($pattern in $Include) {
+    Get-ChildItem -LiteralPath $resolved -File -Filter $pattern
 }
+
+$files = $files | Where-Object { $_.Name -notmatch '\.sha256$' } | Sort-Object FullName -Unique
 
 foreach ($file in $files) {
     $hash = Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256
