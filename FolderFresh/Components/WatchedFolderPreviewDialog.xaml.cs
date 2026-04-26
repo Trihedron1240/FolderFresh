@@ -224,6 +224,7 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
         foreach (var file in displayFiles)
         {
             var filePanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+            ToolTipService.SetToolTip(filePanel, BuildWhyMovedTooltip(file, isIgnored));
 
             var fileIcon = new FontIcon
             {
@@ -279,6 +280,102 @@ public sealed partial class WatchedFolderPreviewDialog : ContentDialog
         mainPanel.Children.Add(fileListPanel);
         border.Child = mainPanel;
         return border;
+    }
+
+    private static string BuildWhyMovedTooltip(FileOrganizeResult file, bool isIgnored)
+    {
+        var matched = file.MatchedBy switch
+        {
+            OrganizeMatchType.Rule => $"Rule - {file.MatchedRuleName ?? "Unnamed rule"}",
+            OrganizeMatchType.Category => $"Category - {file.MatchedCategoryName ?? "Uncategorized"}",
+            _ => "No matching rule or category"
+        };
+
+        var reason = file.MatchedBy switch
+        {
+            OrganizeMatchType.Rule => BuildRuleReason(file),
+            OrganizeMatchType.Category => string.IsNullOrWhiteSpace(file.Extension)
+                ? $"No extension matched category {file.MatchedCategoryName ?? "Unknown"}"
+                : $"Extension {file.Extension} matched category {file.MatchedCategoryName ?? "Unknown"}",
+            _ => isIgnored ? "Ignored by rule or no safe destination found" : "No organization match found"
+        };
+
+        var action = BuildActionSummary(file);
+        var safety = BuildSafetySummary(file);
+
+        return $"Matched: {matched}{Environment.NewLine}Reason: {reason}{Environment.NewLine}Action: {action}{Environment.NewLine}Safety: {safety}";
+    }
+
+    private static string BuildRuleReason(FileOrganizeResult file)
+    {
+        var firstRule = file.MatchedRules.FirstOrDefault();
+        if (firstRule == null)
+        {
+            return "Rule matched this file";
+        }
+
+        var conditions = firstRule.Conditions.Conditions
+            .Select(c => c.DisplayText)
+            .Where(text => !string.IsNullOrWhiteSpace(text))
+            .Take(3)
+            .ToList();
+
+        if (conditions.Count == 0)
+        {
+            return "Rule has no conditions, so it matches all files";
+        }
+
+        var joiner = firstRule.Conditions.MatchType switch
+        {
+            ConditionMatchType.Any => " OR ",
+            ConditionMatchType.None => " NOR ",
+            _ => " AND "
+        };
+
+        var summary = string.Join(joiner, conditions);
+        var extraConditions = firstRule.Conditions.Conditions.Count - conditions.Count;
+        if (extraConditions > 0)
+        {
+            summary += $" (+{extraConditions} more)";
+        }
+
+        return summary;
+    }
+
+    private static string BuildActionSummary(FileOrganizeResult file)
+    {
+        if (file.IsIgnoredByRule)
+        {
+            return "No change; file stays in place";
+        }
+
+        if (file.AllDestinations.Count == 0)
+        {
+            return "No file change";
+        }
+
+        var first = file.AllDestinations[0];
+        return first.ActionType switch
+        {
+            ActionType.Delete => "Move to Recycle Bin",
+            ActionType.CopyToFolder => $"Copy to {first.Path}",
+            _ => $"Move to {first.Path}"
+        };
+    }
+
+    private static string BuildSafetySummary(FileOrganizeResult file)
+    {
+        if (file.Actions.Any(a => a.Type == ActionType.Delete))
+        {
+            return "Delete uses Recycle Bin; undo is tracked when supported";
+        }
+
+        var conflictResolution = file.Actions
+            .Select(a => a.Options.GetValueOrDefault(ActionOptionKeys.ConflictResolution))
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value))
+            ?? "rename";
+
+        return $"Conflicts: {conflictResolution}; undo tracked for supported moves, copies, and renames";
     }
 
     private async void OrganizeButton_Click(ContentDialog sender, ContentDialogButtonClickEventArgs args)

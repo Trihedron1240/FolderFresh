@@ -9,6 +9,8 @@ Website: https://trihedron1240.github.io/FolderFresh/
 FolderFresh is a Windows-first, rule-based file automation app for organizing ordinary folders with previews, profiles, undo, snapshots, and watched-folder workflows.
 It is built for people who want precise local automation without writing scripts or YAML.
 
+Distribution and checksum guidance is available in [DISTRIBUTION.md](DISTRIBUTION.md).
+
 ---
 
 ## Safety And Reliability
@@ -185,6 +187,7 @@ Desktop
 
 ### From Installer
 Download the latest installer from the [Releases](https://github.com/Trihedron1240/FolderFresh/releases) page.
+The installer is self-contained for Windows x64, so users do not need to install the .NET runtime separately.
 
 ### From Source
 
@@ -212,6 +215,12 @@ dotnet run --project FolderFresh/FolderFresh.csproj
 3. Build the app.
 4. Release output will be in `FolderFresh/bin/Release/net9.0-windows10.0.22621/win-x64/`.
 
+### Publish For Installer
+
+```bash
+dotnet publish FolderFresh/FolderFresh.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false -p:PublishTrimmed=false
+```
+
 ### Validation
 
 ```bash
@@ -223,9 +232,12 @@ dotnet test FolderFresh.Tests/FolderFresh.Tests.csproj -c Release --collect:"XPl
 Use the same commands before opening a pull request.
 
 ### Creating the Installer
-1. Build in Release mode.
+1. Publish the self-contained app in Release mode.
 2. Run `FolderFresh/installer.iss` with Inno Setup.
 3. The installer will be written to `FolderFresh/installer_output/`.
+
+Release tags should use the consistent artifact names documented in
+[DISTRIBUTION.md](DISTRIBUTION.md).
 
 ---
 
@@ -254,13 +266,6 @@ Pull requests, issues, and suggestions are welcome. Start with:
 - [SECURITY.md](SECURITY.md)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/STARTER_PACKS.md](docs/STARTER_PACKS.md)
-
----
-
-## AI Assistance Disclosure
-
-Some UI and backend improvements were refined using AI-assisted development tools.
-All logic has been manually reviewed, tested, and verified.
 
 ---
 
