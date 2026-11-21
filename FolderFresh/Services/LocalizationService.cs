@@ -29,7 +29,8 @@ public class LocalizationService
         { "de-DE", "Deutsch" },
         { "uk-UA", "Українська" },
         { "fr-FR", "Français" },
-        { "vi-VN", "Tiếng Việt" }
+        { "vi-VN", "Tiếng Việt" },
+        { "ru-RU", "Russian" }
     };
 
     /// <summary>
